@@ -9,9 +9,9 @@ public class CentipedeAssembler : MonoBehaviour
     [Tooltip("Default prefab for body nodes (should have SkeletonNode or it will be added)")]
     public GameObject defaultBodyPrefab;
 
-    [Header("Default Visuals")]
-    [Tooltip("Circle sprite used when a node has no SpriteRenderer (should be 1 world unit diameter at scale 1)")]
-    public Sprite defaultNodeSprite;
+    [Header("Default Ball")]
+    [Tooltip("BallDefinition used when a config has no ballDefinition assigned")]
+    public BallDefinition defaultBallDefinition;
 
     /// <summary>
     /// Spawns a centipede from a config asset at the given world position.
@@ -30,7 +30,7 @@ public class CentipedeAssembler : MonoBehaviour
         if (root.GetComponent<SkeletonRoot>() == null)
             root.AddComponent<SkeletonRoot>();
 
-        SetupNodeVisual(root, config);
+        SetupNodeBall(root, config);
 
         // Chain body nodes: each is a Unity child of the previous,
         // so BuildTreeFromHierarchy discovers the full chain on Awake
@@ -47,7 +47,7 @@ public class CentipedeAssembler : MonoBehaviour
                 sn = bodyNode.AddComponent<SkeletonNode>();
 
             sn.followDistance = config.followDistance;
-            SetupNodeVisual(bodyNode, config);
+            SetupNodeBall(bodyNode, config);
 
             previousNode = bodyNode.transform;
         }
@@ -59,55 +59,28 @@ public class CentipedeAssembler : MonoBehaviour
     }
 
     /// <summary>
-    /// Ensures a node has a visible circle sprite, collider, and wiggle component
-    /// on a Visual child, sized and colored according to the config.
+    /// Creates a Ball child on the node GameObject, configured for Centipede Mode.
+    /// The Ball replaces the old Visual child (SpriteRenderer + CircleCollider2D + NodeWiggle).
     /// </summary>
-    private void SetupNodeVisual(GameObject node, CentipedeConfig config)
+    private void SetupNodeBall(GameObject node, CentipedeConfig config)
     {
-        float radius = config.nodeRadius;
-        Color color = config.nodeColor;
+        BallDefinition def = config.ballDefinition != null ? config.ballDefinition : defaultBallDefinition;
 
-        Sprite sprite = config.nodeSprite != null ? config.nodeSprite : defaultNodeSprite;
+        var ballGO = new GameObject("Ball");
+        ballGO.transform.SetParent(node.transform, false);
 
-        // SpriteRenderer — reuse existing or create a visual child
-        var sr = node.GetComponentInChildren<SpriteRenderer>();
-        if (sr == null)
-        {
-            var visual = new GameObject("Visual");
-            visual.transform.SetParent(node.transform, false);
-            sr = visual.AddComponent<SpriteRenderer>();
-        }
+        var ball = ballGO.AddComponent<Ball>();
 
-        sr.sprite = sprite;
+        // Spring tuning from CentipedeConfig
+        ball.springStiffness = config.wiggleStiffness;
+        ball.springDamping   = config.wiggleDamping;
+        ball.springMass      = config.wiggleMass;
 
-        sr.color = color;
+        // diameter = radius × 2 (sprite authored at 1 world-unit diameter at scale 1)
+        float diameter = config.nodeRadius * 2f;
 
-        // Scale the visual child to match diameter (sprite is 1 world unit at scale 1)
-        sr.transform.localScale = Vector3.one * radius * 2f;
-
-        GameObject visualObj = sr.gameObject;
-
-        // Collider — on the Visual child so it wiggles with the sprite
-        var collider = visualObj.GetComponent<CircleCollider2D>();
-        if (collider == null)
-            collider = visualObj.AddComponent<CircleCollider2D>();
-        // Radius is in local space; the visual is scaled by diameter,
-        // so a local radius of 0.5 maps to nodeRadius in world units
-        collider.radius = 0.5f;
-
-        // Kinematic Rigidbody2D required for the collider to function
-        var rb = visualObj.GetComponent<Rigidbody2D>();
-        if (rb == null)
-            rb = visualObj.AddComponent<Rigidbody2D>();
-        rb.bodyType = RigidbodyType2D.Kinematic;
-
-        // Spring wiggle — gives the visual inertia and momentum
-        var wiggle = visualObj.GetComponent<NodeWiggle>();
-        if (wiggle == null)
-            wiggle = visualObj.AddComponent<NodeWiggle>();
-        wiggle.stiffness = config.wiggleStiffness;
-        wiggle.damping = config.wiggleDamping;
-        wiggle.mass = config.wiggleMass;
+        ball.Init(def, diameter, centipedeMode: true, node: node.GetComponent<SkeletonNode>());
+        ball.SetTint(config.nodeColor);
     }
 
     [Header("Test")]

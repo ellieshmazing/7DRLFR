@@ -51,7 +51,36 @@ Living documentation of all meaningful variables across the project. Updated whe
 
 | Variable | Type | Location | Description | Behavior | Affects |
 |---|---|---|---|---|---|
-| *(none yet — populate as centipede vars are confirmed)* | | | | | |
+| `nodeCount` | `int` | `CentipedeConfig` | Total number of nodes including the head | Determines how many skeleton nodes and Ball visuals are spawned | Centipede length |
+| `followDistance` | `float` | `CentipedeConfig` | World-unit gap between each node along the trail | Each body node follows its parent at exactly this distance | Segment spacing, overall body length |
+| `nodeRadius` | `float` | `CentipedeConfig` | World-unit radius of each node's Ball visual | Passed to Ball.Init as `diameter = nodeRadius * 2`; sets localScale and CircleCollider2D | Visual size, collider size, effective mass (mass = baseMass × diameter²) |
+| `nodeColor` | `Color` | `CentipedeConfig` | Tint applied to every node's SpriteRenderer | Applied via Ball.SetTint after Init | Node appearance |
+| `wiggleStiffness` | `float` | `CentipedeConfig` | Spring pull strength on each Ball's spring-chase toward its SkeletonNode | Higher = tighter snap-back, less lag | How closely Ball visuals track skeleton positions |
+| `wiggleDamping` | `float` | `CentipedeConfig` | Oscillation decay on the spring | Higher = settles faster, less bouncy | Wobble duration after movement changes |
+| `wiggleMass` | `float` | `CentipedeConfig` | Spring simulation mass per node | Higher = more sluggish and heavy-feeling response | Visual inertia feel |
+| `ballDefinition` | `BallDefinition` | `CentipedeConfig` | Ball type used for all node visuals | Determines sprite and baseMass; falls back to assembler's defaultBallDefinition if null | Node sprite, mass |
+
+---
+
+## BallDefinition (ScriptableObject)
+
+| Variable | Type | Location | Description | Behavior | Affects |
+|---|---|---|---|---|---|
+| `type` | `BallType` | `BallDefinition` | Enum identifier for this ball type | Used to identify type at runtime; one SO asset per enum value | Type checking, lookup |
+| `sprite` | `Sprite` | `BallDefinition` | Sprite for this ball type | Applied to Ball's SpriteRenderer on Init; author at 1 world-unit diameter at scale 1 | Visual appearance |
+| `baseMass` | `float` | `BallDefinition` | Mass for a ball of diameter 1 | Actual RB mass = baseMass × diameter² (area-based scaling for consistent physics feel) | Physics weight, collision response |
+| `movementOverride` | `BallMovementOverride` | `BallDefinition` | Optional custom movement equation (free mode only) | If assigned, OnFixedUpdate is called each physics step instead of default Unity physics | Movement behavior for free-flying balls of this type |
+| `effect` | `BallEffect` | `BallDefinition` | Optional collision effect | OnCollision called on OnCollisionEnter2D; active in both Centipede Mode and free mode | Special on-hit behavior |
+
+---
+
+## Ball (MonoBehaviour)
+
+| Variable | Type | Location | Description | Behavior | Affects |
+|---|---|---|---|---|---|
+| `springStiffness` | `float` | `Ball` | Spring pull strength toward the linked SkeletonNode (Centipede Mode) | Higher = tighter visual tracking of skeleton position | How closely Ball follows node in centipede form |
+| `springDamping` | `float` | `Ball` | Oscillation decay on the Centipede spring | Higher = settles faster | Wobble and bounce after direction changes |
+| `springMass` | `float` | `Ball` | Spring simulation mass (Centipede Mode) | Higher = more sluggish and heavy-feeling | Visual inertia in centipede form |
 
 ---
 
@@ -59,7 +88,16 @@ Living documentation of all meaningful variables across the project. Updated whe
 
 | Variable | Type | Location | Description | Behavior | Affects |
 |---|---|---|---|---|---|
-| *(none yet)* | | | | | |
+| `stiffness` | `float` | `NodeWiggle` | Spring pull strength toward parent transform | Higher = tighter snap-back | How closely visual child tracks parent node (player torso etc.) |
+| `damping` | `float` | `NodeWiggle` | Oscillation decay | Higher = settles faster | Wobble duration |
+| `mass` | `float` | `NodeWiggle` | Spring simulation mass | Higher = more sluggish | Visual inertia feel |
+
+---
+
+## Scale Convention (project-wide)
+Sprites are authored at **1 world-unit diameter at scale 1**.
+`transform.localScale = Vector3.one * diameter`
+`CircleCollider2D.radius = 0.5f` (local space → diameter/2 world units after scaling)
 
 ---
 

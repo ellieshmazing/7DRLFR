@@ -29,9 +29,9 @@ public class CentipedeConfig : ScriptableObject
     [Min(0.01f)]
     public float wiggleMass = 1f;
 
-    [Header("Sprite Override")]
-    [Tooltip("Override node sprite (falls back to assembler default if null)")]
-    public Sprite nodeSprite;
+    [Header("Ball Type")]
+    [Tooltip("BallDefinition used for every node's visual. Falls back to assembler default if null.")]
+    public BallDefinition ballDefinition;
 
     [Header("Prefab Overrides")]
     [Tooltip("Override head prefab (falls back to assembler default if null)")]
