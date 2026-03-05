@@ -12,29 +12,53 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c652bb2bcdf483d45b0b007d756c6fa8, type: 3}
   m_Name: PlayerDefaultConfig
   m_EditorClassIdentifier: Assembly-CSharp::PlayerConfig
+  playerScale: 1
   moveForce: 15
   maxSpeed: 5
-  standHeight: 0.6
-  footSpreadX: 0.2
-  footOffsetY: -0.4
-  footRadius: 0.15
-  torsoRadius: 0.25
+  standHeight: 8
+  footSpreadX: 3
+  footOffsetY: 8
+  torsoLayers:
+  - sprite: {fileID: -1226034082, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    localOffset: {x: 0, y: 0}
+    sortingOrder: 0
+  - sprite: {fileID: -1416153245, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    localOffset: {x: 0.5, y: 8.5}
+    sortingOrder: 1
+  - sprite: {fileID: 1791198264, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    localOffset: {x: 0, y: 9.5}
+    sortingOrder: 1
   torsoWiggleStiffness: 80
   torsoWiggleDamping: 5
   torsoWiggleMass: 1
+  hipWiggleStiffness: 120
+  hipWiggleDamping: 10
+  hipWiggleMass: 1
   footWiggleStiffness: 60
   footWiggleDamping: 8
   footWiggleMass: 0.5
-  armOrbitRadius: 0.3
-  armScale: 0.25
-  torsoSprite: {fileID: -839099904, guid: ec8e09fd763b58a4a8089a76d0052281, type: 3}
-  footSprite: {fileID: -1801009596, guid: ec8e09fd763b58a4a8089a76d0052281, type: 3}
-  armSprite: {fileID: 3818703792864108689, guid: ec8e09fd763b58a4a8089a76d0052281, type: 3}
-  torsoColor: {r: 1, g: 1, b: 1, a: 1}
-  footColor: {r: 1, g: 1, b: 1, a: 1}
-  armColor: {r: 1, g: 1, b: 1, a: 1}
-  footSortingOrder: -1
-  torsoSortingOrder: 0
-  armSortingOrder: 1
+  footMass: 1
+  footGravityScale: 3
+  armOrbitRadius: 10
+  armLayers:
+  - sprite: {fileID: -1628136530, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    localOffset: {x: 0, y: 0}
+    sortingOrder: 3
+  - sprite: {fileID: -1756739904, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    localOffset: {x: 4.5, y: 0.5}
+    sortingOrder: 2
+  leftFoot:
+    sprite: {fileID: -1420021654, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    sortingOrder: -1
+  rightFoot:
+    sprite: {fileID: 2096353187, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    sortingOrder: -1
   torsoNodeGizmoColor: {r: 0, g: 1, b: 1, a: 1}
   footNodeGizmoColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
