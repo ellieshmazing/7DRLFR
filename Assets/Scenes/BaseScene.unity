@@ -621,7 +621,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAssembler
   defaultSprite: {fileID: -839099904, guid: ec8e09fd763b58a4a8089a76d0052281, type: 3}
-  testConfig: {fileID: 11400000, guid: 1b98c42906e02804895a9e5beb232f08, type: 2}
+  testConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
   testPosition: {x: 0, y: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

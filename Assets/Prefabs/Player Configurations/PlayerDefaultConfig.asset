@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c652bb2bcdf483d45b0b007d756c6fa8, type: 3}
+  m_Name: PlayerDefaultConfig
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerConfig
+  moveForce: 15
+  maxSpeed: 5
+  standHeight: 0.6
+  footSpreadX: 0.2
+  footOffsetY: -0.4
+  footRadius: 0.15
+  torsoRadius: 0.25
+  torsoWiggleStiffness: 80
+  torsoWiggleDamping: 5
+  torsoWiggleMass: 1
+  footWiggleStiffness: 60
+  footWiggleDamping: 8
+  footWiggleMass: 0.5
+  armOrbitRadius: 0.3
+  armScale: 0.25
+  torsoSprite: {fileID: -839099904, guid: ec8e09fd763b58a4a8089a76d0052281, type: 3}
+  footSprite: {fileID: -1801009596, guid: ec8e09fd763b58a4a8089a76d0052281, type: 3}
+  armSprite: {fileID: 3818703792864108689, guid: ec8e09fd763b58a4a8089a76d0052281, type: 3}
+  torsoColor: {r: 1, g: 1, b: 1, a: 1}
+  footColor: {r: 1, g: 1, b: 1, a: 1}
+  armColor: {r: 1, g: 1, b: 1, a: 1}
+  footSortingOrder: -1
+  torsoSortingOrder: 0
+  armSortingOrder: 1
+  torsoNodeGizmoColor: {r: 0, g: 1, b: 1, a: 1}
+  footNodeGizmoColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
