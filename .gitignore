@@ -8,5 +8,5 @@
 *.csproj
 *.sln
 *.slnx
-/Assets/Scripts/CLAUDE.md
-/Assets/Scripts/.claude/
+CLAUDE.md
+.claude/
