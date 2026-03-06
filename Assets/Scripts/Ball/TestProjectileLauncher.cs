@@ -7,6 +7,9 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class TestProjectileLauncher : MonoBehaviour
 {
+    [SerializeField] private LayerMask projectileExcludedLayers;
+    [SerializeField] private float projecileOffset;
+    [SerializeField] private float gravity;
     public PlayerArmController arm;
     public GameObject explosionPrefab;
     public float speed = 8f;
@@ -30,12 +33,12 @@ public class TestProjectileLauncher : MonoBehaviour
         Vector2 dir      = (firePos - torsoPos).normalized;
 
         var go = new GameObject("TestProjectile");
-        go.transform.position = firePos;
+        go.transform.position = firePos + dir * projecileOffset;
 
         var sprite = projectileSprite != null
             ? projectileSprite
             : Resources.GetBuiltinResource<Sprite>("UI/Skin/Knob.psd");
 
-        go.AddComponent<TestProjectile>().Init(dir * speed, explosionPrefab, sprite, projectileSize);
+        go.AddComponent<TestProjectile>().Init(dir * speed, explosionPrefab, sprite, projectileSize, projectileExcludedLayers, gravity);
     }
 }
