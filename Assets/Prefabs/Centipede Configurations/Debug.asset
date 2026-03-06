@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CentipedeConfig
   nodeCount: 10
   followDistance: 0.6
-  nodeRadius: 0.3
+  nodeRadius: 1
   nodeColor: {r: 1, g: 1, b: 1, a: 1}
   wiggleStiffness: 100
   wiggleDamping: 10
   wiggleMass: 1
-  nodeSprite: {fileID: 0}
+  ballDefinition: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
   headPrefab: {fileID: 7984257113175378315, guid: f693c407940147a4f8ce046820a22304, type: 3}
   bodyPrefab: {fileID: 8181626248139991486, guid: 6622fd47b5096e54c9cf811686fc9b52, type: 3}

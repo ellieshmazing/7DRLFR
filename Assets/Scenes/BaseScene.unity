@@ -527,7 +527,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CentipedeAssembler
   defaultHeadPrefab: {fileID: 6237557215733255889, guid: ae0bc7f2454b4a24fb822d31882e05cc, type: 3}
   defaultBodyPrefab: {fileID: 8181626248139991486, guid: 6622fd47b5096e54c9cf811686fc9b52, type: 3}
-  defaultNodeSprite: {fileID: 3818703792864108689, guid: ec8e09fd763b58a4a8089a76d0052281, type: 3}
+  defaultBallDefinition: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
   testConfig: {fileID: 11400000, guid: d91345cba6825f74f8f0e8dabfb8cb5d, type: 2}
   testPosition: {x: 0, y: 0}
 --- !u!4 &1685109567
