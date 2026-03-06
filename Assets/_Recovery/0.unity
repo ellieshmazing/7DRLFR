@@ -587,6 +587,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2012067121}
   - component: {fileID: 2012067122}
+  - component: {fileID: 2012067123}
   m_Layer: 0
   m_Name: PlayerAssembler
   m_TagString: Untagged
@@ -626,6 +627,23 @@ MonoBehaviour:
   jumpOffsetFactor: 10
   testConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
   testPosition: {x: 0, y: 0}
+--- !u!114 &2012067123
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2012067120}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3a167873384add141bdf5ecb588b98a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TestProjectileLauncher
+  arm: {fileID: 0}
+  explosionPrefab: {fileID: 3626991430138298493, guid: e54c6be7f62c58f44b61ce481a15d979, type: 3}
+  speed: 8
+  projectileSprite: {fileID: 0}
+  projectileSize: 0.2
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

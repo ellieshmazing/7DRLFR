@@ -1,0 +1,6 @@
+The centipede is a NPC and needs pathfinding independent of user input.
+Its only goal is to damage the player character. 
+
+Please review the following description of pathfinding as I imagine it. I am unfamiliar with how pathfinding is usually implemented in games, so your current output should focus on describing pathfinding concepts that are important in designing this sort of system. Please give me a description of common methods as well as considerations that go into enemy pathfinding design. 
+
+I would like the centipede to take an arching path towards the player character. It should target the player, drawing a circle to the player's location that it should follow. The centipede should update this path periodically as the player moves, though with consideration of performance impacts. The circle should be generated in a random range of angles, making the behavior seem dynamic. The centipede should not consider whether its circle passes through other objects. This should instead be handled by logic that triggers when the centipede collides with the object, 

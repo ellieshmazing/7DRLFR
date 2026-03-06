@@ -12,6 +12,14 @@ Living documentation of all meaningful variables across the project. Updated whe
 | `standHeight` | `float` | `PlayerConfig` | Target vertical distance from lowest foot visual to torso | Enforced each FixedUpdate via velocity override on torso Y | Controls how "tall" the player stands above its feet; affects visual silhouette |
 | `footSpreadX` | `float` | `PlayerConfig` | Half-distance between left and right foot nodes along X | Feet placed at `±footSpreadX` from hip node X each frame | Sets stance width |
 | `footOffsetY` | `float` | `PlayerConfig` | Vertical offset of foot nodes below the torso node | Applied as a downward bias when positioning foot nodes | Controls how far feet hang below the body at rest |
+| `projectileDef` | `BallDefinition` | `PlayerConfig` | BallDefinition used for every shot | Passed to `Ball.Init` on each fire; determines sprite and mass of projectiles | Projectile appearance and physics weight |
+| `firingPointOffset` | `float` | `PlayerConfig` | Distance from arm pivot to barrel tip, in source pixels | Converted to world units (`* pixelToWorld`) and set as FiringPoint localPosition.x | Where projectiles spawn along the barrel |
+| `firingSpeed` | `float` | `PlayerConfig` | World units per second of fired projectiles | Applied as initial linearVelocity via `ball.Detach()` | Projectile travel speed |
+| `fireCooldown` | `float` | `PlayerConfig` | Minimum seconds between shots | Enforced by `ProjectileGun`'s `lastFireTime` gate in Update | Maximum fire rate |
+| `projectileInitialScale` | `float` | `PlayerConfig` | World-unit diameter of a projectile at the moment of spawn | Overrides `Ball.Init`'s scale immediately after spawning; `ProjectileScaleGrow` then animates to true diameter | Barrel-emergence illusion intensity |
+| `projectileGrowTime` | `float` | `PlayerConfig` | Seconds for a projectile to reach its true diameter from spawn scale | Passed to `ProjectileScaleGrow`; rate = `diameter / growTime` so all sizes pop out in the same duration | Pop-out duration from barrel |
+| `tempMinProjectileDiameter` | `float` | `PlayerConfig` | **[TEMP]** Minimum random projectile diameter in world units | Used until a projectile queue replaces random sizing | Smallest possible shot |
+| `tempMaxProjectileDiameter` | `float` | `PlayerConfig` | **[TEMP]** Maximum random projectile diameter in world units | Used until a projectile queue replaces random sizing | Largest possible shot |
 
 ---
 
@@ -47,6 +55,19 @@ Living documentation of all meaningful variables across the project. Updated whe
 
 ---
 
+## ProjectileGun (MonoBehaviour — on Arm GO)
+
+| Variable | Type | Location | Description | Behavior | Affects |
+|---|---|---|---|---|---|
+| `initialScale` | `float` | `ProjectileGun` | Starting world-unit diameter of a spawned projectile | Overrides `Ball.Init`'s true-diameter scale at spawn; `ProjectileScaleGrow` then grows it to full size | Creates the barrel-emergence illusion |
+| `growTime` | `float` | `ProjectileGun` | Seconds for a projectile to grow from spawn scale to true diameter | Passed to `ProjectileScaleGrow.Initialize`; rate computed as `diameter / growTime` — larger balls move faster to finish in equal time | Pop-out duration regardless of projectile size |
+| `firingSpeed` | `float` | `ProjectileGun` | World units per second of a fired projectile | Applied via `ball.Detach(direction * firingSpeed)` — becomes the Rigidbody2D linearVelocity | Projectile travel speed |
+| `fireCooldown` | `float` | `ProjectileGun` | Minimum seconds between consecutive shots | Gate in `Update`; compares `Time.time - lastFireTime` | Maximum sustained fire rate |
+| `tempMinDiameter` | `float` | `ProjectileGun` | **[TEMP]** Lower bound of the random diameter range | Used by `GetProjectileDiameter()` until a queue replaces it | Smallest possible projectile spawned |
+| `tempMaxDiameter` | `float` | `ProjectileGun` | **[TEMP]** Upper bound of the random diameter range | Used by `GetProjectileDiameter()` until a queue replaces it | Largest possible projectile spawned |
+
+---
+
 ## CentipedeConfig (ScriptableObject)
 
 | Variable | Type | Location | Description | Behavior | Affects |
@@ -59,6 +80,7 @@ Living documentation of all meaningful variables across the project. Updated whe
 | `wiggleDamping` | `float` | `CentipedeConfig` | Oscillation decay on the spring | Higher = settles faster, less bouncy | Wobble duration after movement changes |
 | `wiggleMass` | `float` | `CentipedeConfig` | Spring simulation mass per node | Higher = more sluggish and heavy-feeling response | Visual inertia feel |
 | `ballDefinition` | `BallDefinition` | `CentipedeConfig` | Ball type used for all node visuals | Determines sprite and baseMass; falls back to assembler's defaultBallDefinition if null | Node sprite, mass |
+| `detachDistance` | `float` | `CentipedeConfig` | Distance a Ball must reach from its SkeletonNode to trigger detachment | CentipedeController checks per-ball each FixedUpdate; preemptive SHM energy check marks additional balls that are inevitably going to detach | Controls how hard a hit must be to break a centipede segment |
 
 ---
 

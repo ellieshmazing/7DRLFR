@@ -47,6 +47,9 @@ public class Ball : MonoBehaviour
     private SkeletonNode linkedNode;
     private Vector2 springVelocity;
 
+    /// <summary>Current spring simulation velocity in world space.</summary>
+    public Vector2 SpringVelocity => springVelocity;
+
     // ── Cached layer IDs (shared across all Ball instances) ───────────────────
     private static int layerDefault   = -1;
     private static int layerCentipede = -1;
@@ -120,6 +123,22 @@ public class Ball : MonoBehaviour
     {
         EnsureComponents();
         sr.color = color;
+    }
+
+    /// <summary>Adds to the internal spring simulation velocity (test/debug use).</summary>
+    public void InjectSpringVelocity(Vector2 addedVelocity)
+    {
+        springVelocity += addedVelocity;
+    }
+
+    /// <summary>
+    /// Detaches this ball from its centipede segment: switches to free Dynamic physics
+    /// and assigns <paramref name="launchVelocity"/> as its initial velocity.
+    /// </summary>
+    public void Detach(Vector2 launchVelocity)
+    {
+        SetCentipedeMode(false);
+        rb.linearVelocity = launchVelocity;
     }
 
     // ─────────────────────────────────────────────────────────────────────────

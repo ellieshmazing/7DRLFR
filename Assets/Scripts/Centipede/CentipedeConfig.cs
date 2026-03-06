@@ -33,6 +33,11 @@ public class CentipedeConfig : ScriptableObject
     [Tooltip("BallDefinition used for every node's visual. Falls back to assembler default if null.")]
     public BallDefinition ballDefinition;
 
+    [Header("Destruction")]
+    [Tooltip("Distance a Ball must reach from its SkeletonNode to trigger detachment")]
+    [Min(0.01f)]
+    public float detachDistance = 0.5f;
+
     [Header("Prefab Overrides")]
     [Tooltip("Override head prefab (falls back to assembler default if null)")]
     public GameObject headPrefab;
