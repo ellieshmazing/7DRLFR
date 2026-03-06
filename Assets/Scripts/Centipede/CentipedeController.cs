@@ -250,5 +250,15 @@ public class CentipedeController : MonoBehaviour
         // Add CentipedeController to new head.
         var newController = newHeadGO.AddComponent<CentipedeController>();
         newController.InitializeAsSplit(config, chainNodes, chainBalls);
+
+        // Mirror DebugMouseFollow from the original head, if present.
+        // [RequireComponent(Rigidbody2D)] on DebugMouseFollow auto-adds an RB to the new head.
+        var origMouseFollow = GetComponent<DebugMouseFollow>();
+        if (origMouseFollow != null)
+        {
+            var newMouseFollow = newHeadGO.AddComponent<DebugMouseFollow>();
+            newMouseFollow.speed    = origMouseFollow.speed;
+            newMouseFollow.deadZone = origMouseFollow.deadZone;
+        }
     }
 }
