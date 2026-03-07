@@ -122,3 +122,10 @@ Topic: Updating tuning dimension registry after removing arc pathfinder
 Concepts:
   - **Coordinate Descent Ordering**: When you restructure a tuning dimension sequence, the order still must follow the dependency chain — each dimension should only be tuned after the variables it depends on are locked. Collapsing arc-specific dims and renumbering the scent dims means the scent system now tunes in the right order relative to base `speed` (dim 12 → 13–17), preserving the deliberate bottom-up dependency logic.
   - **Tuning as Documentation**: A dimension definition (name, variables, scenario, ranges) is more than a runtime config — it's a compressed specification of *what the variable controls perceptually*. Keeping it synchronized with the codebase is part of the same discipline as keeping VARIABLES.md in sync: when a variable is removed from the system, its tuning entry must be removed too, or the tuning workflow silently operates on fields that no longer exist.
+
+---
+Date: 2026-03-07
+Topic: Tuning system dimension design for procedural walking
+Concepts:
+  - **Coordinate descent ordering**: When tuning variables that feed into each other, the order of dimensions matters as much as the dimensions themselves. Walk Shape (trigger geometry) must precede Walk Timing (duration/speed) because the cadence only reads correctly once you know where and when steps fire — evaluating timing on top of broken shape produces confounded judgments.
+  - **Init-only vs live variables**: Distinguishing variables that must take effect at spawn (rb.mass, gravityScale) from those readable per-frame determines whether the tuning system can sweep them continuously or must batch-respawn. FootMovement's FSM vars are all live-readable, making them cheap to tune — a key advantage of the per-frame config pattern.
