@@ -88,6 +88,62 @@ public class CentipedeConfig : ScriptableObject
     [Min(0f)]
     public float targetArrivalRadius = 0.5f;
 
+    [Header("Scent Navigator")]
+    [Tooltip("Use ScentFieldNavigator instead of CentipedePathfinder for this config")]
+    public bool useScentNavigator = false;
+
+    [Tooltip("Ring buffer capacity; 200 × 0.1 s interval = 20 seconds of scent trail")]
+    [Min(10)]
+    public int scentHistorySize = 200;
+
+    [Tooltip("Seconds between player position samples pushed into the scent field")]
+    [Min(0.01f)]
+    public float scentSampleInterval = 0.1f;
+
+    [Tooltip("Time constant (seconds) for scent weight to decay to 37% of original strength")]
+    [Min(0.1f)]
+    public float scentDecayTime = 8f;
+
+    [Tooltip("Gaussian spatial spread of each scent sample in world units; set to ~half the expected engagement distance")]
+    [Min(0.1f)]
+    public float scentSigma = 1.5f;
+
+    [Tooltip("Radius at which 8 gradient samples are taken around the head to estimate field direction")]
+    [Min(0.05f)]
+    public float scentGradientSampleRadius = 0.8f;
+
+    [Tooltip("Turn-rate factor: how aggressively the centipede blends toward the gradient per second at full sensitivity")]
+    [Min(0f)]
+    public float scentSteeringBlend = 4f;
+
+    [Tooltip("World-unit radius within which passing suppresses nearby scent samples")]
+    [Min(0f)]
+    public float scentConsumeRadius = 0.6f;
+
+    [Tooltip("Weight consumed per second at the centipede's center; controls how quickly the spiral tightens")]
+    [Min(0f)]
+    public float scentConsumeRate = 2f;
+
+    [Tooltip("Sweep-and-lock oscillator frequency in Hz; centipede sweeps ballistically at low phase, snaps at high phase")]
+    [Min(0f)]
+    public float scentOscillationFrequency = 0.35f;
+
+    [Tooltip("Max speed bonus (world units/sec) when the centipede is on a hot trail directly ahead")]
+    [Min(0f)]
+    public float scentSpeedBoost = 1f;
+
+    [Tooltip("Forward scent field strength that yields full speed boost; normalize against your typical sigma/historySize")]
+    [Min(0.001f)]
+    public float scentGradientMaxStrength = 5f;
+
+    [Tooltip("Field strength at the head below which fallback direct pursuit activates")]
+    [Min(0f)]
+    public float scentFallbackThreshold = 0.05f;
+
+    [Tooltip("Blend rate toward the player during fallback (weaker than gradient steering to avoid snapping)")]
+    [Min(0f)]
+    public float scentFallbackBlend = 0.8f;
+
     [Header("Prefab Overrides")]
     [Tooltip("Override head prefab (falls back to assembler default if null)")]
     public GameObject headPrefab;
