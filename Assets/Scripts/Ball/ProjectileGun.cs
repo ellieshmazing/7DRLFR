@@ -64,10 +64,13 @@ public sealed class ProjectileGun : MonoBehaviour
         var ball = projectileGO.AddComponent<Ball>();
         ball.Init(projectileDef, diameter, centipedeMode: false);
 
-        projectileGO.transform.localScale = Vector3.one * initialScale;
+        // Convert world-unit diameters → localScale values that match the sprite's PPU.
+        float targetLocalScale  = Ball.LocalScaleForDiameter(projectileDef.sprite, diameter);
+        float initialLocalScale = Ball.LocalScaleForDiameter(projectileDef.sprite, initialScale);
+        projectileGO.transform.localScale = Vector3.one * initialLocalScale;
 
         var scaleGrow = projectileGO.AddComponent<ProjectileScaleGrow>();
-        scaleGrow.Initialize(diameter, growTime);
+        scaleGrow.Initialize(targetLocalScale, growTime);
 
         ball.Detach((Vector2)transform.right * firingSpeed);
     }

@@ -33,3 +33,17 @@ Topic: Debug input reliability in Unity Editor (New Input System)
 Concepts:
   - **Separation of concerns in debug tooling**: Embedding input polling inside a core system class (like CentipedeAssembler) risks coupling the system's lifecycle to debug behavior — if the object is disabled or transitions state, the input stops working. Dedicated debug scripts (SpawnDebug, CentipedeDestruction) on a stable manager GameObject give you a reliable, removable seam.
   - **Defensive null checks on input devices**: In Unity's New Input System, Keyboard.current can return null briefly during editor play-mode transitions or when input focus changes. A missing null guard silently throws a NullReferenceException that frame, making input appear "random" — the fix is a simple kb == null early-out before accessing any key state.
+
+---
+Date: 2026-03-06
+Topic: Runtime variable tuning strategy — spring parameterization and multi-phase optimization
+Concepts:
+  - **Damping ratio parameterization**: A spring-mass-damper system is fully characterized by natural frequency (ω = √(k/m)) and damping ratio (ζ = c / 2√(km)), not by raw stiffness and damping. Storing ω and ζ instead of k and c makes the spring's *feel* independent of mass — you can change mass for collision tuning without altering the spring's response character. This reduces 3 arbitrary coupled knobs to 2 perceptually orthogonal ones per spring.
+  - **Coordinate descent in perceptual space**: When tuning dozens of coupled game feel variables, searching the full space is intractable. Grouping variables into perceptual dimensions (clusters that a human perceives as one "axis of feel") and tuning them one at a time in dependency order is a form of coordinate descent. It converges because the dimensions are chosen to be roughly perceptually independent — changing torso spring feel doesn't invalidate the foot spring choice you already made.
+
+---
+Date: 2026-03-06
+Topic: Sprite scaling and collider sizing in Ball.Init
+Concepts:
+  - **Coordinate Space Layering**: A sprite's visual size in world space is `pixelWidth / pixelsPerUnit × localScale` — not just `localScale`. When a system assumes sprites are "1 unit at scale 1" but the actual assets are 16px @ PPU=128 (0.125 units), the collider ends up 8× larger than the visual. Deriving scale from the sprite's real PPU at runtime eliminates this class of mismatch entirely.
+  - **Convention vs. Reality Gap**: Bugs like this arise when a scale contract is documented but not enforced. The comment said "authored at 1wu" while the asset said otherwise. Reading from the asset directly (sprite.rect.width / sprite.pixelsPerUnit) makes the convention self-enforcing — the code is now true regardless of what any comment says.
