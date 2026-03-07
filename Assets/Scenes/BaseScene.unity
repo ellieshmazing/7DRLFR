@@ -631,7 +631,7 @@ MonoBehaviour:
   defaultHeadPrefab: {fileID: 6237557215733255889, guid: ae0bc7f2454b4a24fb822d31882e05cc, type: 3}
   defaultBodyPrefab: {fileID: 8181626248139991486, guid: 6622fd47b5096e54c9cf811686fc9b52, type: 3}
   defaultBallDefinition: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
-  testConfig: {fileID: 11400000, guid: 4507b4f9ff99c3647bded542d64881cd, type: 2}
+  testConfig: {fileID: 11400000, guid: 67507a2064f90104698f1ec4f19b689b, type: 2}
   testPosition: {x: 0, y: 0}
   testDetachIndices: 000000000800000011000000
 --- !u!4 &1685109567
