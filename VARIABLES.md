@@ -12,6 +12,14 @@ Living documentation of all meaningful variables across the project. Updated whe
 | `standHeight` | `float` | `PlayerConfig` | Target vertical distance from lowest foot visual to torso | Enforced each FixedUpdate via velocity override on torso Y | Controls how "tall" the player stands above its feet; affects visual silhouette |
 | `footSpreadX` | `float` | `PlayerConfig` | Half-distance between left and right foot nodes along X | Feet placed at `±footSpreadX` from hip node X each frame | Sets stance width |
 | `footOffsetY` | `float` | `PlayerConfig` | Vertical offset of foot nodes below the torso node | Applied as a downward bias when positioning foot nodes | Controls how far feet hang below the body at rest |
+| `projectileDef` | `BallDefinition` | `PlayerConfig` | BallDefinition used for every shot | Passed to `Ball.Init` on each fire; determines sprite and mass of projectiles | Projectile appearance and physics weight |
+| `firingPointOffset` | `float` | `PlayerConfig` | Distance from arm pivot to barrel tip, in source pixels | Converted to world units (`* pixelToWorld`) and set as FiringPoint localPosition.x | Where projectiles spawn along the barrel |
+| `firingSpeed` | `float` | `PlayerConfig` | World units per second of fired projectiles | Applied as initial linearVelocity via `ball.Detach()` | Projectile travel speed |
+| `fireCooldown` | `float` | `PlayerConfig` | Minimum seconds between shots | Enforced by `ProjectileGun`'s `lastFireTime` gate in Update | Maximum fire rate |
+| `projectileInitialScale` | `float` | `PlayerConfig` | World-unit diameter of a projectile at the moment of spawn | Overrides `Ball.Init`'s scale immediately after spawning; `ProjectileScaleGrow` then animates to true diameter | Barrel-emergence illusion intensity |
+| `projectileGrowTime` | `float` | `PlayerConfig` | Seconds for a projectile to reach its true diameter from spawn scale | Passed to `ProjectileScaleGrow`; rate = `diameter / growTime` so all sizes pop out in the same duration | Pop-out duration from barrel |
+| `tempMinProjectileDiameter` | `float` | `PlayerConfig` | **[TEMP]** Minimum random projectile diameter in world units | Used until a projectile queue replaces random sizing | Smallest possible shot |
+| `tempMaxProjectileDiameter` | `float` | `PlayerConfig` | **[TEMP]** Maximum random projectile diameter in world units | Used until a projectile queue replaces random sizing | Largest possible shot |
 
 ---
 
@@ -47,6 +55,19 @@ Living documentation of all meaningful variables across the project. Updated whe
 
 ---
 
+## ProjectileGun (MonoBehaviour — on Arm GO)
+
+| Variable | Type | Location | Description | Behavior | Affects |
+|---|---|---|---|---|---|
+| `initialScale` | `float` | `ProjectileGun` | Starting world-unit diameter of a spawned projectile | Overrides `Ball.Init`'s true-diameter scale at spawn; `ProjectileScaleGrow` then grows it to full size | Creates the barrel-emergence illusion |
+| `growTime` | `float` | `ProjectileGun` | Seconds for a projectile to grow from spawn scale to true diameter | Passed to `ProjectileScaleGrow.Initialize`; rate computed as `diameter / growTime` — larger balls move faster to finish in equal time | Pop-out duration regardless of projectile size |
+| `firingSpeed` | `float` | `ProjectileGun` | World units per second of a fired projectile | Applied via `ball.Detach(direction * firingSpeed)` — becomes the Rigidbody2D linearVelocity | Projectile travel speed |
+| `fireCooldown` | `float` | `ProjectileGun` | Minimum seconds between consecutive shots | Gate in `Update`; compares `Time.time - lastFireTime` | Maximum sustained fire rate |
+| `tempMinDiameter` | `float` | `ProjectileGun` | **[TEMP]** Lower bound of the random diameter range | Used by `GetProjectileDiameter()` until a queue replaces it | Smallest possible projectile spawned |
+| `tempMaxDiameter` | `float` | `ProjectileGun` | **[TEMP]** Upper bound of the random diameter range | Used by `GetProjectileDiameter()` until a queue replaces it | Largest possible projectile spawned |
+
+---
+
 ## CentipedeConfig (ScriptableObject)
 
 | Variable | Type | Location | Description | Behavior | Affects |
@@ -59,6 +80,18 @@ Living documentation of all meaningful variables across the project. Updated whe
 | `wiggleDamping` | `float` | `CentipedeConfig` | Oscillation decay on the spring | Higher = settles faster, less bouncy | Wobble duration after movement changes |
 | `wiggleMass` | `float` | `CentipedeConfig` | Spring simulation mass per node | Higher = more sluggish and heavy-feeling response | Visual inertia feel |
 | `ballDefinition` | `BallDefinition` | `CentipedeConfig` | Ball type used for all node visuals | Determines sprite and baseMass; falls back to assembler's defaultBallDefinition if null | Node sprite, mass |
+| `detachDistance` | `float` | `CentipedeConfig` | Distance a Ball must reach from its SkeletonNode to trigger detachment | CentipedeController checks per-ball each FixedUpdate; preemptive SHM energy check marks additional balls that are inevitably going to detach | Controls how hard a hit must be to break a centipede segment |
+| `speed` | `float` | `CentipedeConfig` | Arc traversal speed in world units/sec | CentipedePathfinder sets `rb.linearVelocity` magnitude to this value while following an arc | How fast the centipede closes on the player |
+| `minTurnRadius` | `float` | `CentipedeConfig` | Minimum allowed circular arc radius; prevents hairpin turns | Any computed arc with radius below this is rejected and resampled during Replan() | Tightest curve the centipede can execute; prevents self-overlap at sharp bends |
+| `arcAngleVariance` | `float` | `CentipedeConfig` | ± random range (degrees) of arc departure angle from the direct approach heading | Sampled each Replan(); wider variance = more oblique arcs and surprising approach angles | How varied the centipede's attack vectors are |
+| `replanInterval` | `float` | `CentipedeConfig` | Seconds between arc recalculations | Timer ticked in FixedUpdate; jitter added each reset to desync multiple centipedes | How often the centipede adapts its path to the player's current position |
+| `replanJitter` | `float` | `CentipedeConfig` | Random ± seconds added to replanInterval each cycle | Prevents centipedes spawned together from replanning on the same frame | Variation in reaction cadence between individuals |
+| `maxReplanAttempts` | `int` | `CentipedeConfig` | Max arc generation retries per Replan() call before accepting the best failed arc | Higher = more likely to satisfy minTurnRadius constraint; too high wastes CPU | Tradeoff between arc quality and planning cost |
+| `waveAmplitude` | `float` | `CentipedeConfig` | Lateral peak displacement of the sinusoidal wriggle wave | Applied perpendicular to the arc tangent each frame; steers the physical path | How wide the centipede's wriggling motion is |
+| `waveFrequency` | `float` | `CentipedeConfig` | Wave oscillations per second | Increments wavePhase by `waveFrequency * deltaTime` each FixedUpdate | How rapidly the centipede wriggles side to side |
+| `wavePhaseOffsetPerNode` | `float` | `CentipedeConfig` | Phase shift per body node index for GetBodyWaveOffset() | Creates the appearance of a wave propagating from head to tail | Visual traveling-wave cadence along the body |
+| `collisionCooldownDuration` | `float` | `CentipedeConfig` | Seconds before another collision response can trigger | Prevents rapid flip-flopping when the head grazes a wall repeatedly | Stability of collision response; lower = more reactive but jittery |
+| `targetArrivalRadius` | `float` | `CentipedeConfig` | Distance to player at which the centipede considers the arc complete and replans | Checked each FixedUpdate against `Vector2.Distance(head, player)` | How close the centipede gets before picking a new arc |
 
 ---
 

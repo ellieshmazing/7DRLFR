@@ -525,13 +525,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 246a8b46ad70ddb44b472fcba64ae5cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CentipedeAssembler
-  playerTarget: {fileID: 0}
   defaultHeadPrefab: {fileID: 6237557215733255889, guid: ae0bc7f2454b4a24fb822d31882e05cc, type: 3}
   defaultBodyPrefab: {fileID: 8181626248139991486, guid: 6622fd47b5096e54c9cf811686fc9b52, type: 3}
   defaultBallDefinition: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
-  testConfig: {fileID: 11400000, guid: 4507b4f9ff99c3647bded542d64881cd, type: 2}
+  testConfig: {fileID: 11400000, guid: d91345cba6825f74f8f0e8dabfb8cb5d, type: 2}
   testPosition: {x: 0, y: 0}
-  testDetachIndices: 000000000800000011000000
+  testDetachIndices: 
 --- !u!4 &1685109567
 Transform:
   m_ObjectHideFlags: 0
@@ -547,7 +546,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1983716707
+--- !u!1 &2006196100
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -555,58 +554,29 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1983716709}
-  - component: {fileID: 1983716708}
-  - component: {fileID: 1983716710}
+  - component: {fileID: 2006196101}
   m_Layer: 0
-  m_Name: SpawnDebug
+  m_Name: CentipedeConfig
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1983716708
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1983716707}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e595199d936e3d4498229caf42ab3150, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SpawnDebug
-  centipedeAssembler: {fileID: 1685109566}
-  playerAssembler: {fileID: 2012067122}
---- !u!4 &1983716709
+--- !u!4 &2006196101
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1983716707}
+  m_GameObject: {fileID: 2006196100}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.25241, y: -0.19776, z: 0}
+  m_LocalPosition: {x: -0.12513, y: 0.23805, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1983716710
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1983716707}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 32802f180e852434c95e176eb34698ee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CentipedeDestruction
-  centipedeAssembler: {fileID: 1685109566}
 --- !u!1 &2012067120
 GameObject:
   m_ObjectHideFlags: 0
@@ -663,7 +633,7 @@ SceneRoots:
   - {fileID: 519420032}
   - {fileID: 619394802}
   - {fileID: 1513407022}
+  - {fileID: 2006196101}
   - {fileID: 1685109567}
   - {fileID: 1655355833}
   - {fileID: 2012067121}
-  - {fileID: 1983716709}

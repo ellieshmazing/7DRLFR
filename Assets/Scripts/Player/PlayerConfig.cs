@@ -92,6 +92,31 @@ public class PlayerConfig : ScriptableObject
         new ArmLayerDef { color = Color.white, localOffset = Vector2.zero, sortingOrder = 1 }
     };
 
+    [Header("Gun")]
+    [Tooltip("BallDefinition spawned on each shot")]
+    public BallDefinition projectileDef;
+
+    [Tooltip("Distance from the arm pivot to the barrel tip, in source pixels")]
+    [Min(0f)] public float firingPointOffset = 8f;
+
+    [Tooltip("World units per second of fired projectiles")]
+    [Min(0.1f)] public float firingSpeed = 10f;
+
+    [Tooltip("Minimum seconds between shots")]
+    [Min(0f)] public float fireCooldown = 0.25f;
+
+    [Tooltip("Starting world-unit diameter of a projectile at spawn — creates barrel-emergence illusion")]
+    [Min(0.001f)] public float projectileInitialScale = 0.05f;
+
+    [Tooltip("Seconds for a projectile to grow from spawn scale to its true diameter")]
+    [Min(0.001f)] public float projectileGrowTime = 0.15f;
+
+    [Tooltip("[TEMP] Minimum random projectile diameter in world units")]
+    [Min(0.01f)] public float tempMinProjectileDiameter = 0.2f;
+
+    [Tooltip("[TEMP] Maximum random projectile diameter in world units")]
+    [Min(0.01f)] public float tempMaxProjectileDiameter = 0.8f;
+
     [Header("Feet")]
     public FootDef leftFoot  = new FootDef { color = Color.white, sortingOrder = -1 };
     public FootDef rightFoot = new FootDef { color = Color.white, sortingOrder = -1 };

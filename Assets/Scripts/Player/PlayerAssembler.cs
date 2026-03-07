@@ -158,6 +158,21 @@ public class PlayerAssembler : MonoBehaviour
         armLayerCtrl.layerTransforms = armLayerTransforms;
         armLayerCtrl.config          = config;
 
+        // --- Firing point and gun ---
+        var firingPointGO = new GameObject("FiringPoint");
+        firingPointGO.transform.SetParent(armGO.transform, false);
+        firingPointGO.transform.localPosition = new Vector3(config.firingPointOffset * pixelToWorld, 0f, 0f);
+
+        var gun = armGO.AddComponent<ProjectileGun>();
+        gun.firingPoint     = firingPointGO.transform;
+        gun.projectileDef   = config.projectileDef;
+        gun.initialScale    = config.projectileInitialScale;
+        gun.growTime        = config.projectileGrowTime;
+        gun.firingSpeed     = config.firingSpeed;
+        gun.fireCooldown    = config.fireCooldown;
+        gun.tempMinDiameter = config.tempMinProjectileDiameter;
+        gun.tempMaxDiameter = config.tempMaxProjectileDiameter;
+
         // --- Hip node ---
         // footOffsetY places it below the torso at spawn (negative value expected).
         // After the first FixedUpdate PlayerHipNode takes over Y from foot positions.
@@ -262,7 +277,7 @@ public class PlayerAssembler : MonoBehaviour
     [SerializeField] private Vector2 testPosition;
 
     [ContextMenu("Test Spawn")]
-    private void TestSpawn()
+    public void TestSpawn()
     {
         if (!Application.isPlaying || testConfig == null) return;
         Spawn(testConfig, testPosition);
