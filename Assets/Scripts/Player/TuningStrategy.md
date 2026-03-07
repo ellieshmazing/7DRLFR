@@ -2,9 +2,9 @@
 
 ## Goal
 
-A runtime tuning system that lets the developer efficiently discover optimal variable values for BallWorld's Player and Centipede systems by *playing the game*. The system replaces raw stiffness/damping spring parameters with perceptually meaningful frequency/dampingRatio pairs (reducing coupled knobs), groups ~50 variables into 19 ordered tuning dimensions, and provides a multi-phase workflow: continuous sweep to bracket viable ranges, A/B forced-choice comparison to converge on preferred values, and cross-validation to catch interaction effects. Tuned values write directly to ScriptableObject assets. Named profiles are saved as SO duplicates in organized subfolders. A visual overlay shows current tuning state including a computed spring step-response waveform. Init-only variables trigger automatic entity respawning when changed.
+A runtime tuning system that lets the developer efficiently discover optimal variable values for BallWorld's Player and Centipede systems by *playing the game*. The system replaces raw stiffness/damping spring parameters with perceptually meaningful frequency/dampingRatio pairs (reducing coupled knobs), groups ~60 variables into 21 ordered tuning dimensions, and provides a multi-phase workflow: continuous sweep to bracket viable ranges, A/B forced-choice comparison to converge on preferred values, and cross-validation to catch interaction effects. Tuned values write directly to ScriptableObject assets. Named profiles are saved as SO duplicates in organized subfolders. A visual overlay shows current tuning state including a computed spring step-response waveform. Init-only variables trigger automatic entity respawning when changed.
 
-Dimensions 1–14 apply to both pathfinder modes. When `useScentNavigator == true`, dimensions 12–13 (arc-specific: `minTurnRadius`, `arcAngleVariance`, `replanInterval`) are skipped automatically, and dimensions 15–19 (scent-specific) are appended. When using the arc pathfinder, dimensions 15–19 are skipped.
+Dimensions 1–16 apply to both pathfinder modes. When `useScentNavigator == true`, dimensions 14–15 (arc-specific: `minTurnRadius`, `arcAngleVariance`, `replanInterval`) are skipped automatically, and dimensions 17–21 (scent-specific) are appended. When using the arc pathfinder, dimensions 17–21 are skipped.
 
 ---
 
@@ -130,7 +130,7 @@ Scripts that need this refactor (per-frame readers):
 |---|---|---|
 | `PlayerSkeletonRoot` | moveForce, maxSpeed, standHeight, jumpSpeed, jumpOffsetFactor | PlayerConfig |
 | `PlayerHipNode` | HipStiffness, HipDamping, hipMass | PlayerConfig |
-| `PlayerFeet` | FootStiffness, FootDamping, footMass, footSpreadX | PlayerConfig |
+| `FootMovement` | FootStiffness, FootDamping, footSpringMass, footGravityScale, footSpreadX, idleSpeedThreshold, strideTriggerDistance, strideProjectionTime, stepHeight, baseStepDuration, minStepDuration, stepSpeedScale, maxWalkableAngle, stepRaycastDistance | PlayerConfig |
 | `NodeWiggle` (torso) | TorsoStiffness, TorsoDamping, torsoMass | PlayerConfig |
 | `Ball` (centipede) | WiggleStiffness, WiggleDamping, wiggleMass | CentipedeConfig |
 | `CentipedeController` | detachDistance | CentipedeConfig |
@@ -637,6 +637,18 @@ foreach pos in positions:
 | `jumpSpeed` | `float` | `8.0` | Base jump impulse (moved from PlayerAssembler); try 3–20; higher = higher base jump arc |
 | `jumpOffsetFactor` | `float` | `10.0` | Extra impulse per unit hip compression (moved from PlayerAssembler); try 0–25; higher = more reward for crouching before jumping |
 
+### Foot Movement FSM — PlayerConfig (dims 3–4)
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `strideTriggerDistance` | `float` | `5.0` | How far behind ideal X (source pixels) a locked foot must lag before stepping. try 2–12; lower = hyperactive stepping, higher = lazy wide-stance gait |
+| `strideProjectionTime` | `float` | `0.15` | Seconds of torso velocity projected forward when computing step target X. try 0.05–0.3; higher = feet land further ahead of the body, more anticipatory feel |
+| `stepHeight` | `float` | `4.0` | Peak height of the step arc above the start-to-target line, in source pixels. try 1–12; lower = flat shuffle, higher = exaggerated lift |
+| `baseStepDuration` | `float` | `0.2` | Time (seconds) for one step at zero horizontal speed. try 0.1–0.4; higher = slow deliberate plodding, lower = snappy |
+| `minStepDuration` | `float` | `0.06` | Minimum step duration at high speeds. try 0.02–0.15; prevents infinitely fast leg cycling at top speed |
+| `stepSpeedScale` | `float` | `0.3` | How much horizontal speed shortens step duration: duration = base / (1 + speed × scale). try 0.05–0.6; higher = steps collapse rapidly with speed |
+| `idleSpeedThreshold` | `float` | `0.5` | Horizontal speed (wu/s) below which the player is considered idle and feet correct to neutral stance. try 0.1–1.5; set near the minimum speed you can walk at |
+
 ### Spring Parameterization — CentipedeConfig (replaces stiffness/damping fields)
 
 | Variable | Type | Default | Description |
@@ -675,33 +687,35 @@ Each dimension is a TuningDimensionDef ScriptableObject. Create one asset per ro
 |---|---|---|---|---|---|
 | 1 | Foot Physics | `footMass` (0.1–5), `footGravityScale` (0.3–3) | — | **Yes** | Drop from height. Jump repeatedly. Watch landing arc and fall speed. Heavier = less jump height. |
 | 2 | Movement | `moveForce` (5–50), `maxSpeed` (2–15) | — | No | Run left-right. Start and stop. Try to dodge. moveForce = acceleration feel, maxSpeed = top speed feel. |
-| 3 | Foot Spring | `footFrequency` (5–20), `footDampingRatio` (0.3–1.2) | — | No | Run and stop suddenly. Watch feet settle. Change direction. Low damping = swingy feet. |
-| 4 | Hip Spring | `hipFrequency` (5–25), `hipDampingRatio` (0.2–1.2) | — | No | Jump and land. Watch torso bob. Higher frequency = faster recovery. Low damping = head-bobbing. |
-| 5 | Torso Spring | `torsoFrequency` (4–20), `torsoDampingRatio` (0.1–1.5) | — | No | Change direction rapidly. Watch torso visual lag behind skeleton node. Pure visual polish. |
-| 6 | Stance Geometry | `standHeight` (6–20 px), `footSpreadX` (2–10 px) | — | No | Stand still. Run. Jump. Evaluate silhouette proportions and stability feel. |
-| 7 | Jump Feel | `jumpSpeed` (3–20), `jumpOffsetFactor` (0–25) | — | No | Jump from flat ground (tests jumpSpeed). Crouch into ground then jump (tests offsetFactor). Cross a gap. |
-| 8 | Gun Feel | `firingSpeed` (3–25), `fireCooldown` (0.05–0.5) | — | No | Shoot at targets at near, mid, and far range. Hold fire button for sustained fire. |
+| 3 | Walk Shape | `strideTriggerDistance` (2–12 px), `strideProjectionTime` (0.05–0.3s), `stepHeight` (1–12 px) | — | No | Run, reverse, stop abruptly. Watch when feet lift and where they plant. High trigger = lazy wide gait; low = hyperactive. High height = floaty step arc; low = shuffle. |
+| 4 | Walk Timing | `baseStepDuration` (0.1–0.4s), `minStepDuration` (0.02–0.15s), `stepSpeedScale` (0.05–0.6), `idleSpeedThreshold` (0.1–1.5) | — | No | Walk at slow, medium, and fast speeds. High base = plodding. High speedScale = steps collapse at speed. IdleThreshold = where return-to-neutral stance triggers. |
+| 5 | Foot Spring | `footFrequency` (5–20), `footDampingRatio` (0.3–1.2) | — | No | Jump and let feet hang airborne. Watch them spring toward formation. Low damping = swingy; high = snaps rigid. |
+| 6 | Hip Spring | `hipFrequency` (5–25), `hipDampingRatio` (0.2–1.2) | — | No | Jump and land. Watch torso bob. Higher frequency = faster recovery. Low damping = head-bobbing. |
+| 7 | Torso Spring | `torsoFrequency` (4–20), `torsoDampingRatio` (0.1–1.5) | — | No | Change direction rapidly. Watch torso visual lag behind skeleton node. Pure visual polish. |
+| 8 | Stance Geometry | `standHeight` (6–20 px), `footSpreadX` (2–10 px) | — | No | Stand still. Run. Jump. Evaluate silhouette proportions and stability feel. |
+| 9 | Jump Feel | `jumpSpeed` (3–20), `jumpOffsetFactor` (0–25) | — | No | Jump from flat ground (tests jumpSpeed). Crouch into ground then jump (tests offsetFactor). Cross a gap. |
+| 10 | Gun Feel | `firingSpeed` (3–25), `fireCooldown` (0.05–0.5) | — | No | Shoot at targets at near, mid, and far range. Hold fire button for sustained fire. |
 
 #### Centipede Dimensions (tune second)
 
 | # | Dimension Name | Variables (fieldName) | Ranges | Init-only? | Test Scenario |
 |---|---|---|---|---|---|
-| 9 | Body Spring | `wiggleFrequency` (4–20), `wiggleDampingRatio` (0.1–1.2) | — | No | Watch centipede traverse. Hit it with a projectile. Observe wobble and recovery. |
-| 10 | Body Geometry | `followDistance` (0.1–0.8), `nodeRadius` (0.05–0.4) | — | **Yes** | Watch centipede at rest and in motion. Evaluate spacing and body proportions. |
-| 11 | Destruction | `detachDistance` (0.2–1.5) | — | No | Shoot centipede with different projectile sizes. How hard is it to break? Too easy = trivial. Too hard = frustrating. |
-| 12 | Pathing Speed | `speed` (1–8), `minTurnRadius` (0.5–4) | — | **Yes** | Let centipede chase. Feel the threat level. High speed + low turn radius = aggressive. |
-| 13 | Pathing Behavior | `arcAngleVariance` (10–120°), `replanInterval` (0.5–4s) | — | **Yes** | Watch approach patterns for 30+ seconds. High variance = unpredictable. Low replan = adaptive. |
-| 14 | Wriggle Feel | `waveAmplitude` (0.1–1.0), `waveFrequency` (0.5–5), `wavePhaseOffsetPerNode` (0.1–1.0) | — | **Yes** | Watch centipede approach from a distance. Evaluate character and organic feel. |
+| 11 | Body Spring | `wiggleFrequency` (4–20), `wiggleDampingRatio` (0.1–1.2) | — | No | Watch centipede traverse. Hit it with a projectile. Observe wobble and recovery. |
+| 12 | Body Geometry | `followDistance` (0.1–0.8), `nodeRadius` (0.05–0.4) | — | **Yes** | Watch centipede at rest and in motion. Evaluate spacing and body proportions. |
+| 13 | Destruction | `detachDistance` (0.2–1.5) | — | No | Shoot centipede with different projectile sizes. How hard is it to break? Too easy = trivial. Too hard = frustrating. |
+| 14 | Pathing Speed | `speed` (1–8), `minTurnRadius` (0.5–4) | — | **Yes** | Let centipede chase. Feel the threat level. High speed + low turn radius = aggressive. |
+| 15 | Pathing Behavior | `arcAngleVariance` (10–120°), `replanInterval` (0.5–4s) | — | **Yes** | Watch approach patterns for 30+ seconds. High variance = unpredictable. Low replan = adaptive. |
+| 16 | Wriggle Feel | `waveAmplitude` (0.1–1.0), `waveFrequency` (0.5–5), `wavePhaseOffsetPerNode` (0.1–1.0) | — | **Yes** | Watch centipede approach from a distance. Evaluate character and organic feel. |
 
-#### Scent Navigator Dimensions (tune instead of 12–13 when `useScentNavigator == true`)
+#### Scent Navigator Dimensions (tune instead of 14–15 when `useScentNavigator == true`)
 
 | # | Dimension Name | Variables (fieldName) | Ranges | Init-only? | Test Scenario |
 |---|---|---|---|---|---|
-| 15 | Scent Trail | `scentDecayTime` (3–20), `scentSigma` (0.5–3.0) | — | No* | Let player stand still 10 seconds, move away, stand still again. Watch centipede follow the ghost path. High decayTime = long-lived memory. High sigma = blurry wide trail, gradient activates earlier. (*Requires ScentField live-read refactor — see Implementation Notes.) |
-| 16 | Scent Consumption | `scentConsumeRate` (0.5–5.0), `scentConsumeRadius` (0.3–1.5) | — | No | Stand completely still. Watch centipede spiral in. High rate + wide radius = tight decisive spiral that closes fast. Low rate = looser circles, centipede may drift past and arc back. |
-| 17 | Hunting Rhythm | `scentSteeringBlend` (1.0–10.0), `scentOscillationFrequency` (0.1–1.0), `scentGradientSampleRadius` (0.3–2.0) | — | No | Run gentle curves for 20+ seconds. Watch heading changes. Low blend + low oscillation = slow deliberate sweep. High blend + high oscillation = jittery reactive zigzag. High sample radius = smooth global steering. |
-| 18 | Trail Speed | `scentSpeedBoost` (0–3.0), `scentGradientMaxStrength` (1.0–10.0) | — | No | Sprint in a straight line, then stop abruptly. Watch if centipede surges. Calibrate `scentGradientMaxStrength` first (sweep until boost is clearly visible), then tune `scentSpeedBoost` for threat level. |
-| 19 | Fallback Behavior | `scentFallbackThreshold` (0.01–0.2), `scentFallbackBlend` (0.2–2.0) | — | No | Hide behind cover for 30+ seconds until field fully decays. High threshold = centipede switches to direct chase quickly. High blend = fast snap-to-player once fallback activates. |
+| 17 | Scent Trail | `scentDecayTime` (3–20), `scentSigma` (0.5–3.0) | — | No* | Let player stand still 10 seconds, move away, stand still again. Watch centipede follow the ghost path. High decayTime = long-lived memory. High sigma = blurry wide trail, gradient activates earlier. (*Requires ScentField live-read refactor — see Implementation Notes.) |
+| 18 | Scent Consumption | `scentConsumeRate` (0.5–5.0), `scentConsumeRadius` (0.3–1.5) | — | No | Stand completely still. Watch centipede spiral in. High rate + wide radius = tight decisive spiral that closes fast. Low rate = looser circles, centipede may drift past and arc back. |
+| 19 | Hunting Rhythm | `scentSteeringBlend` (1.0–10.0), `scentOscillationFrequency` (0.1–1.0), `scentGradientSampleRadius` (0.3–2.0) | — | No | Run gentle curves for 20+ seconds. Watch heading changes. Low blend + low oscillation = slow deliberate sweep. High blend + high oscillation = jittery reactive zigzag. High sample radius = smooth global steering. |
+| 20 | Trail Speed | `scentSpeedBoost` (0–3.0), `scentGradientMaxStrength` (1.0–10.0) | — | No | Sprint in a straight line, then stop abruptly. Watch if centipede surges. Calibrate `scentGradientMaxStrength` first (sweep until boost is clearly visible), then tune `scentSpeedBoost` for threat level. |
+| 21 | Fallback Behavior | `scentFallbackThreshold` (0.01–0.2), `scentFallbackBlend` (0.2–2.0) | — | No | Hide behind cover for 30+ seconds until field fully decays. High threshold = centipede switches to direct chase quickly. High blend = fast snap-to-player once fallback activates. |
 
 ### Tuning Order Rationale
 
@@ -709,11 +723,14 @@ The order is not arbitrary — it follows the dependency chain:
 
 **Player (bottom-up):**
 1. Foot Physics first because `footMass` affects jump height, collision response, and how much spring force is needed to move the feet. Every dimension above depends on feet feeling right.
-2. Movement before springs because movement speed determines how much spring oscillation the player sees during normal play. A spring setting that looks great at low speed might look frantic at high speed.
-3. Springs bottom-up (foot → hip → torso) because each layer tracks the one below. Tuning torso spring before hip spring means you'll re-tune torso when hip changes.
-4. Stance Geometry after springs because it's visual proportion tuning — the motion character should be locked before adjusting silhouette.
-5. Jump after stance because jump impulse interacts with footMass and hipMass, both of which should be finalized.
-6. Gun last because it's nearly independent of body feel.
+2. Movement before anything else because `maxSpeed` determines the range of speeds at which walking, stepping, and spring oscillation will be evaluated. A walk setting that looks right at low speed may feel wrong at top speed.
+3. Walk Shape after Movement because `strideTriggerDistance` and `stepHeight` should be tuned at the actual play speed. Step projection time also depends on how fast the torso moves.
+4. Walk Timing after Walk Shape because `stepSpeedScale` governs how quickly duration compresses with speed — you need the shape locked before calibrating the timing. Set `idleSpeedThreshold` last; it should match the minimum walking speed you observed in dim 2.
+5. Foot Spring after walk timing because the foot spring only governs the *airborne* phase (feet hang freely between steps and on jump). Lock the walking feel before tuning what happens when feet leave the ground.
+6. Hip and Torso springs bottom-up because each layer tracks the one below. Tuning torso spring before hip spring means you'll re-tune torso when hip changes.
+7. Stance Geometry after springs because it's visual proportion tuning — the motion character should be locked before adjusting silhouette.
+8. Jump after stance because jump impulse interacts with footMass and hipMass, both of which should be finalized.
+9. Gun last because it's nearly independent of body feel.
 
 **Centipede:**
 1. Body Spring first because it defines the centipede's visual character.
@@ -747,7 +764,7 @@ The tuning system excludes playerScale. After tuning at a chosen scale, if you l
 **Scripts (live config reading):**
 - `PlayerSkeletonRoot.cs` — add `PlayerConfig config` field; read moveForce, maxSpeed, standHeight, jumpSpeed, jumpOffsetFactor from config per-frame
 - `PlayerHipNode.cs` — add `PlayerConfig config` field; read HipStiffness, HipDamping, hipMass from config per-frame
-- `PlayerFeet.cs` — add `PlayerConfig config` field; read FootStiffness, FootDamping, footSpringMass, footSpreadX from config per-frame
+- `FootMovement.cs` — already reads all params per-frame from `config`; no change needed (complete)
 - `PlayerAssembler.cs` — remove jumpSpeed/jumpOffsetFactor (moved to PlayerConfig); wire config refs to scripts; use computed properties for stiffness/damping
 
 **Scripts (minimal change):**
@@ -762,7 +779,7 @@ The tuning system excludes playerScale. After tuning at a chosen scale, if you l
 - `TuningOverlay.cs` — Canvas-based UI overlay with waveform rendering
 - `AutoRespawner.cs` — coroutine-based destroy-and-respawn for init-only variable changes
 - `SpringParams.cs` — static helper class with ComputeStiffness/ComputeDamping
-- 14× TuningDimensionDef assets (one per dimension, configured in Inspector)
+- 21× TuningDimensionDef assets (one per dimension, configured in Inspector; dims 14–15 and 17–21 are conditional on navigator mode)
 
 ### Edge Cases
 
@@ -782,7 +799,7 @@ The tuning system excludes playerScale. After tuning at a chosen scale, if you l
 
 8. **Cross-validation scope**: Only perturb dimensions within the same entity. Don't perturb centipede variables when cross-validating the player, and vice versa. Run Player cross-validation first, then Centipede cross-validation.
 
-10. **Conditional dimension skipping for scent/arc navigator**: When `CentipedeConfig.useScentNavigator == true`, TuningManager must skip dimensions 12 and 13 at runtime — they contain arc-only fields (`minTurnRadius`, `arcAngleVariance`, `replanInterval`) that have no effect on ScentFieldNavigator. Conversely, when using the arc pathfinder, skip dimensions 15–19. Detect this by inspecting the target config's `useScentNavigator` bool before entering a dimension. Dimension 12's `speed` variable is shared — it remains relevant for both navigators, but in scent mode the entire dimension is replaced by dimensions 15–19 which tune scent-specific speed behavior alongside the base `speed` (kept at its current value from dimension 12's earlier arc-mode pass).
+10. **Conditional dimension skipping for scent/arc navigator**: When `CentipedeConfig.useScentNavigator == true`, TuningManager must skip dimensions 14 and 15 at runtime — they contain arc-only fields (`minTurnRadius`, `arcAngleVariance`, `replanInterval`) that have no effect on ScentFieldNavigator. Conversely, when using the arc pathfinder, skip dimensions 17–21. Detect this by inspecting the target config's `useScentNavigator` bool before entering a dimension. Dimension 14's `speed` variable is shared — it remains relevant for both navigators, but in scent mode the entire dimension is replaced by dimensions 17–21 which tune scent-specific speed behavior alongside the base `speed` (kept at its current value from dimension 14's earlier arc-mode pass).
 
 11. **`scentDecayTime` and `scentSigma` are not currently live**: `ScentField` copies these two values from config at `Initialize()` into private fields (`decayTime`, `sigma`) and uses those copies in `Evaluate()`. Without a refactor they would require respawn. Preferred fix: store a `CentipedeConfig` reference in `ScentField` instead of copying, and read `config.scentDecayTime` / `config.scentSigma` directly inside `Evaluate()`. This is a one-line change per field and enables live tuning without respawn. Mark them `requiresRespawn: false` after this refactor. If the refactor is deferred, mark them `requiresRespawn: true` and also call `ScentField.Instance.Clear()` alongside the respawn so the new config values govern a fresh field (not a stale field initialized under the old values).
 
