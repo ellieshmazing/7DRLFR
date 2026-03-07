@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 /// <summary>
 /// Attach this to a persistent GameObject (e.g. "GameManager").
@@ -8,6 +9,10 @@ using UnityEngine;
 /// Chunk layout relative to player chunk (P):
 ///   [P-3][P-2][P-1][P][P+1][P+2]
 ///    ^^^--- destroyed beyond this     ^^^--- pre-generated ahead
+///
+/// A single shared decoration Tilemap (created at startup under the Grid) is
+/// used for cross-chunk elements like tree canopies. When a chunk is destroyed,
+/// its decoration tiles are erased from that shared layer.
 /// </summary>
 public class ChunkManager : MonoBehaviour
 {
@@ -15,7 +20,7 @@ public class ChunkManager : MonoBehaviour
     [Tooltip("The player Transform - used to determine current chunk.")]
     public Transform player;
 
-    // Fetched automatically from this same GameObject — no need to assign in Inspector.
+    // Fetched automatically from this same GameObject.
     private TerrainGenerator terrainGenerator;
 
     [Header("Chunk Settings")]
@@ -28,25 +33,27 @@ public class ChunkManager : MonoBehaviour
     [Tooltip("How many chunks to pre-generate AHEAD of the player.")]
     public int chunksToKeepAhead = 2;
 
-    // --- Internal State ---
+    // --- Internal ---
     private Dictionary<int, GameObject> _activeChunks = new();
+    private Dictionary<int, List<Vector3Int>> _chunkDecoTiles = new(); // tracks deco tiles per chunk
+    private Tilemap _decoTilemap;
     private int _currentChunkIndex = 0;
 
     void Start()
     {
         terrainGenerator = GetComponent<TerrainGenerator>();
 
-        // Debug fallback: if no player is assigned, track the main camera instead.
         if (player == null)
         {
             player = Camera.main.transform;
-            Debug.LogWarning("[ChunkManager] No player assigned — falling back to Camera.main for chunk tracking.");
+            Debug.LogWarning("[ChunkManager] No player assigned — falling back to Camera.main.");
         }
 
-        // Seed the terrain generator once.
+        // Create the shared decoration Tilemap once, as a sibling of chunk Tilemaps.
+        _decoTilemap = terrainGenerator.CreateDecorationTilemap();
+
         terrainGenerator.InitSeed();
 
-        // Generate the starting chunks around the player's spawn.
         _currentChunkIndex = WorldXToChunkIndex(player.position.x);
         RefreshChunks();
     }
@@ -54,7 +61,6 @@ public class ChunkManager : MonoBehaviour
     void Update()
     {
         int newChunkIndex = WorldXToChunkIndex(player.position.x);
-
         if (newChunkIndex != _currentChunkIndex)
         {
             _currentChunkIndex = newChunkIndex;
@@ -62,22 +68,17 @@ public class ChunkManager : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Spawns any missing chunks in the keep window, destroys any outside it.
-    /// </summary>
     void RefreshChunks()
     {
         int minChunk = _currentChunkIndex - chunksToKeepBehind;
         int maxChunk = _currentChunkIndex + chunksToKeepAhead;
 
-        // Spawn missing chunks in the window.
         for (int i = minChunk; i <= maxChunk; i++)
         {
             if (!_activeChunks.ContainsKey(i))
                 SpawnChunk(i);
         }
 
-        // Destroy chunks that have fallen outside the window.
         List<int> toRemove = new();
         foreach (var kvp in _activeChunks)
         {
@@ -87,6 +88,14 @@ public class ChunkManager : MonoBehaviour
 
         foreach (int idx in toRemove)
         {
+            // Erase this chunk's decoration tiles from the shared tilemap.
+            if (_chunkDecoTiles.TryGetValue(idx, out var tiles))
+            {
+                foreach (var pos in tiles)
+                    _decoTilemap.SetTile(pos, null);
+                _chunkDecoTiles.Remove(idx);
+            }
+
             Destroy(_activeChunks[idx]);
             _activeChunks.Remove(idx);
         }
@@ -94,17 +103,15 @@ public class ChunkManager : MonoBehaviour
 
     void SpawnChunk(int chunkIndex)
     {
-        // World-space X origin of this chunk.
         float worldX = chunkIndex * chunkWidth;
 
-        GameObject chunkGO = terrainGenerator.GenerateChunk(chunkIndex, worldX);
+        List<Vector3Int> decoTiles = new();
+        GameObject chunkGO = terrainGenerator.GenerateChunk(chunkIndex, worldX, _decoTilemap, decoTiles);
+
         _activeChunks[chunkIndex] = chunkGO;
+        _chunkDecoTiles[chunkIndex] = decoTiles;
     }
 
-    /// <summary>
-    /// Converts a world-space X position to a chunk index.
-    /// Handles negative indices correctly for any future left-side expansion.
-    /// </summary>
     int WorldXToChunkIndex(float worldX)
     {
         return Mathf.FloorToInt(worldX / chunkWidth);
