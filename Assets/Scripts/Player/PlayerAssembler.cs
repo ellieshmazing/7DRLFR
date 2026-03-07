@@ -277,7 +277,7 @@ public class PlayerAssembler : MonoBehaviour
     [SerializeField] private Vector2 testPosition;
 
     [ContextMenu("Test Spawn")]
-    private void TestSpawn()
+    public void TestSpawn()
     {
         if (!Application.isPlaying || testConfig == null) return;
         Spawn(testConfig, testPosition);

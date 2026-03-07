@@ -81,6 +81,17 @@ Living documentation of all meaningful variables across the project. Updated whe
 | `wiggleMass` | `float` | `CentipedeConfig` | Spring simulation mass per node | Higher = more sluggish and heavy-feeling response | Visual inertia feel |
 | `ballDefinition` | `BallDefinition` | `CentipedeConfig` | Ball type used for all node visuals | Determines sprite and baseMass; falls back to assembler's defaultBallDefinition if null | Node sprite, mass |
 | `detachDistance` | `float` | `CentipedeConfig` | Distance a Ball must reach from its SkeletonNode to trigger detachment | CentipedeController checks per-ball each FixedUpdate; preemptive SHM energy check marks additional balls that are inevitably going to detach | Controls how hard a hit must be to break a centipede segment |
+| `speed` | `float` | `CentipedeConfig` | Arc traversal speed in world units/sec | CentipedePathfinder sets `rb.linearVelocity` magnitude to this value while following an arc | How fast the centipede closes on the player |
+| `minTurnRadius` | `float` | `CentipedeConfig` | Minimum allowed circular arc radius; prevents hairpin turns | Any computed arc with radius below this is rejected and resampled during Replan() | Tightest curve the centipede can execute; prevents self-overlap at sharp bends |
+| `arcAngleVariance` | `float` | `CentipedeConfig` | ± random range (degrees) of arc departure angle from the direct approach heading | Sampled each Replan(); wider variance = more oblique arcs and surprising approach angles | How varied the centipede's attack vectors are |
+| `replanInterval` | `float` | `CentipedeConfig` | Seconds between arc recalculations | Timer ticked in FixedUpdate; jitter added each reset to desync multiple centipedes | How often the centipede adapts its path to the player's current position |
+| `replanJitter` | `float` | `CentipedeConfig` | Random ± seconds added to replanInterval each cycle | Prevents centipedes spawned together from replanning on the same frame | Variation in reaction cadence between individuals |
+| `maxReplanAttempts` | `int` | `CentipedeConfig` | Max arc generation retries per Replan() call before accepting the best failed arc | Higher = more likely to satisfy minTurnRadius constraint; too high wastes CPU | Tradeoff between arc quality and planning cost |
+| `waveAmplitude` | `float` | `CentipedeConfig` | Lateral peak displacement of the sinusoidal wriggle wave | Applied perpendicular to the arc tangent each frame; steers the physical path | How wide the centipede's wriggling motion is |
+| `waveFrequency` | `float` | `CentipedeConfig` | Wave oscillations per second | Increments wavePhase by `waveFrequency * deltaTime` each FixedUpdate | How rapidly the centipede wriggles side to side |
+| `wavePhaseOffsetPerNode` | `float` | `CentipedeConfig` | Phase shift per body node index for GetBodyWaveOffset() | Creates the appearance of a wave propagating from head to tail | Visual traveling-wave cadence along the body |
+| `collisionCooldownDuration` | `float` | `CentipedeConfig` | Seconds before another collision response can trigger | Prevents rapid flip-flopping when the head grazes a wall repeatedly | Stability of collision response; lower = more reactive but jittery |
+| `targetArrivalRadius` | `float` | `CentipedeConfig` | Distance to player at which the centipede considers the arc complete and replans | Checked each FixedUpdate against `Vector2.Distance(head, player)` | How close the centipede gets before picking a new arc |
 
 ---
 

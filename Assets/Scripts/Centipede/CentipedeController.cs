@@ -260,5 +260,13 @@ public class CentipedeController : MonoBehaviour
             newMouseFollow.speed    = origMouseFollow.speed;
             newMouseFollow.deadZone = origMouseFollow.deadZone;
         }
+
+        // Mirror CentipedePathfinder from the original head, if present.
+        var origPathfinder = GetComponent<CentipedePathfinder>();
+        if (origPathfinder != null)
+        {
+            var newPathfinder = newHeadGO.AddComponent<CentipedePathfinder>();
+            newPathfinder.Initialize(config, origPathfinder.Target);
+        }
     }
 }

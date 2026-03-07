@@ -3,6 +3,10 @@ using System.Collections.Generic;
 
 public class CentipedeAssembler : MonoBehaviour
 {
+    [Header("Pathfinding")]
+    [Tooltip("Assign the player Transform to enable autonomous pathfinding. Leave null for manual/debug control.")]
+    public Transform playerTarget;
+
     [Header("Default Prefabs")]
     [Tooltip("Default prefab for the head node (should have SkeletonRoot or it will be added)")]
     public GameObject defaultHeadPrefab;
@@ -64,6 +68,13 @@ public class CentipedeAssembler : MonoBehaviour
         var controller = root.AddComponent<CentipedeController>();
         controller.Initialize(config, nodeList, ballList);
 
+        var origMouseFollow = root.GetComponent<DebugMouseFollow>();
+        if (origMouseFollow != null)
+            Destroy(origMouseFollow);
+
+        var pathfinder = root.AddComponent<CentipedePathfinder>();
+        pathfinder.Initialize(config, playerTarget);
+
         lastSpawnedNodes  = new List<SkeletonNode>(nodeList);
         lastSpawnedBalls  = new List<Ball>(ballList);
         lastSpawnedConfig = config;
@@ -103,7 +114,7 @@ public class CentipedeAssembler : MonoBehaviour
     [SerializeField] private Vector2 testPosition;
 
     [ContextMenu("Test Spawn")]
-    private void TestSpawn()
+    public void TestSpawn()
     {
         if (!Application.isPlaying || testConfig == null) return;
         Spawn(testConfig, testPosition);
@@ -126,7 +137,7 @@ public class CentipedeAssembler : MonoBehaviour
     /// Targeted balls turn red as visual confirmation.
     /// </summary>
     [ContextMenu("Execute Detachment Test")]
-    private void ExecuteDetachmentTest()
+    public void ExecuteDetachmentTest()
     {
         Debug.Log($"[DetachTest] isPlaying={Application.isPlaying} | config={lastSpawnedConfig} | balls={lastSpawnedBalls.Count} | indices={testDetachIndices.Count}");
 
