@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff60679b078f6a84cafb8f957d07cd55, type: 3}
+  m_Name: 08_GunFeel
+  m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
+  dimensionName: Gun Feel
+  testScenario: Shoot at targets at near, mid, and far range. Hold fire button for
+    sustained fire.
+  variables:
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: firingSpeed
+    min: 3
+    max: 25
+    defaultValue: 10
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: fireCooldown
+    min: 0.05
+    max: 0.5
+    defaultValue: 0.25
+    requiresRespawn: 0
+    liveSync: 0
+  sweepDuration: 10

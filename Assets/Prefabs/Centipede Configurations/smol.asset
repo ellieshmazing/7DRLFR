@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: smol
   m_EditorClassIdentifier: Assembly-CSharp::CentipedeConfig
   nodeCount: 20
-  followDistance: 0.15
-  nodeRadius: 0.5
+  followDistance: 0.2
+  nodeRadius: 0.1
   nodeColor: {r: 1, g: 1, b: 1, a: 1}
-  wiggleStiffness: 80
-  wiggleDamping: 5
+  wiggleFrequency: 8.94
+  wiggleDampingRatio: 0.28
   wiggleMass: 1
   ballDefinition: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
   detachDistance: 0.5
