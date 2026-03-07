@@ -68,3 +68,10 @@ Topic: ScentField debug visualizer — GL overlay for scalar field and navigator
 Concepts:
   - **Scalar Field Visualization**: A scalar field assigns a single value to every point in space. Visualizing it means sampling on a grid and mapping each value to color — the same technique used in fluid sim heat maps and physics debug overlays. Here, sampling the scent field on a world-space grid reveals the Gaussian blending between footprints, the sigma influence radius, and where decay has hollowed out old regions of the trail.
   - **State Legibility via Direct Debug Rendering**: Complex AI behavior becomes tunable when every invisible internal variable has a visual proxy — arrows for vectors, pulsing rings for oscillators, color shifts for state flags. The gap between the gradient arrow and momentum arrow is the steering blend made visible in one glance, which would otherwise require reading logs or adding breakpoints.
+
+---
+Date: 2026-03-07
+Topic: Procedural foot placement (FootMovement)
+Concepts:
+  - **Finite State Machine per limb**: Rather than a single character state, each foot owns its own FSM (Locked/Stepping/Airborne). This lets the two feet be in different states simultaneously — one planted while the other arcs — which is what makes procedural walk feel grounded rather than animated. The gait constraint (only one foot Stepping at a time) is a single rule that emerges naturally from the per-limb design.
+  - **Kinematic override vs. physics**: Locking a foot means zeroing its velocity and snapping its position every FixedUpdate — effectively making a Dynamic RB behave kinematically without changing its type. This lets the foot participate in collision detection (still resolves contacts) while the locomotion system has total positional authority. The trade-off is a one-frame artifact on lock/unlock, which is imperceptible at normal frame rates.

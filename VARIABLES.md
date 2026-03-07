@@ -34,6 +34,15 @@ Living documentation of all meaningful variables across the project. Updated whe
 | `projectileGrowTime` | `float` | `PlayerConfig` | Seconds for a projectile to reach its true diameter from spawn scale | Passed to `ProjectileScaleGrow`; rate = `diameter / growTime` so all sizes pop out in the same duration | Pop-out duration from barrel |
 | `tempMinProjectileDiameter` | `float` | `PlayerConfig` | **[TEMP]** Minimum random projectile diameter in world units | Used until a projectile queue replaces random sizing | Smallest possible shot |
 | `tempMaxProjectileDiameter` | `float` | `PlayerConfig` | **[TEMP]** Maximum random projectile diameter in world units | Used until a projectile queue replaces random sizing | Largest possible shot |
+| `maxWalkableAngle` | `float` (degrees) | `PlayerConfig` | Max angle between surface normal and Vector2.up for a walkable surface | Lower = feet only lock on near-flat ground; higher = gecko-grip on walls | Foot landing discrimination; affects foot lock after step and after airborne |
+| `strideTriggerDistance` | `float` (px) | `PlayerConfig` | How far behind ideal X position a locked foot must lag before it initiates a step | Lower = steps start sooner; higher = foot drags before stepping | Walk cadence onset and visual foot drag |
+| `strideProjectionTime` | `float` (s) | `PlayerConfig` | Seconds of torso velocity projected forward to predict step target X | Lower = conservative short steps; higher = aggressive reaching strides | Where foot lands ahead of torso |
+| `stepHeight` | `float` (px) | `PlayerConfig` | Peak height of the step arc above the start-to-target baseline | Lower = shuffling/gliding; higher = marching/bounding feel | Visual liftoff of each step |
+| `baseStepDuration` | `float` (s) | `PlayerConfig` | Step duration at zero horizontal speed | Lower = snappy steps; higher = deliberate strides at rest | Cadence at standstill |
+| `minStepDuration` | `float` (s) | `PlayerConfig` | Floor on step duration at high speeds | Prevents infinitely fast leg cycling when sprinting | Maximum step rate |
+| `stepSpeedScale` | `float` | `PlayerConfig` | How much horizontal speed shortens step duration: `duration = base / (1 + speed * scale)` | Lower = uniform cadence regardless of speed; higher = dramatically faster steps when running | Speed responsiveness of walk animation |
+| `idleSpeedThreshold` | `float` (wu/s) | `PlayerConfig` | Speed below which the player is considered idle; triggers idle stance correction | Lower = corrects sooner after stopping; higher = tolerates slow drift without correcting | Transition between walking and idle recovery behavior |
+| `stepRaycastDistance` | `float` (px) | `PlayerConfig` | Downward raycast distance when probing for step target ground | Must exceed torso-to-ground distance; lower = misses far drops | Terrain adaptability of step target Y |
 
 ---
 
@@ -54,12 +63,18 @@ Living documentation of all meaningful variables across the project. Updated whe
 
 ---
 
-## PlayerFeet
+## FootMovement
 
 | Variable | Type | Location | Description | Behavior | Affects |
 |---|---|---|---|---|---|
-| `config` | `PlayerConfig` | `PlayerFeet` | Live config SO reference | FootStiffness, FootDamping, footSpringMass, footSpreadX read per-frame | Foot spring and formation |
-| `pixelToWorld` | `float` | `PlayerFeet` | Pixel-to-world conversion factor, cached at spawn | Multiplies footSpreadX to world units | Correct foot spacing |
+| `config` | `PlayerConfig` | `FootMovement` | Live config SO reference | All foot movement params read per-frame | All procedural walk/step/airborne behavior |
+| `pixelToWorld` | `float` | `FootMovement` | Pixel-to-world conversion factor, cached at spawn | Multiplies all pixel-space config values to world units | Step distances, arc heights, thresholds |
+| `torsoRB` | `Rigidbody2D` | `FootMovement` | Torso physics body — source of velocity and position | linearVelocity read each FixedUpdate for step trigger and target prediction | Step gating, step projection |
+| `footColliderRadius` | `float` | `FootMovement` | Foot circle collider radius in world units | Added to raycast hit Y so feet land on top of surfaces, not inside them | All step target Y positions |
+| `_left.state` / `_right.state` | `FootState` | `FootMovement` | Per-foot FSM state (Locked/Stepping/Airborne) | Transitions drive all foot position logic each FixedUpdate | Everything downstream |
+| `_left.lockPosition` / `_right.lockPosition` | `Vector2` | `FootMovement` | World position where a Locked foot is pinned | Set by LockFoot(); held fixed each frame in Locked state | Hip ground reference, jump gating |
+| `_left.stepProgress` / `_right.stepProgress` | `float` | `FootMovement` | 0..1 normalized arc progress for a Stepping foot | Advances by dt/stepDuration each FixedUpdate | Arc position, step completion |
+| `_left.stepDuration` / `_right.stepDuration` | `float` | `FootMovement` | Seconds for the current step arc to complete | Computed from baseStepDuration / (1 + speed * stepSpeedScale); higher speed = shorter duration | Step cadence at different movement speeds |
 
 ---
 
