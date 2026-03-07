@@ -68,3 +68,22 @@ Topic: ScentField debug visualizer — GL overlay for scalar field and navigator
 Concepts:
   - **Scalar Field Visualization**: A scalar field assigns a single value to every point in space. Visualizing it means sampling on a grid and mapping each value to color — the same technique used in fluid sim heat maps and physics debug overlays. Here, sampling the scent field on a world-space grid reveals the Gaussian blending between footprints, the sigma influence radius, and where decay has hollowed out old regions of the trail.
   - **State Legibility via Direct Debug Rendering**: Complex AI behavior becomes tunable when every invisible internal variable has a visual proxy — arrows for vectors, pulsing rings for oscillators, color shifts for state flags. The gap between the gradient arrow and momentum arrow is the steering blend made visible in one glance, which would otherwise require reading logs or adding breakpoints.
+---
+Date: 2026-03-07
+Topic: GL debug overlay rendering
+Concepts:
+  - **GL Matrix Stack**: In OnRenderObject(), Unity pre-loads the full projection × view matrix. GL.LoadIdentity() discards it; GL.MultMatrix(worldToCameraMatrix) only restores the view component — leaving vertices in view space with no projection applied. The safe pattern is GL.PushMatrix() alone, relying on the already-correct matrix.
+  - **Defensive null guards**: Shader.Find() can return null in builds or stripped shaders. Guarding before Material construction prevents a silent null-ref crash that's hard to trace from a black screen.
+
+---
+Date: 2026-03-07
+Topic: FootMovement — procedural walking FSM
+Concepts:
+  - **Finite State Machine per limb**: Decomposing a character's leg behavior into discrete states (Locked/Stepping/Airborne) rather than a single spring makes each state's intent explicit and eliminates the contradictions that arise when physics, animation, and grounding logic fight over the same Rigidbody. The gait constraint (only one foot Stepping at a time) emerges naturally as a single predicate rather than a complex priority system.
+  - **Stable reference vs. raw physics**: The hip spring targets a `lockPosition` (discrete, only updated at state transitions) rather than the raw `rb.position` of the foot (jittery, one physics step behind). This is the core tradeoff in procedural animation — when to trust the physics simulation and when to maintain your own authoritative bookkeeping value.
+---
+Date: 2026-03-07
+Topic: URP render pipeline compatibility for GL debug overlay
+Concepts:
+  - **Render Pipeline Callbacks**: Built-in RP dispatches OnRenderObject to all active MonoBehaviours; URP does not. URP exposes RenderPipelineManager.endCameraRendering as the equivalent hook, fired once per camera per frame from the SRP internals. Debug tools that target URP must subscribe to this event rather than override the legacy message.
+  - **Explicit GL Matrix Setup**: Built-in RP pre-loads projection × view into the GL matrix stack before OnRenderObject fires. The URP endCameraRendering callback makes no such guarantee — projection and modelview must be set explicitly via GL.LoadProjectionMatrix and GL.modelview before issuing any world-space GL draw calls.

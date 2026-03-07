@@ -34,6 +34,15 @@ Living documentation of all meaningful variables across the project. Updated whe
 | `projectileGrowTime` | `float` | `PlayerConfig` | Seconds for a projectile to reach its true diameter from spawn scale | Passed to `ProjectileScaleGrow`; rate = `diameter / growTime` so all sizes pop out in the same duration | Pop-out duration from barrel |
 | `tempMinProjectileDiameter` | `float` | `PlayerConfig` | **[TEMP]** Minimum random projectile diameter in world units | Used until a projectile queue replaces random sizing | Smallest possible shot |
 | `tempMaxProjectileDiameter` | `float` | `PlayerConfig` | **[TEMP]** Maximum random projectile diameter in world units | Used until a projectile queue replaces random sizing | Largest possible shot |
+| `maxWalkableAngle` | `float` | `PlayerConfig` | Max angle between a surface normal and Vector2.up for the surface to count as walkable (degrees) | 0 = flat only, 90 = any surface; gates foot locking on landing and mid-step collision | Walkable surface threshold |
+| `strideTriggerDistance` | `float` | `PlayerConfig` | How far behind its ideal position a locked foot must fall before stepping, in source pixels | Multiplied by pixelToWorld each use; lower = steps initiate sooner | Stride responsiveness |
+| `strideProjectionTime` | `float` | `PlayerConfig` | Seconds of torso velocity projected forward when computing step target X | Controls how far ahead the foot reaches; lower = conservative, higher = aggressive strides | Step target anticipation |
+| `stepHeight` | `float` | `PlayerConfig` | Peak height of the step arc above the start→target line, in source pixels | Multiplied by pixelToWorld; creates lift via `sin(π·t)` envelope | Step visual clearance / march character |
+| `baseStepDuration` | `float` | `PlayerConfig` | Time for one complete step at zero horizontal speed (seconds) | Floor of step timing; `duration = base / (1 + speed * scale)` | Cadence at low speed |
+| `minStepDuration` | `float` | `PlayerConfig` | Floor on step duration at high speeds (seconds) | Prevents infinite leg cycling; `Mathf.Max(min, computed)` | Maximum leg cycling rate |
+| `stepSpeedScale` | `float` | `PlayerConfig` | How much horizontal speed shortens step duration | `duration = baseStepDuration / (1 + |vx| * scale)` | Cadence scaling with speed |
+| `idleSpeedThreshold` | `float` | `PlayerConfig` | Horizontal speed (world units/s) below which the player is considered idle | Switches from stride-trigger logic to idle-correction logic; gates direction reversal | Idle/walking mode boundary |
+| `stepRaycastDistance` | `float` | `PlayerConfig` | Downward raycast distance when probing for step target ground, in source pixels | Must exceed the torso-to-ground distance; multiplied by pixelToWorld | Ground detection range for step placement |
 
 ---
 
@@ -54,12 +63,17 @@ Living documentation of all meaningful variables across the project. Updated whe
 
 ---
 
-## PlayerFeet
+## FootMovement
+
+Procedural walking FSM; replaces PlayerFeet. Attach to HipNode GO alongside PlayerHipNode.
 
 | Variable | Type | Location | Description | Behavior | Affects |
 |---|---|---|---|---|---|
-| `config` | `PlayerConfig` | `PlayerFeet` | Live config SO reference | FootStiffness, FootDamping, footSpringMass, footSpreadX read per-frame | Foot spring and formation |
-| `pixelToWorld` | `float` | `PlayerFeet` | Pixel-to-world conversion factor, cached at spawn | Multiplies footSpreadX to world units | Correct foot spacing |
+| `config` | `PlayerConfig` | `FootMovement` | Live config SO reference | All Foot Movement tuning params read per-frame | Gait, step speed, walkability |
+| `pixelToWorld` | `float` | `FootMovement` | Pixel-to-world conversion factor, cached at spawn | Multiplies pixel-space config values to world units | Correct step distances and arc heights |
+| `torsoRB` | `Rigidbody2D` | `FootMovement` | Root torso body (wired by assembler) | `linearVelocity` and `position` read per-frame for step targeting and spring | Step direction and speed prediction |
+| `leftFootRB` / `rightFootRB` | `Rigidbody2D` | `FootMovement` | Foot visual bodies (wired by assembler) | Position and velocity overridden each FixedUpdate per state | Foot physics position |
+| `leftFootContact` / `rightFootContact` | `FootContact` | `FootMovement` | Ground contact detectors (wired by assembler) | `isGrounded` and `lastContactNormal` queried each frame | Lock triggers, walkability check |
 
 ---
 

@@ -30,10 +30,9 @@ public class PlayerSkeletonRoot : MonoBehaviour
     [Header("Wiring (set by PlayerAssembler)")]
     public Transform hipNode;
     public PlayerHipNode hipNodeScript;
+    public FootMovement footMovement;
     public Rigidbody2D leftFootRB;
     public Rigidbody2D rightFootRB;
-    public FootContact leftFootContact;
-    public FootContact rightFootContact;
 
     private Rigidbody2D rb;
     private bool _jumpRequested;
@@ -96,15 +95,11 @@ public class PlayerSkeletonRoot : MonoBehaviour
         _jumpRequested = false;
 
         if (leftFootRB == null || rightFootRB == null) return;
+        if (footMovement == null || !footMovement.CanJump()) return;
 
-        // The grounding foot is the lower one — only it counts for ground contact.
-        bool leftIsLower = leftFootRB.position.y <= rightFootRB.position.y;
-        FootContact groundingContact = leftIsLower ? leftFootContact : rightFootContact;
-        if (groundingContact == null || !groundingContact.isGrounded) return;
-
-        // Hip offset: positive when the hip node has been pulled below the lowest foot
+        // Hip offset: positive when the hip node has been pulled below the lowest locked foot
         // (spring compression = stored potential energy).
-        float lowestFootY = leftIsLower ? leftFootRB.position.y : rightFootRB.position.y;
+        float lowestFootY = footMovement.GetLockedFootY();
         float hipOffset   = Mathf.Max(0f, lowestFootY - hipNode.position.y);
 
         // Total impulse (kg·m/s) — linear in hip offset, physically grounded in
@@ -123,5 +118,8 @@ public class PlayerSkeletonRoot : MonoBehaviour
         // so it rises with the feet at a consistent rate regardless of spring tuning.
         if (hipNodeScript != null)
             hipNodeScript.ApplyJumpImpulse(jumpImpulse / hipNodeScript.mass);
+
+        // Release foot locks so they fly freely.
+        footMovement.OnJump();
     }
 }

@@ -13,9 +13,9 @@ using UnityEngine;
 ///   ├── Arm              (PlayerArmController, ArmLayerController)
 ///   │   ├── ArmLayer_0    (SpriteRenderer)
 ///   │   └── ...           (one child per ArmLayerDef in PlayerConfig)
-///   ├── HipNode          (PlayerSkeletonNode, PlayerHipNode, PlayerFeet)
-///   ├── LeftFootVisual   (SpriteRenderer, CircleCollider2D, Rigidbody2D [Dynamic, gravity])
-///   └── RightFootVisual  (SpriteRenderer, CircleCollider2D, Rigidbody2D [Dynamic, gravity])
+///   ├── HipNode          (PlayerSkeletonNode, PlayerHipNode, FootMovement)
+///   ├── LeftFootVisual   (SpriteRenderer, CircleCollider2D, Rigidbody2D [Dynamic, gravity], FootContact)
+///   └── RightFootVisual  (SpriteRenderer, CircleCollider2D, Rigidbody2D [Dynamic, gravity], FootContact)
 ///
 /// All offsets in PlayerConfig are in source pixels (16px grid).
 /// The assembler converts them to world units via:
@@ -172,10 +172,6 @@ public class PlayerAssembler : MonoBehaviour
         var hipNodeScript = hipGO.AddComponent<PlayerHipNode>();
         hipNodeScript.config = config;
 
-        var feetScript = hipGO.AddComponent<PlayerFeet>();
-        feetScript.config       = config;
-        feetScript.pixelToWorld = pixelToWorld;
-
         // Wire hip node into PlayerSkeletonRoot
         playerRoot.hipNode = hipGO.transform;
 
@@ -190,18 +186,23 @@ public class PlayerAssembler : MonoBehaviour
                               new Vector2(position.x + footSpreadWorldX, footSpawnY),
                               config.rightFoot, spriteLocalScale, colRadius, config);
 
-        // Wire foot RBs into both hip-node scripts
-        hipNodeScript.leftFootRB  = leftFootRB;
-        hipNodeScript.rightFootRB = rightFootRB;
-        feetScript.leftFootRB     = leftFootRB;
-        feetScript.rightFootRB    = rightFootRB;
+        // --- FootMovement (on HipNode, replaces PlayerFeet) ---
+        var footMovement = hipGO.AddComponent<FootMovement>();
+        footMovement.config            = config;
+        footMovement.pixelToWorld      = pixelToWorld;
+        footMovement.torsoRB           = torsoRB;
+        footMovement.leftFootRB        = leftFootRB;
+        footMovement.rightFootRB       = rightFootRB;
+        footMovement.leftFootContact   = leftFootRB.GetComponent<FootContact>();
+        footMovement.rightFootContact  = rightFootRB.GetComponent<FootContact>();
 
-        // Wire hip script and foot contacts into the skeleton root for jump
-        playerRoot.hipNodeScript   = hipNodeScript;
-        playerRoot.leftFootRB      = leftFootRB;
-        playerRoot.rightFootRB     = rightFootRB;
-        playerRoot.leftFootContact = leftFootRB.GetComponent<FootContact>();
-        playerRoot.rightFootContact = rightFootRB.GetComponent<FootContact>();
+        // Wire FootMovement into hip and root
+        hipNodeScript.footMovement = footMovement;
+
+        playerRoot.hipNodeScript = hipNodeScript;
+        playerRoot.footMovement  = footMovement;
+        playerRoot.leftFootRB    = leftFootRB;
+        playerRoot.rightFootRB   = rightFootRB;
 
         // Activating triggers Awake then Start on the complete hierarchy
         root.SetActive(true);

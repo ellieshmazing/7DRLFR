@@ -139,6 +139,39 @@ public class PlayerConfig : ScriptableObject
     [Tooltip("[TEMP] Maximum random projectile diameter in world units")]
     [Min(0.01f)] public float tempMaxProjectileDiameter = 0.8f;
 
+    [Header("Foot Movement")]
+    [Tooltip("Max angle between surface normal and Vector2.up for a surface to be walkable (degrees). " +
+             "0 = flat only, 90 = any surface.")]
+    [Range(0f, 90f)] public float maxWalkableAngle = 50f;
+
+    [Tooltip("How far behind its ideal position (movement direction) a locked foot must be " +
+             "before stepping, in source pixels.")]
+    [Min(0f)] public float strideTriggerDistance = 5f;
+
+    [Tooltip("Seconds of velocity projected forward when computing step target X. " +
+             "Lower = conservative short steps; higher = aggressive reaching strides.")]
+    [Min(0f)] public float strideProjectionTime = 0.15f;
+
+    [Tooltip("Peak height of the step arc above the start→target line, in source pixels.")]
+    [Min(0f)] public float stepHeight = 4f;
+
+    [Tooltip("Time for one complete step at zero horizontal speed (seconds).")]
+    [Min(0.01f)] public float baseStepDuration = 0.2f;
+
+    [Tooltip("Minimum step duration at high speeds — prevents infinite leg cycling (seconds).")]
+    [Min(0.01f)] public float minStepDuration = 0.06f;
+
+    [Tooltip("How much horizontal speed shortens step duration: duration = base / (1 + speed * scale).")]
+    [Min(0f)] public float stepSpeedScale = 0.3f;
+
+    [Tooltip("Horizontal speed (world units/s) below which the player is considered idle " +
+             "and feet correct toward neutral stance.")]
+    [Min(0f)] public float idleSpeedThreshold = 0.5f;
+
+    [Tooltip("Downward raycast distance when probing for step target ground, in source pixels. " +
+             "Must exceed the torso-to-ground distance.")]
+    [Min(1f)] public float stepRaycastDistance = 30f;
+
     [Header("Feet")]
     public FootDef leftFoot  = new FootDef { color = Color.white, sortingOrder = -1 };
     public FootDef rightFoot = new FootDef { color = Color.white, sortingOrder = -1 };
