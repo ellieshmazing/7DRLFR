@@ -108,6 +108,40 @@ Living documentation of all meaningful variables across the project. Updated whe
 | `wavePhaseOffsetPerNode` | `float` | `CentipedeConfig` | Phase shift per body node index for GetBodyWaveOffset() | Creates the appearance of a wave propagating from head to tail | Visual traveling-wave cadence along the body |
 | `collisionCooldownDuration` | `float` | `CentipedeConfig` | Seconds before another collision response can trigger | Prevents rapid flip-flopping when the head grazes a wall repeatedly | Stability of collision response; lower = more reactive but jittery |
 | `targetArrivalRadius` | `float` | `CentipedeConfig` | Distance to player at which the centipede considers the arc complete and replans | Checked each FixedUpdate against `Vector2.Distance(head, player)` | How close the centipede gets before picking a new arc |
+| `useScentNavigator` | `bool` | `CentipedeConfig` | Enables ScentFieldNavigator instead of CentipedePathfinder for this config | Read by CentipedeAssembler.Spawn(); swaps which pathfinder component is added | Selects the pathfinding personality for this centipede type |
+| `scentHistorySize` | `int` | `CentipedeConfig` | Ring buffer capacity for the shared ScentField; 200 × 0.1 s = 20 s of trail | Read once on ScentField.Initialize() from the first centipede config; subsequent centipedes reuse | How much scent trail history is retained in the field |
+| `scentSampleInterval` | `float` | `CentipedeConfig` | Seconds between player position samples pushed into the scent field | Governs ScentField.Update() emission rate; lower = denser trail with more computation | Trail resolution vs. field evaluation cost |
+| `scentDecayTime` | `float` | `CentipedeConfig` | Time constant for scent weight to decay to 37% (e^-1) of original strength | Used in ScentField.Evaluate() temporal factor exp(−age/decayTime) | How long the player's trail persists before fading |
+| `scentSigma` | `float` | `CentipedeConfig` | Gaussian spatial spread (world units) of each player position sample | Controls the spatial extent of each sample's influence in ScentField.Evaluate(); set to ~half engagement distance | Effective "smell radius" per step of the scent trail |
+| `scentGradientSampleRadius` | `float` | `CentipedeConfig` | Radius at which 8 direction samples are taken to compute the field gradient | Used in ScentFieldNavigator.ComputeGradientDirection(); should be ≤ scentSigma for best resolution | How locally vs. broadly the centipede reads the field |
+| `scentSteeringBlend` | `float` | `CentipedeConfig` | Turn-rate factor; blends momentum toward gradient at this rate × sensitivity per second | Used in ScentFieldNavigator.FixedUpdate(); multiplied by oscillator sensitivity | How aggressively the centipede turns toward the scent at peak sensitivity |
+| `scentConsumeRadius` | `float` | `CentipedeConfig` | World-unit radius within which the centipede suppresses nearby scent samples | Governs ScentField.Consume() proximity test; wider = more territory claimed per pass | How much of the trail is erased per frame of travel |
+| `scentConsumeRate` | `float` | `CentipedeConfig` | Weight consumed per second at the centipede's exact center position | Applied in ScentField.Consume() scaled by proximity; higher = faster spiral tightening | Rate at which the inward spiral closes on a stationary target |
+| `scentOscillationFrequency` | `float` | `CentipedeConfig` | Frequency (Hz) of the sweep-and-lock sensitivity oscillator | Increments sensitivityPhase by freq × 2π × dt each FixedUpdate | Speed of the predator sweep-lock rhythm; 0.35 Hz ≈ 3-second full cycle |
+| `scentSpeedBoost` | `float` | `CentipedeConfig` | Max speed bonus (world units/sec) when centipede is directly on a hot trail | Added to base speed proportional to trailHeat = forwardFieldStrength/scentGradientMaxStrength | Creates natural acceleration surge on fresh scent |
+| `scentGradientMaxStrength` | `float` | `CentipedeConfig` | Forward scent field strength that yields full speed boost | Normalizes trailHeat clamped to [0,1]; calibrate against expected field intensity | Sets sensitivity of the speed boost response |
+| `scentFallbackThreshold` | `float` | `CentipedeConfig` | Field strength at head below which fallback direct pursuit activates | Tested each FixedUpdate in ScentFieldNavigator; activates when field is empty or fully consumed | Prevents the centipede from stalling when scent is absent |
+| `scentFallbackBlend` | `float` | `CentipedeConfig` | Blend rate toward the player during fallback (weaker than gradient steering) | Applied as Lerp(momentum, toPlayer, scentFallbackBlend × dt) | Gentleness of the fallback so it doesn't instantly snap to player direction |
+
+---
+
+## ScentField (MonoBehaviour, singleton)
+
+| Variable | Type | Location | Description | Behavior | Affects |
+|---|---|---|---|---|---|
+| `player` | `Transform` | `ScentField` | Reference to the player transform being tracked | Used in Update() to record player positions into the ring buffer | Source of scent emission |
+| `samples` | `Sample[]` | `ScentField` | Ring buffer of `(position, timestamp, weight)` tuples | Circular write; head advances modulo historySize; count tracks valid entries | The scent field's raw data |
+| `head` | `int` | `ScentField` | Next write index in the ring buffer | Advances each sample; wraps around at historySize | Buffer write position |
+| `count` | `int` | `ScentField` | Number of valid samples currently in the buffer | Clamped to historySize; governs Evaluate() loop bounds | How many Gaussians are summed in field evaluation |
+
+---
+
+## ScentFieldNavigator (MonoBehaviour)
+
+| Variable | Type | Location | Description | Behavior | Affects |
+|---|---|---|---|---|---|
+| `momentum` | `Vector2` | `ScentFieldNavigator` | Normalized current heading direction | Blended toward gradient each FixedUpdate; normalized after blend | The actual direction of travel; inertia carrier |
+| `sensitivityPhase` | `float` | `ScentFieldNavigator` | Phase accumulator for the sweep-and-lock oscillator | Incremented by scentOscillationFrequency × 2π × dt; initialized random per centipede | Drives sensitivity = 0.5 + 0.5 × sin(phase) |
 
 ---
 
