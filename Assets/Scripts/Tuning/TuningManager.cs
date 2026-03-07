@@ -25,6 +25,8 @@ public class TuningManager : MonoBehaviour
 
     public enum TuningPhase { Idle, Sweep, AB, CrossValidation, Complete }
 
+    enum EntityType { None, Player, Centipede }
+
     // ── Serialized fields ────────────────────────────────────────────────────
 
     [Header("Config References")]
@@ -57,6 +59,12 @@ public class TuningManager : MonoBehaviour
     [SerializeField] float overlayWidth = 320f;
     [SerializeField] float overlayOpacity = 0.85f;
 
+    [Header("Spawn Positions")]
+    [SerializeField] Vector2 playerSpawnPosition = new Vector2(0f, 1f);
+    [SerializeField] Vector2 centipedeSpawnPosition = new Vector2(0f, 3f);
+    [SerializeField] int centipedeSpawnCount = 1;
+    [SerializeField] float centipedeSpawnSpacing = 3f;
+
     // ── State ────────────────────────────────────────────────────────────────
 
     TuningPhase phase = TuningPhase.Idle;
@@ -83,6 +91,7 @@ public class TuningManager : MonoBehaviour
     bool respawnPending;
     ScriptableObject respawnTargetConfig;
     float lastAppliedRespawnValue;
+    Coroutine activeSpawnCoroutine;
 
     // ── Public properties (for overlay) ──────────────────────────────────────
 
@@ -338,10 +347,12 @@ public class TuningManager : MonoBehaviour
     void AdvanceToNextVariable()
     {
         variableIndex++;
+        bool newDimension = false;
         if (CurrentDimension == null || variableIndex >= CurrentDimension.variables.Length)
         {
             variableIndex = 0;
             dimensionIndex++;
+            newDimension = true;
             if (dimensionIndex >= dimensionDefs.Length)
             {
                 phase = TuningPhase.CrossValidation;
@@ -349,6 +360,8 @@ public class TuningManager : MonoBehaviour
                 return;
             }
         }
+        if (newDimension)
+            TriggerDimensionSpawn();
         EnterSweep();
     }
 
@@ -577,6 +590,42 @@ public class TuningManager : MonoBehaviour
         respawnTargetConfig = config;
     }
 
+    // ── Dimension spawn ──────────────────────────────────────────────────────
+
+    EntityType GetEntityType(TuningDimensionDef dim)
+    {
+        if (dim?.variables == null || dim.variables.Length == 0) return EntityType.None;
+        var cfg = dim.variables[0].targetConfig;
+        if (cfg is PlayerConfig) return EntityType.Player;
+        if (cfg is CentipedeConfig) return EntityType.Centipede;
+        return EntityType.None;
+    }
+
+    void TriggerDimensionSpawn()
+    {
+        // Cancel any pending mid-sweep respawn — the fresh spawn supersedes it.
+        respawnPending = false;
+
+        if (activeSpawnCoroutine != null)
+            StopCoroutine(activeSpawnCoroutine);
+
+        switch (GetEntityType(CurrentDimension))
+        {
+            case EntityType.Player:
+                activeSpawnCoroutine = StartCoroutine(
+                    AutoRespawner.SpawnFreshPlayer(playerConfig, playerAssembler, playerSpawnPosition));
+                break;
+
+            case EntityType.Centipede:
+                var positions = new Vector2[centipedeSpawnCount];
+                for (int i = 0; i < centipedeSpawnCount; i++)
+                    positions[i] = centipedeSpawnPosition + Vector2.right * i * centipedeSpawnSpacing;
+                activeSpawnCoroutine = StartCoroutine(
+                    AutoRespawner.SpawnFreshCentipedes(centipedeConfig, centipedeAssembler, positions));
+                break;
+        }
+    }
+
     // ── Navigation helpers ───────────────────────────────────────────────────
 
     void EnterSweep()
@@ -611,6 +660,7 @@ public class TuningManager : MonoBehaviour
             }
             dimensionIndex = 0;
             variableIndex = 0;
+            TriggerDimensionSpawn();
             EnterSweep();
             Debug.Log($"[TuningManager] Tuning started — dimension 0: {CurrentDimension?.dimensionName}");
         }
@@ -631,6 +681,7 @@ public class TuningManager : MonoBehaviour
             EnterCrossValidation();
             return;
         }
+        TriggerDimensionSpawn();
         EnterSweep();
         Debug.Log($"[TuningManager] Advanced to dimension {dimensionIndex}: " +
                   $"{CurrentDimension?.dimensionName}");
@@ -640,6 +691,7 @@ public class TuningManager : MonoBehaviour
     {
         variableIndex = 0;
         dimensionIndex = Mathf.Max(0, dimensionIndex - 1);
+        TriggerDimensionSpawn();
         EnterSweep();
         Debug.Log($"[TuningManager] Back to dimension {dimensionIndex}: " +
                   $"{CurrentDimension?.dimensionName}");
@@ -660,6 +712,7 @@ public class TuningManager : MonoBehaviour
         foreach (var v in dim.variables)
             ApplyValue(v, v.defaultValue);
 
+        TriggerDimensionSpawn();
         EnterSweep();
         Debug.Log($"[TuningManager] Reset dimension {dimensionIndex}: {dim.dimensionName}");
     }
