@@ -96,6 +96,16 @@ public class ScentFieldDebugVisualizer : MonoBehaviour
         sampleReadBuf = new ScentField.DebugSample[512];
     }
 
+    private void OnEnable()
+    {
+        RenderPipelineManager.endCameraRendering += OnEndCameraRendering;
+    }
+
+    private void OnDisable()
+    {
+        RenderPipelineManager.endCameraRendering -= OnEndCameraRendering;
+    }
+
     private void OnDestroy()
     {
         if (lineMaterial != null)
@@ -126,18 +136,22 @@ public class ScentFieldDebugVisualizer : MonoBehaviour
         }
     }
 
-    private void OnRenderObject()
+    // URP does not call OnRenderObject on scene MonoBehaviours — subscribe to the pipeline event instead.
+    private void OnEndCameraRendering(ScriptableRenderContext context, Camera camera)
     {
-        if (Camera.current != Camera.main) return;
-        if (ScentField.Instance == null)  return;
-        if (mode == DebugMode.Off)        return;
+        if (camera != Camera.main)       return;
+        if (ScentField.Instance == null) return;
+        if (mode == DebugMode.Off)       return;
 
         EnsureGLMaterial();
+        if (lineMaterial == null) return;
 
-        GL.PushMatrix();
-        GL.LoadIdentity();
-        GL.MultMatrix(Camera.main.worldToCameraMatrix);
+        // Unlike OnRenderObject (built-in RP), this callback does not pre-load the
+        // projection × view matrix — set both explicitly.
         lineMaterial.SetPass(0);
+        GL.PushMatrix();
+        GL.LoadProjectionMatrix(camera.projectionMatrix);
+        GL.modelview = camera.worldToCameraMatrix;
 
         DrawSamples();
 
@@ -297,6 +311,7 @@ public class ScentFieldDebugVisualizer : MonoBehaviour
         if (lineMaterial != null) return;
 
         Shader shader = Shader.Find("Hidden/Internal-Colored");
+        if (shader == null) { Debug.LogError("[ScentFieldDebugVisualizer] Shader 'Hidden/Internal-Colored' not found."); return; }
         lineMaterial = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
         lineMaterial.SetInt("_SrcBlend", (int)BlendMode.SrcAlpha);
         lineMaterial.SetInt("_DstBlend", (int)BlendMode.OneMinusSrcAlpha);
