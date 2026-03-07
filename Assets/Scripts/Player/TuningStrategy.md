@@ -781,7 +781,7 @@ The tuning system excludes playerScale. After tuning at a chosen scale, if you l
 - `TuningOverlay.cs` — Canvas-based UI overlay with waveform rendering
 - `AutoRespawner.cs` — coroutine-based destroy-and-respawn for init-only variable changes
 - `SpringParams.cs` — static helper class with ComputeStiffness/ComputeDamping
-- 16× TuningDimensionDef assets (one per player/centipede dimension, configured in Inspector)
+- 21× TuningDimensionDef assets (one per dimension, configured in Inspector; dims 14–15 and 17–21 are conditional on navigator mode)
 
 ### Edge Cases
 
