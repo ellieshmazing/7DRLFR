@@ -57,22 +57,44 @@ public class PlayerConfig : ScriptableObject
         new TorsoLayerDef { color = Color.white, localOffset = Vector2.zero, sortingOrder = 0 }
     };
 
-    [Header("Wiggle — Torso")]
-    [Min(0f)] public float torsoWiggleStiffness = 80f;
-    [Min(0f)] public float torsoWiggleDamping = 5f;
-    [Min(0.01f)] public float torsoWiggleMass = 1f;
+    [Header("Spring — Torso")]
+    [Tooltip("Natural frequency ω (rad/s); higher = snappier visual tracking")]
+    [Min(0.01f)] public float torsoFrequency = 8.94f;
+    [Tooltip("Damping ratio ζ; 0 = perpetual bounce, 1 = critically damped")]
+    [Min(0f)] public float torsoDampingRatio = 0.28f;
+    [Tooltip("Spring simulation mass; affects response to external forces without changing spring feel")]
+    [Min(0.01f)] public float torsoMass = 1f;
 
-    [Header("Wiggle — Hip")]
-    [Tooltip("Spring pulling the hip node toward the lowest foot Y")]
-    [Min(0f)] public float hipWiggleStiffness = 120f;
-    [Min(0f)] public float hipWiggleDamping = 10f;
-    [Min(0.01f)] public float hipWiggleMass = 1f;
+    public float TorsoStiffness => SpringParams.ComputeStiffness(torsoFrequency, torsoMass);
+    public float TorsoDamping   => SpringParams.ComputeDamping(torsoFrequency, torsoDampingRatio, torsoMass);
 
-    [Header("Wiggle — Feet")]
-    [Tooltip("Spring pulling each foot toward its target X and toward hip Y")]
-    [Min(0f)] public float footWiggleStiffness = 60f;
-    [Min(0f)] public float footWiggleDamping = 8f;
-    [Min(0.01f)] public float footWiggleMass = 0.5f;
+    [Header("Spring — Hip")]
+    [Tooltip("Natural frequency ω (rad/s); higher = torso snaps to foot level faster")]
+    [Min(0.01f)] public float hipFrequency = 10.95f;
+    [Tooltip("Damping ratio ζ; lower = more torso bob on landing")]
+    [Min(0f)] public float hipDampingRatio = 0.46f;
+    [Tooltip("Hip spring mass; also divides jump impulse")]
+    [Min(0.01f)] public float hipMass = 1f;
+
+    public float HipStiffness => SpringParams.ComputeStiffness(hipFrequency, hipMass);
+    public float HipDamping   => SpringParams.ComputeDamping(hipFrequency, hipDampingRatio, hipMass);
+
+    [Header("Spring — Feet")]
+    [Tooltip("Natural frequency ω (rad/s); higher = feet snap to formation faster")]
+    [Min(0.01f)] public float footFrequency = 10.95f;
+    [Tooltip("Damping ratio ζ; lower = feet wobble after direction changes")]
+    [Min(0f)] public float footDampingRatio = 0.73f;
+    [Tooltip("Foot spring simulation mass; independent of footMass (RB mass)")]
+    [Min(0.01f)] public float footSpringMass = 0.5f;
+
+    public float FootStiffness => SpringParams.ComputeStiffness(footFrequency, footSpringMass);
+    public float FootDamping   => SpringParams.ComputeDamping(footFrequency, footDampingRatio, footSpringMass);
+
+    [Header("Jump")]
+    [Tooltip("Base jump impulse (kg·m/s); actual velocity = jumpSpeed / footMass")]
+    [Min(0f)] public float jumpSpeed = 8f;
+    [Tooltip("Extra impulse per world-unit of hip compression")]
+    [Min(0f)] public float jumpOffsetFactor = 10f;
 
     [Header("Foot Physics")]
     [Tooltip("Mass of each foot Rigidbody2D. Affects gravity response, collision impulses, " +

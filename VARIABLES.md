@@ -9,9 +9,23 @@ Living documentation of all meaningful variables across the project. Updated whe
 | Variable | Type | Location | Description | Behavior | Affects |
 |---|---|---|---|---|---|
 | `moveForce` | `float` | `PlayerConfig` | Horizontal force applied per frame while WASD is held | Applied as `ForceMode2D.Force` each FixedUpdate; scales with frame rate via physics timestep | Torso horizontal acceleration; interacts with `linearDamping` for top speed feel |
-| `standHeight` | `float` | `PlayerConfig` | Target vertical distance from lowest foot visual to torso | Enforced each FixedUpdate via velocity override on torso Y | Controls how "tall" the player stands above its feet; affects visual silhouette |
-| `footSpreadX` | `float` | `PlayerConfig` | Half-distance between left and right foot nodes along X | Feet placed at `±footSpreadX` from hip node X each frame | Sets stance width |
-| `footOffsetY` | `float` | `PlayerConfig` | Vertical offset of foot nodes below the torso node | Applied as a downward bias when positioning foot nodes | Controls how far feet hang below the body at rest |
+| `maxSpeed` | `float` | `PlayerConfig` | Speed cap — AddForce stops when this magnitude is exceeded | Checked per-FixedUpdate from config SO | Top speed feel |
+| `standHeight` | `float` | `PlayerConfig` | Target vertical distance from lowest foot visual to torso, in source pixels | Enforced each FixedUpdate via velocity override on torso Y; converted to world units via `pixelToWorld` | Controls how "tall" the player stands above its feet; affects visual silhouette |
+| `footSpreadX` | `float` | `PlayerConfig` | Half-distance between left and right foot nodes along X, in source pixels | Feet placed at `±footSpreadX * pixelToWorld` from hip node X each frame | Sets stance width |
+| `footOffsetY` | `float` | `PlayerConfig` | Vertical offset of foot nodes below the torso node, in source pixels | Applied as a downward bias when positioning foot nodes | Controls how far feet hang below the body at rest |
+| `torsoFrequency` | `float` | `PlayerConfig` | Torso spring natural frequency ω (rad/s) | Higher = snappier visual tracking of torso node; `TorsoStiffness` and `TorsoDamping` computed from this | Spring response speed for torso visual |
+| `torsoDampingRatio` | `float` | `PlayerConfig` | Torso spring damping ratio ζ; 0 = perpetual bounce, 1 = critically damped | Lower = more overshoot/bounce; `TorsoDamping` computed from this | Torso visual oscillation character |
+| `torsoMass` | `float` | `PlayerConfig` | Torso spring simulation mass | Higher = more resistance to external forces without changing spring feel; `TorsoStiffness` and `TorsoDamping` recomputed | Torso visual inertia |
+| `hipFrequency` | `float` | `PlayerConfig` | Hip spring natural frequency ω (rad/s) | Higher = torso snaps to foot level faster after jumps/impacts | Hip spring response speed |
+| `hipDampingRatio` | `float` | `PlayerConfig` | Hip spring damping ratio ζ | Lower = more torso bob on landing, higher = planted/rigid feel | Hip spring oscillation character |
+| `hipMass` | `float` | `PlayerConfig` | Hip spring mass; also divides jump impulse | Higher = lower jump height from same jumpSpeed; `HipStiffness` and `HipDamping` recomputed | Hip spring inertia, jump height |
+| `footFrequency` | `float` | `PlayerConfig` | Foot spring natural frequency ω (rad/s) | Higher = feet snap to formation faster during movement | Foot spring response speed |
+| `footDampingRatio` | `float` | `PlayerConfig` | Foot spring damping ratio ζ | Lower = feet wobble after direction changes, higher = rigid formation | Foot spring oscillation character |
+| `footSpringMass` | `float` | `PlayerConfig` | Foot spring simulation mass; independent of footMass (RB mass) | Affects visual inertia only; `FootStiffness` and `FootDamping` recomputed | Foot visual inertia |
+| `jumpSpeed` | `float` | `PlayerConfig` | Base jump impulse (kg·m/s); actual velocity = jumpSpeed / footMass | Read per-frame from config by PlayerSkeletonRoot | Jump height at rest |
+| `jumpOffsetFactor` | `float` | `PlayerConfig` | Extra impulse per world-unit of hip compression | Read per-frame from config; rewards crouching before jumping | Jump height bonus from compression |
+| `footMass` | `float` | `PlayerConfig` | Mass of each foot Rigidbody2D | Set once at spawn (init-only); affects gravity, collision, jump height | Foot physics weight |
+| `footGravityScale` | `float` | `PlayerConfig` | Gravity scale for each foot Rigidbody2D | Set once at spawn (init-only); increase for snappier landings | Fall speed and landing snap |
 | `projectileDef` | `BallDefinition` | `PlayerConfig` | BallDefinition used for every shot | Passed to `Ball.Init` on each fire; determines sprite and mass of projectiles | Projectile appearance and physics weight |
 | `firingPointOffset` | `float` | `PlayerConfig` | Distance from arm pivot to barrel tip, in source pixels | Converted to world units (`* pixelToWorld`) and set as FiringPoint localPosition.x | Where projectiles spawn along the barrel |
 | `firingSpeed` | `float` | `PlayerConfig` | World units per second of fired projectiles | Applied as initial linearVelocity via `ball.Detach()` | Projectile travel speed |
@@ -27,7 +41,8 @@ Living documentation of all meaningful variables across the project. Updated whe
 
 | Variable | Type | Location | Description | Behavior | Affects |
 |---|---|---|---|---|---|
-| *(none yet)* | | | | | |
+| `config` | `PlayerConfig` | `PlayerSkeletonRoot` | Live config SO reference | All tunable values read per-frame from this SO | All player movement and jump parameters |
+| `pixelToWorld` | `float` | `PlayerSkeletonRoot` | Pixel-to-world conversion factor, cached at spawn | Multiplies pixel-space config values (standHeight) to world units | Correct scaling of config values |
 
 ---
 
@@ -35,7 +50,7 @@ Living documentation of all meaningful variables across the project. Updated whe
 
 | Variable | Type | Location | Description | Behavior | Affects |
 |---|---|---|---|---|---|
-| *(none yet)* | | | | | |
+| `config` | `PlayerConfig` | `PlayerHipNode` | Live config SO reference | HipStiffness, HipDamping, hipMass read per-frame | Hip spring response |
 
 ---
 
@@ -43,7 +58,8 @@ Living documentation of all meaningful variables across the project. Updated whe
 
 | Variable | Type | Location | Description | Behavior | Affects |
 |---|---|---|---|---|---|
-| *(none yet)* | | | | | |
+| `config` | `PlayerConfig` | `PlayerFeet` | Live config SO reference | FootStiffness, FootDamping, footSpringMass, footSpreadX read per-frame | Foot spring and formation |
+| `pixelToWorld` | `float` | `PlayerFeet` | Pixel-to-world conversion factor, cached at spawn | Multiplies footSpreadX to world units | Correct foot spacing |
 
 ---
 
@@ -76,9 +92,9 @@ Living documentation of all meaningful variables across the project. Updated whe
 | `followDistance` | `float` | `CentipedeConfig` | World-unit gap between each node along the trail | Each body node follows its parent at exactly this distance | Segment spacing, overall body length |
 | `nodeRadius` | `float` | `CentipedeConfig` | World-unit radius of each node's Ball visual | Passed to Ball.Init as `diameter = nodeRadius * 2`; sets localScale and CircleCollider2D | Visual size, collider size, effective mass (mass = baseMass × diameter²) |
 | `nodeColor` | `Color` | `CentipedeConfig` | Tint applied to every node's SpriteRenderer | Applied via Ball.SetTint after Init | Node appearance |
-| `wiggleStiffness` | `float` | `CentipedeConfig` | Spring pull strength on each Ball's spring-chase toward its SkeletonNode | Higher = tighter snap-back, less lag | How closely Ball visuals track skeleton positions |
-| `wiggleDamping` | `float` | `CentipedeConfig` | Oscillation decay on the spring | Higher = settles faster, less bouncy | Wobble duration after movement changes |
-| `wiggleMass` | `float` | `CentipedeConfig` | Spring simulation mass per node | Higher = more sluggish and heavy-feeling response | Visual inertia feel |
+| `wiggleFrequency` | `float` | `CentipedeConfig` | Ball spring natural frequency ω (rad/s) | Higher = balls track skeleton tightly; `WiggleStiffness` and `WiggleDamping` computed from this | Ball visual tracking tightness |
+| `wiggleDampingRatio` | `float` | `CentipedeConfig` | Ball spring damping ratio ζ | Lower = more wobble after impacts; `WiggleDamping` computed from this | Ball oscillation character |
+| `wiggleMass` | `float` | `CentipedeConfig` | Spring simulation mass per node | Higher = more sluggish response; affects detachment energy threshold | Visual inertia feel, detachment difficulty |
 | `ballDefinition` | `BallDefinition` | `CentipedeConfig` | Ball type used for all node visuals | Determines sprite and baseMass; falls back to assembler's defaultBallDefinition if null | Node sprite, mass |
 | `detachDistance` | `float` | `CentipedeConfig` | Distance a Ball must reach from its SkeletonNode to trigger detachment | CentipedeController checks per-ball each FixedUpdate; preemptive SHM energy check marks additional balls that are inevitably going to detach | Controls how hard a hit must be to break a centipede segment |
 | `speed` | `float` | `CentipedeConfig` | Arc traversal speed in world units/sec | CentipedePathfinder sets `rb.linearVelocity` magnitude to this value while following an arc | How fast the centipede closes on the player |
@@ -111,9 +127,9 @@ Living documentation of all meaningful variables across the project. Updated whe
 
 | Variable | Type | Location | Description | Behavior | Affects |
 |---|---|---|---|---|---|
-| `springStiffness` | `float` | `Ball` | Spring pull strength toward the linked SkeletonNode (Centipede Mode) | Higher = tighter visual tracking of skeleton position | How closely Ball follows node in centipede form |
-| `springDamping` | `float` | `Ball` | Oscillation decay on the Centipede spring | Higher = settles faster | Wobble and bounce after direction changes |
-| `springMass` | `float` | `Ball` | Spring simulation mass (Centipede Mode) | Higher = more sluggish and heavy-feeling | Visual inertia in centipede form |
+| `springStiffness` | `float` | `Ball` | Spring pull strength toward the linked SkeletonNode (Centipede Mode) | Higher = tighter visual tracking of skeleton position; dual-written by TuningManager | How closely Ball follows node in centipede form |
+| `springDamping` | `float` | `Ball` | Oscillation decay on the Centipede spring | Higher = settles faster; dual-written by TuningManager | Wobble and bounce after direction changes |
+| `springMass` | `float` | `Ball` | Spring simulation mass (Centipede Mode) | Higher = more sluggish and heavy-feeling; dual-written by TuningManager | Visual inertia in centipede form |
 
 ---
 
@@ -121,9 +137,21 @@ Living documentation of all meaningful variables across the project. Updated whe
 
 | Variable | Type | Location | Description | Behavior | Affects |
 |---|---|---|---|---|---|
-| `stiffness` | `float` | `NodeWiggle` | Spring pull strength toward parent transform | Higher = tighter snap-back | How closely visual child tracks parent node (player torso etc.) |
-| `damping` | `float` | `NodeWiggle` | Oscillation decay | Higher = settles faster | Wobble duration |
-| `mass` | `float` | `NodeWiggle` | Spring simulation mass | Higher = more sluggish | Visual inertia feel |
+| `stiffness` | `float` | `NodeWiggle` | Spring pull strength toward parent transform | Higher = tighter snap-back; dual-written by TuningManager from torso spring computed properties | How closely visual child tracks parent node (player torso etc.) |
+| `damping` | `float` | `NodeWiggle` | Oscillation decay | Higher = settles faster; dual-written by TuningManager | Wobble duration |
+| `mass` | `float` | `NodeWiggle` | Spring simulation mass | Higher = more sluggish; dual-written by TuningManager | Visual inertia feel |
+
+---
+
+## TuningManager (MonoBehaviour — dev-only singleton)
+
+| Variable | Type | Location | Description | Behavior | Affects |
+|---|---|---|---|---|---|
+| `sweepSpeedMultiplier` | `float` | `TuningManager` | Multiplier on sweep cycle speed | Lower = slower, more deliberate sweep; adjustable at runtime with `[` / `]` keys | Sweep pace |
+| `abSwapInterval` | `float` | `TuningManager` | Seconds per A/B exposure before auto-swap | Shorter = faster convergence, harder to evaluate | A/B comparison tempo |
+| `abEpsilon` | `float` | `TuningManager` | Fraction of total variable range at which A/B declares convergence | Lower = finer precision but more rounds | Convergence threshold |
+| `crossValPerturbation` | `float` | `TuningManager` | Random ± fraction applied during cross-validation | Lower = subtler variants | Cross-validation sensitivity |
+| `crossValVariants` | `int` | `TuningManager` | Number of perturbed configs to test | More = thorough but longer | Cross-validation coverage |
 
 ---
 

@@ -29,15 +29,6 @@ public class PlayerAssembler : MonoBehaviour
              "(should be 1 world unit diameter at scale 1)")]
     public Sprite defaultSprite;
 
-    [Header("Jump")]
-    [Tooltip("Base jump impulse (kg·m/s). Actual velocity = jumpSpeed / footMass — " +
-             "increase footMass without raising this and the player jumps lower.")]
-    public float jumpSpeed = 8f;
-
-    [Tooltip("Extra impulse per world-unit of hip-below-foot offset (kg·m/s per m). " +
-             "Tune alongside footMass and hipWiggleStiffness/Mass. Adjustable while live.")]
-    public float jumpOffsetFactor = 10f;
-
     // Source sprite width assumed for all sprites in this project.
     const float SPRITE_PX = 16f;
     // Pixels-per-unit set on the spritesheet import settings.
@@ -54,9 +45,6 @@ public class PlayerAssembler : MonoBehaviour
     public GameObject Spawn(PlayerConfig config, Vector2 position)
     {
         // --- Scale conversion ---
-        // pixelToWorld: multiplier to convert a source-pixel distance to world units.
-        // spriteLocalScale: localScale value that makes a 16px sprite appear playerScale wu wide.
-        // colRadius: CircleCollider2D.radius in local space so the collider matches the sprite circle.
         if (config.playerScale < 0.001f)
             Debug.LogWarning("[PlayerAssembler] PlayerConfig.playerScale is ~0 — " +
                              "all offsets and sprites will collapse to zero size. " +
@@ -64,7 +52,7 @@ public class PlayerAssembler : MonoBehaviour
 
         float pixelToWorld    = config.playerScale / SPRITE_PX;
         float spriteLocalScale = config.playerScale * PPU / SPRITE_PX;
-        float colRadius       = 0.5f * SPRITE_PX / PPU; // = 0.0625; constant regardless of playerScale
+        float colRadius       = 0.5f * SPRITE_PX / PPU;
 
         // Keep inactive until the full hierarchy is built so Awake/Start fire
         // only after all components are present.
@@ -84,24 +72,21 @@ public class PlayerAssembler : MonoBehaviour
 
         // --- Skeleton root / movement controller ---
         var playerRoot = root.AddComponent<PlayerSkeletonRoot>();
-        playerRoot.moveForce       = config.moveForce;
-        playerRoot.maxSpeed        = config.maxSpeed;
-        playerRoot.standHeight     = config.standHeight * pixelToWorld;
-        playerRoot.jumpSpeed       = jumpSpeed;
-        playerRoot.jumpOffsetFactor = jumpOffsetFactor;
+        playerRoot.config       = config;
+        playerRoot.pixelToWorld = pixelToWorld;
 
         // --- Torso visual (wiggles around torso node) ---
         // TorsoVisual is a plain parent with NodeWiggle; no SpriteRenderer of its own.
-        // Each TorsoLayerDef spawns a child GO that is a purely visual sprite.
+        // NodeWiggle keeps local fields — tuning system dual-writes to both SO and instance.
         var torsoVisualGO = new GameObject("TorsoVisual");
         torsoVisualGO.transform.SetParent(root.transform, false);
         torsoVisualGO.transform.localPosition = Vector3.zero;
         torsoVisualGO.transform.localScale    = Vector3.one;
 
         var torsoWiggle = torsoVisualGO.AddComponent<NodeWiggle>();
-        torsoWiggle.stiffness = config.torsoWiggleStiffness;
-        torsoWiggle.damping   = config.torsoWiggleDamping;
-        torsoWiggle.mass      = config.torsoWiggleMass;
+        torsoWiggle.stiffness = config.TorsoStiffness;
+        torsoWiggle.damping   = config.TorsoDamping;
+        torsoWiggle.mass      = config.torsoMass;
 
         var torsoLayerCtrl = torsoVisualGO.AddComponent<TorsoLayerController>();
 
@@ -126,7 +111,6 @@ public class PlayerAssembler : MonoBehaviour
         torsoLayerCtrl.config          = config;
 
         // --- Arm (orbits torso visual, points at mouse) ---
-        // Arm is a plain pivot GO with the orbit controller; sprite layers are children.
         var armGO = new GameObject("Arm");
         armGO.transform.SetParent(root.transform, false);
         armGO.transform.localPosition = Vector3.zero;
@@ -174,8 +158,6 @@ public class PlayerAssembler : MonoBehaviour
         gun.tempMaxDiameter = config.tempMaxProjectileDiameter;
 
         // --- Hip node ---
-        // footOffsetY places it below the torso at spawn (negative value expected).
-        // After the first FixedUpdate PlayerHipNode takes over Y from foot positions.
         float footOffsetWorldY = config.footOffsetY * pixelToWorld;
         Vector2 hipSpawnPos = new Vector2(position.x, position.y + footOffsetWorldY);
 
@@ -188,15 +170,11 @@ public class PlayerAssembler : MonoBehaviour
         hipSkelNode.localOffset = new Vector2(0f, footOffsetWorldY);
 
         var hipNodeScript = hipGO.AddComponent<PlayerHipNode>();
-        hipNodeScript.stiffness = config.hipWiggleStiffness;
-        hipNodeScript.damping   = config.hipWiggleDamping;
-        hipNodeScript.mass      = config.hipWiggleMass;
+        hipNodeScript.config = config;
 
-        var feetScript       = hipGO.AddComponent<PlayerFeet>();
-        feetScript.footSpreadX = config.footSpreadX * pixelToWorld;
-        feetScript.stiffness   = config.footWiggleStiffness;
-        feetScript.damping     = config.footWiggleDamping;
-        feetScript.mass        = config.footWiggleMass;
+        var feetScript = hipGO.AddComponent<PlayerFeet>();
+        feetScript.config       = config;
+        feetScript.pixelToWorld = pixelToWorld;
 
         // Wire hip node into PlayerSkeletonRoot
         playerRoot.hipNode = hipGO.transform;
@@ -252,8 +230,6 @@ public class PlayerAssembler : MonoBehaviour
         sr.color        = footDef.color;
         sr.sortingOrder = footDef.sortingOrder;
 
-        // colRadius in local space → (playerScale / 2) world units after scaling,
-        // matching the visual circle of the 16px sprite.
         var col = go.AddComponent<CircleCollider2D>();
         col.radius = colRadius;
 

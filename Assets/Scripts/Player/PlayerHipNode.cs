@@ -14,16 +14,17 @@ using UnityEngine;
 [DefaultExecutionOrder(-15)]
 public class PlayerHipNode : MonoBehaviour
 {
+    [Tooltip("Live config SO — HipStiffness, HipDamping, hipMass read per-frame")]
+    public PlayerConfig config;
+
     [Tooltip("Left foot visual Rigidbody2D (wired by PlayerAssembler)")]
     public Rigidbody2D leftFootRB;
 
     [Tooltip("Right foot visual Rigidbody2D (wired by PlayerAssembler)")]
     public Rigidbody2D rightFootRB;
 
-    [Header("Y Spring — pulls hip toward lowest foot Y")]
-    [Min(0f)] public float stiffness = 120f;
-    [Min(0f)] public float damping   = 10f;
-    [Min(0.01f)] public float mass   = 1f;
+    // Kept public so PlayerSkeletonRoot can read it for jump impulse division
+    public float mass => config != null ? config.hipMass : 1f;
 
     // Tracked separately from the transform so the spring has genuine
     // inertia — identical bookkeeping to NodeWiggle.currentPos / velocity.
@@ -37,7 +38,11 @@ public class PlayerHipNode : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (leftFootRB == null || rightFootRB == null) return;
+        if (leftFootRB == null || rightFootRB == null || config == null) return;
+
+        float stiffness = config.HipStiffness;
+        float damping   = config.HipDamping;
+        float m         = config.hipMass;
 
         float targetY = Mathf.Min(leftFootRB.position.y, rightFootRB.position.y);
 
@@ -46,7 +51,7 @@ public class PlayerHipNode : MonoBehaviour
         float displacement  = hipY - targetY;
         float springForce   = -stiffness * displacement;
         float dampingForce  = -damping * hipVelocityY;
-        float acceleration  = (springForce + dampingForce) / mass;
+        float acceleration  = (springForce + dampingForce) / m;
 
         hipVelocityY += acceleration * Time.fixedDeltaTime;
         hipY         += hipVelocityY * Time.fixedDeltaTime;

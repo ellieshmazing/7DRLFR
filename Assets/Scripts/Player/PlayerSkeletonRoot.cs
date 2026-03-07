@@ -20,25 +20,12 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(Rigidbody2D))]
 public class PlayerSkeletonRoot : MonoBehaviour
 {
-    [Header("Movement")]
-    [Tooltip("Horizontal force applied per frame while input is held")]
-    public float moveForce = 15f;
+    [Header("Config (set by PlayerAssembler)")]
+    [Tooltip("Live config SO — moveForce, maxSpeed, standHeight, jumpSpeed, jumpOffsetFactor read per-frame")]
+    public PlayerConfig config;
 
-    [Tooltip("Speed cap — AddForce stops when this magnitude is exceeded")]
-    public float maxSpeed = 5f;
-
-    [Header("Stance")]
-    [Tooltip("Vertical distance the torso sits above the hip node")]
-    public float standHeight = 0.6f;
-
-    [Header("Jump")]
-    [Tooltip("Base upward impulse (kg·m/s) applied when jumping at rest. " +
-             "Actual velocity = jumpSpeed / footMass, so heavier feet jump lower.")]
-    public float jumpSpeed = 8f;
-
-    [Tooltip("Extra impulse (kg·m/s) per world-unit of hip-below-foot offset (linear). " +
-             "Reflects stored spring energy. Actual extra velocity = offset * factor / footMass.")]
-    public float jumpOffsetFactor = 10f;
+    [Tooltip("Pixel-to-world conversion factor, cached at spawn")]
+    public float pixelToWorld;
 
     [Header("Wiring (set by PlayerAssembler)")]
     public Transform hipNode;
@@ -68,6 +55,15 @@ public class PlayerSkeletonRoot : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (config == null) return;
+
+        // Read tunable values from config SO each frame
+        float moveForce  = config.moveForce;
+        float maxSpeed   = config.maxSpeed;
+        float standHeight = config.standHeight * pixelToWorld;
+        float jumpSpeed   = config.jumpSpeed;
+        float jumpOffsetFactor = config.jumpOffsetFactor;
+
         // 1. Horizontal WASD movement
         var kb = Keyboard.current;
         float h = kb != null
@@ -91,10 +87,10 @@ public class PlayerSkeletonRoot : MonoBehaviour
         hipNode.position = new Vector3(rb.position.x, hipNode.position.y, 0f);
 
         // 4. Jump
-        TryJump();
+        TryJump(jumpSpeed, jumpOffsetFactor);
     }
 
-    void TryJump()
+    void TryJump(float jumpSpeed, float jumpOffsetFactor)
     {
         if (!_jumpRequested) return;
         _jumpRequested = false;

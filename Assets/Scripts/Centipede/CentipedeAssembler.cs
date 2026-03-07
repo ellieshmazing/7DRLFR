@@ -95,9 +95,9 @@ public class CentipedeAssembler : MonoBehaviour
 
         var ball = ballGO.AddComponent<Ball>();
 
-        // Spring tuning from CentipedeConfig
-        ball.springStiffness = config.wiggleStiffness;
-        ball.springDamping   = config.wiggleDamping;
+        // Spring tuning from CentipedeConfig (computed from frequency/dampingRatio)
+        ball.springStiffness = config.WiggleStiffness;
+        ball.springDamping   = config.WiggleDamping;
         ball.springMass      = config.wiggleMass;
 
         // diameter = radius × 2 (sprite authored at 1 world-unit diameter at scale 1)
