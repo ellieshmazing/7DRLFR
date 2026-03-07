@@ -17,9 +17,9 @@ using UnityEngine;
 ///     (or in addition to) default physics.
 ///
 /// Scale convention (project-wide):
-///   transform.localScale = Vector3.one * diameter
-///   CircleCollider2D.radius = 0.5f  (local space → diameter world units after scaling)
-///   Sprite is authored at 1 world-unit diameter at scale 1.
+///   localScale  = diameter / spriteWorldDiam   (spriteWorldDiam = sprite.rect.width / sprite.pixelsPerUnit)
+///   circ.radius = spriteWorldDiam / 2           (local space → diameter/2 world units after scaling)
+/// This is PPU-agnostic: the sprite always renders at exactly `diameter` world units.
 /// </summary>
 [DefaultExecutionOrder(0)]
 public class Ball : MonoBehaviour
@@ -65,10 +65,7 @@ public class Ball : MonoBehaviour
     /// Configures this ball. Safe to call before Awake fires (e.g. on inactive hierarchy).
     /// </summary>
     /// <param name="definition">Type data — sprite, base mass, optional overrides.</param>
-    /// <param name="diameter">
-    /// Diameter in world units. Sets transform.localScale = Vector3.one * diameter.
-    /// The sprite is authored at 1 world-unit diameter at scale 1.
-    /// </param>
+    /// <param name="diameter">Desired diameter in world units.</param>
     /// <param name="centipedeMode">True if this ball is a Centipede segment visual.</param>
     /// <param name="node">SkeletonNode this ball springs toward (Centipede Mode only).</param>
     public void Init(BallDefinition definition, float diameter, bool centipedeMode, SkeletonNode node = null)
@@ -79,17 +76,36 @@ public class Ball : MonoBehaviour
 
         sr.sprite = definition.sprite;
 
-        // Scale: sprite is authored at 1 world-unit diameter at scale 1
-        transform.localScale = Vector3.one * diameter;
-
-        // Local radius 0.5 → diameter/2 world units after scaling
-        circ.radius = 0.5f;
+        // Compute localScale so the sprite displays at exactly `diameter` world units,
+        // regardless of the sprite's authored PPU. circ.radius in local space is set to
+        // half the sprite's natural world diameter so world-space radius = diameter/2. ✓
+        float spriteWorldDiam  = SpriteWorldDiameter(definition.sprite);
+        transform.localScale   = Vector3.one * (diameter / spriteWorldDiam);
+        circ.radius            = spriteWorldDiam * 0.5f;
 
         // Mass scales with cross-sectional area for consistent feel across sizes
         rb.mass = definition.baseMass * diameter * diameter;
         rb.gravityScale = 0f;
 
         SetCentipedeMode(centipedeMode, node);
+    }
+
+    /// <summary>
+    /// Returns the localScale value that makes <paramref name="sprite"/> render at
+    /// exactly <paramref name="diameter"/> world units. Use this when you need to
+    /// drive scale externally (e.g. ProjectileScaleGrow) after calling Init.
+    /// Safe with a null sprite (falls back to returning diameter unchanged).
+    /// </summary>
+    public static float LocalScaleForDiameter(Sprite sprite, float diameter)
+    {
+        return diameter / SpriteWorldDiameter(sprite);
+    }
+
+    // Returns the sprite's natural world-space diameter at localScale = 1.
+    private static float SpriteWorldDiameter(Sprite sprite)
+    {
+        if (sprite == null || sprite.pixelsPerUnit <= 0f) return 1f;
+        return sprite.rect.width / sprite.pixelsPerUnit;
     }
 
     /// <summary>
