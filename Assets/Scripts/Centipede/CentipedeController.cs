@@ -19,6 +19,9 @@ public class CentipedeController : MonoBehaviour
     private List<SkeletonNode> nodes = new List<SkeletonNode>();
     private List<Ball> balls = new List<Ball>();
 
+    /// <summary>Exposes the config for runtime queries (e.g. AutoRespawner filtering).</summary>
+    public CentipedeConfig Config => config;
+
     // ── Initialization ────────────────────────────────────────────────────────
 
     /// <summary>

@@ -18,16 +18,21 @@ public class CentipedeConfig : ScriptableObject
     [Tooltip("Color applied to every node's SpriteRenderer")]
     public Color nodeColor = Color.white;
 
-    [Header("Wiggle")]
-    [Tooltip("Spring pull strength — higher = tighter snap-back")]
-    public float wiggleStiffness = 80f;
+    [Header("Spring — Wiggle")]
+    [Tooltip("Natural frequency ω (rad/s); higher = balls track skeleton tightly")]
+    [Min(0.01f)]
+    public float wiggleFrequency = 8.94f;
 
-    [Tooltip("Oscillation decay — higher = settles faster")]
-    public float wiggleDamping = 5f;
+    [Tooltip("Damping ratio ζ; lower = more wobble after impacts")]
+    [Min(0f)]
+    public float wiggleDampingRatio = 0.28f;
 
-    [Tooltip("Visual weight — higher = more sluggish, heavier feel")]
+    [Tooltip("Spring simulation mass; affects detachment energy threshold")]
     [Min(0.01f)]
     public float wiggleMass = 1f;
+
+    public float WiggleStiffness => SpringParams.ComputeStiffness(wiggleFrequency, wiggleMass);
+    public float WiggleDamping   => SpringParams.ComputeDamping(wiggleFrequency, wiggleDampingRatio, wiggleMass);
 
     [Header("Ball Type")]
     [Tooltip("BallDefinition used for every node's visual. Falls back to assembler default if null.")]

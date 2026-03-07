@@ -21,14 +21,11 @@ using UnityEngine;
 [DefaultExecutionOrder(0)]
 public class PlayerFeet : MonoBehaviour
 {
-    [Header("Formation")]
-    [Tooltip("Horizontal distance from hip node centre to each foot")]
-    [Min(0f)] public float footSpreadX = 0.2f;
+    [Tooltip("Live config SO — FootStiffness, FootDamping, footSpringMass, footSpreadX read per-frame")]
+    public PlayerConfig config;
 
-    [Header("Spring — both axes; X pulls to spread, Y pulls to hip Y")]
-    [Min(0f)] public float stiffness = 60f;
-    [Min(0f)] public float damping   = 8f;
-    [Min(0.01f)] public float mass   = 0.5f;
+    [Tooltip("Pixel-to-world conversion factor, cached at spawn")]
+    public float pixelToWorld;
 
     [Header("References (wired by PlayerAssembler)")]
     public Rigidbody2D leftFootRB;
@@ -36,20 +33,24 @@ public class PlayerFeet : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (leftFootRB == null || rightFootRB == null) return;
+        if (leftFootRB == null || rightFootRB == null || config == null) return;
+
+        float stiffness   = config.FootStiffness;
+        float damping     = config.FootDamping;
+        float mass        = config.footSpringMass;
+        float footSpreadX = config.footSpreadX * pixelToWorld;
 
         float hipX = transform.position.x;
         float hipY = transform.position.y;
 
-        UpdateFoot(leftFootRB,  hipX - footSpreadX, hipY);
-        UpdateFoot(rightFootRB, hipX + footSpreadX, hipY);
+        UpdateFoot(leftFootRB,  hipX - footSpreadX, hipY, stiffness, damping, mass);
+        UpdateFoot(rightFootRB, hipX + footSpreadX, hipY, stiffness, damping, mass);
     }
 
-    void UpdateFoot(Rigidbody2D foot, float targetX, float hipY)
+    void UpdateFoot(Rigidbody2D foot, float targetX, float hipY,
+                    float stiffness, float damping, float mass)
     {
         // X: spring-damper toward target horizontal position.
-        //    Using the same spring model as Y keeps the feel consistent and
-        //    replaces the old (targetX - pos) / dt rigid snap.
         float xDisplacement = foot.position.x - targetX;
         float xAcceleration = (-stiffness * xDisplacement - damping * foot.linearVelocity.x) / mass;
         float xVelocity     = foot.linearVelocity.x + xAcceleration * Time.fixedDeltaTime;
