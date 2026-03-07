@@ -10,26 +10,26 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 55b4f0af9a23acb4e9ff66a08b665e9f, type: 3}
-  m_Name: Debug
+  m_Name: smol_20260307_021525
   m_EditorClassIdentifier: Assembly-CSharp::CentipedeConfig
-  nodeCount: 10
-  followDistance: 0.77649724
-  nodeRadius: 1.005498
+  nodeCount: 20
+  followDistance: 0.2
+  nodeRadius: 0.1
   nodeColor: {r: 1, g: 1, b: 1, a: 1}
-  wiggleFrequency: 4.4585757
-  wiggleDampingRatio: 0.2750178
+  wiggleFrequency: 8.94
+  wiggleDampingRatio: 0.28
   wiggleMass: 1
   ballDefinition: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
-  detachDistance: 1.4030675
-  speed: 6.761471
-  minTurnRadius: 3.9242067
-  arcAngleVariance: 85.340225
-  replanInterval: 1.3218192
+  detachDistance: 0.5
+  speed: 1
+  minTurnRadius: 1.5
+  arcAngleVariance: 60
+  replanInterval: 2
   replanJitter: 0.4
   maxReplanAttempts: 8
-  waveAmplitude: 0.17524968
-  waveFrequency: 0.66645026
-  wavePhaseOffsetPerNode: 0.21714967
+  waveAmplitude: 1
+  waveFrequency: 2
+  wavePhaseOffsetPerNode: 0.3
   collisionCooldownDuration: 0.5
   targetArrivalRadius: 0.5
   headPrefab: {fileID: 7984257113175378315, guid: f693c407940147a4f8ce046820a22304, type: 3}

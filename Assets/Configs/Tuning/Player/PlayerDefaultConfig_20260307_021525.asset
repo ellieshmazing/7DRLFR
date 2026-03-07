@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c652bb2bcdf483d45b0b007d756c6fa8, type: 3}
-  m_Name: PlayerDefaultConfig
+  m_Name: PlayerDefaultConfig_20260307_021525
   m_EditorClassIdentifier: Assembly-CSharp::PlayerConfig
   playerScale: 1
   moveForce: 19.07023

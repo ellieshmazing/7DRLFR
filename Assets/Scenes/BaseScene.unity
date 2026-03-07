@@ -404,11 +404,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: c1c8a9bbef4fcb249b59920221246129, type: 2}
   tuningToggleKey: 4
   nextDimensionKey: 3
-  logKey: 98
+  logKey: 43
   lockKey: 2
   chooseAKey: 41
   chooseBKey: 42
-  saveProfileKey: 102
+  saveProfileKey: 45
   loadProfileKey: 103
   resetKey: 65
   skipDimensionKey: 52
@@ -419,6 +419,14 @@ MonoBehaviour:
   crossValVariants: 4
   overlayWidth: 320
   overlayOpacity: 0.85
+  playerSpawnPosition: {x: 0, y: 1}
+  centipedeSpawnPosition: {x: 0, y: 3}
+  centipedeSpawnCount: 1
+  centipedeSpawnSpacing: 3
+  abToneFreqA: 880
+  abToneFreqB: 550
+  abToneDuration: 0.12
+  abToneVolume: 10
 --- !u!4 &1050510440
 Transform:
   m_ObjectHideFlags: 0

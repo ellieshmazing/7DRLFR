@@ -65,6 +65,12 @@ public class TuningManager : MonoBehaviour
     [SerializeField] int centipedeSpawnCount = 1;
     [SerializeField] float centipedeSpawnSpacing = 3f;
 
+    [Header("AB Tones (Testing Only)")]
+    [SerializeField] float abToneFreqA = 880f;
+    [SerializeField] float abToneFreqB = 550f;
+    [SerializeField] float abToneDuration = 0.12f;
+    [SerializeField] float abToneVolume = 0.4f;
+
     // ── State ────────────────────────────────────────────────────────────────
 
     TuningPhase phase = TuningPhase.Idle;
@@ -86,6 +92,11 @@ public class TuningManager : MonoBehaviour
     List<Dictionary<string, float>> crossValSnapshots;
     int crossValIndex;
     bool crossValShowingBase;
+
+    // AB tones
+    AudioSource abToneSource;
+    AudioClip toneClipA;
+    AudioClip toneClipB;
 
     // Respawn
     bool respawnPending;
@@ -133,6 +144,11 @@ public class TuningManager : MonoBehaviour
         Instance = this;
 
         ValidateDimensions();
+
+        abToneSource = gameObject.AddComponent<AudioSource>();
+        abToneSource.playOnAwake = false;
+        toneClipA = GenerateToneClip(abToneFreqA, abToneDuration);
+        toneClipB = GenerateToneClip(abToneFreqB, abToneDuration);
     }
 
     void OnDestroy()
@@ -245,6 +261,15 @@ public class TuningManager : MonoBehaviour
         SweepNormalized = normalized;
         float value = Mathf.Lerp(v.min, v.max, normalized);
 
+        if (kb[logKey].wasPressedThisFrame)
+            loggedValues.Add(value);
+
+        if (kb[lockKey].wasPressedThisFrame)
+        {
+            TransitionToAB();
+            return;
+        }
+
         // Throttle respawn for init-only variables: quantize to 1% steps
         if (v.requiresRespawn)
         {
@@ -261,12 +286,6 @@ public class TuningManager : MonoBehaviour
         }
 
         ApplyValue(v, value);
-
-        if (kb[logKey].wasPressedThisFrame)
-            loggedValues.Add(value);
-
-        if (kb[lockKey].wasPressedThisFrame)
-            TransitionToAB();
     }
 
     void TransitionToAB()
@@ -305,6 +324,7 @@ public class TuningManager : MonoBehaviour
         {
             abSwapTimer = 0f;
             showingA = !showingA;
+            PlayABTone(showingA);
             ApplyValue(CurrentVariable, showingA ? abA : abB);
         }
 
@@ -340,6 +360,7 @@ public class TuningManager : MonoBehaviour
             abB = abLo + 2f * (abHi - abLo) / 3f;
             abSwapTimer = 0f;
             showingA = true;
+            PlayABTone(true);
             ApplyValue(v, abA);
         }
     }
@@ -609,7 +630,10 @@ public class TuningManager : MonoBehaviour
         if (activeSpawnCoroutine != null)
             StopCoroutine(activeSpawnCoroutine);
 
-        switch (GetEntityType(CurrentDimension))
+        var entityType = GetEntityType(CurrentDimension);
+        CleanupOppositeEntities(entityType);
+
+        switch (entityType)
         {
             case EntityType.Player:
                 activeSpawnCoroutine = StartCoroutine(
@@ -622,6 +646,37 @@ public class TuningManager : MonoBehaviour
                     positions[i] = centipedeSpawnPosition + Vector2.right * i * centipedeSpawnSpacing;
                 activeSpawnCoroutine = StartCoroutine(
                     AutoRespawner.SpawnFreshCentipedes(centipedeConfig, centipedeAssembler, positions));
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Destroys entities that belong to the opposite type when switching dimensions,
+    /// and always destroys free-flying projectile balls.
+    /// </summary>
+    void CleanupOppositeEntities(EntityType spawningType)
+    {
+        // Free balls (projectiles / ejected segments) — always clear these on any dimension switch
+        foreach (var ball in FindObjectsByType<Ball>(FindObjectsSortMode.None))
+        {
+            var rb = ball.GetComponent<Rigidbody2D>();
+            if (rb != null && rb.bodyType == RigidbodyType2D.Dynamic)
+                Destroy(ball.gameObject);
+        }
+
+        switch (spawningType)
+        {
+            case EntityType.Centipede:
+                // Destroy the player when entering a centipede dimension
+                var player = FindAnyObjectByType<PlayerSkeletonRoot>();
+                if (player != null)
+                    Destroy(player.gameObject);
+                break;
+
+            case EntityType.Player:
+                // Destroy all centipedes when entering a player dimension
+                foreach (var root in FindObjectsByType<SkeletonRoot>(FindObjectsSortMode.None))
+                    Destroy(root.gameObject);
                 break;
         }
     }
@@ -646,6 +701,7 @@ public class TuningManager : MonoBehaviour
         abSwapTimer = 0f;
         showingA = true;
         abRoundCount = 0;
+        PlayABTone(true);
         ApplyValue(CurrentVariable, abA);
     }
 
@@ -715,6 +771,32 @@ public class TuningManager : MonoBehaviour
         TriggerDimensionSpawn();
         EnterSweep();
         Debug.Log($"[TuningManager] Reset dimension {dimensionIndex}: {dim.dimensionName}");
+    }
+
+    // ── AB Tones (testing) ───────────────────────────────────────────────────
+
+    void PlayABTone(bool isA)
+    {
+        abToneSource.PlayOneShot(isA ? toneClipA : toneClipB, abToneVolume);
+    }
+
+    AudioClip GenerateToneClip(float frequency, float duration)
+    {
+        int sampleRate = AudioSettings.outputSampleRate > 0 ? AudioSettings.outputSampleRate : 44100;
+        int sampleCount = Mathf.RoundToInt(sampleRate * duration);
+        var clip = AudioClip.Create("ABTone", sampleCount, 1, sampleRate, false);
+        float[] samples = new float[sampleCount];
+        float attackSec = 0.005f;
+        float releaseSec = 0.02f;
+        for (int i = 0; i < sampleCount; i++)
+        {
+            float t = (float)i / sampleRate;
+            float attack  = Mathf.Clamp01(t / attackSec);
+            float release = Mathf.Clamp01((duration - t) / releaseSec);
+            samples[i] = Mathf.Sin(2f * Mathf.PI * frequency * t) * attack * release;
+        }
+        clip.SetData(samples, 0);
+        return clip;
     }
 
     // ── Validation ───────────────────────────────────────────────────────────
