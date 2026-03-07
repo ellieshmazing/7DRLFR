@@ -77,13 +77,14 @@ Concepts:
 
 ---
 Date: 2026-03-07
-Topic: FootMovement — procedural walking FSM
-Concepts:
-  - **Finite State Machine per limb**: Decomposing a character's leg behavior into discrete states (Locked/Stepping/Airborne) rather than a single spring makes each state's intent explicit and eliminates the contradictions that arise when physics, animation, and grounding logic fight over the same Rigidbody. The gait constraint (only one foot Stepping at a time) emerges naturally as a single predicate rather than a complex priority system.
-  - **Stable reference vs. raw physics**: The hip spring targets a `lockPosition` (discrete, only updated at state transitions) rather than the raw `rb.position` of the foot (jittery, one physics step behind). This is the core tradeoff in procedural animation — when to trust the physics simulation and when to maintain your own authoritative bookkeeping value.
----
-Date: 2026-03-07
 Topic: URP render pipeline compatibility for GL debug overlay
 Concepts:
   - **Render Pipeline Callbacks**: Built-in RP dispatches OnRenderObject to all active MonoBehaviours; URP does not. URP exposes RenderPipelineManager.endCameraRendering as the equivalent hook, fired once per camera per frame from the SRP internals. Debug tools that target URP must subscribe to this event rather than override the legacy message.
   - **Explicit GL Matrix Setup**: Built-in RP pre-loads projection × view into the GL matrix stack before OnRenderObject fires. The URP endCameraRendering callback makes no such guarantee — projection and modelview must be set explicitly via GL.LoadProjectionMatrix and GL.modelview before issuing any world-space GL draw calls.
+
+---
+Date: 2026-03-07
+Topic: FootMovement — procedural walking FSM
+Concepts:
+  - **Finite State Machine per limb**: Decomposing a character's leg behavior into discrete states (Locked/Stepping/Airborne) rather than a single spring makes each state's intent explicit and eliminates the contradictions that arise when physics, animation, and grounding logic fight over the same Rigidbody. The gait constraint (only one foot Stepping at a time) emerges naturally as a single predicate rather than a complex priority system.
+  - **Kinematic override vs. physics**: Locking a foot means zeroing its velocity and snapping its position every FixedUpdate — effectively making a Dynamic RB behave kinematically without changing its type. This lets the foot participate in collision detection (still resolves contacts) while the locomotion system has total positional authority. The stable `lockPosition` bookkeeping value is what lets the hip spring target a non-jittery reference — when to trust the simulation vs. maintain your own authoritative state is a core procedural animation tradeoff.

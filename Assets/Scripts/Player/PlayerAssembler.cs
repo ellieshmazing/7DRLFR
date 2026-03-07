@@ -188,21 +188,26 @@ public class PlayerAssembler : MonoBehaviour
 
         // --- FootMovement (on HipNode, replaces PlayerFeet) ---
         var footMovement = hipGO.AddComponent<FootMovement>();
-        footMovement.config            = config;
-        footMovement.pixelToWorld      = pixelToWorld;
-        footMovement.torsoRB           = torsoRB;
-        footMovement.leftFootRB        = leftFootRB;
-        footMovement.rightFootRB       = rightFootRB;
-        footMovement.leftFootContact   = leftFootRB.GetComponent<FootContact>();
-        footMovement.rightFootContact  = rightFootRB.GetComponent<FootContact>();
+        footMovement.config             = config;
+        footMovement.pixelToWorld       = pixelToWorld;
+        footMovement.torsoRB            = torsoRB;
+        footMovement.footColliderRadius = colRadius;
+        footMovement.leftFootRB         = leftFootRB;
+        footMovement.rightFootRB        = rightFootRB;
+        footMovement.leftFootContact    = leftFootRB.GetComponent<FootContact>();
+        footMovement.rightFootContact   = rightFootRB.GetComponent<FootContact>();
 
-        // Wire FootMovement into hip and root
+        // Wire into hip node and skeleton root
         hipNodeScript.footMovement = footMovement;
+        hipNodeScript.leftFootRB   = leftFootRB;
+        hipNodeScript.rightFootRB  = rightFootRB;
 
-        playerRoot.hipNodeScript = hipNodeScript;
-        playerRoot.footMovement  = footMovement;
-        playerRoot.leftFootRB    = leftFootRB;
-        playerRoot.rightFootRB   = rightFootRB;
+        playerRoot.hipNodeScript    = hipNodeScript;
+        playerRoot.footMovement     = footMovement;
+        playerRoot.leftFootRB       = leftFootRB;
+        playerRoot.rightFootRB      = rightFootRB;
+        playerRoot.leftFootContact  = leftFootRB.GetComponent<FootContact>();
+        playerRoot.rightFootContact = rightFootRB.GetComponent<FootContact>();
 
         // Activating triggers Awake then Start on the complete hierarchy
         root.SetActive(true);

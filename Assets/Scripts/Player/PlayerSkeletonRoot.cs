@@ -28,11 +28,13 @@ public class PlayerSkeletonRoot : MonoBehaviour
     public float pixelToWorld;
 
     [Header("Wiring (set by PlayerAssembler)")]
-    public Transform hipNode;
+    public Transform     hipNode;
     public PlayerHipNode hipNodeScript;
-    public FootMovement footMovement;
-    public Rigidbody2D leftFootRB;
-    public Rigidbody2D rightFootRB;
+    public FootMovement  footMovement;
+    public Rigidbody2D   leftFootRB;
+    public Rigidbody2D   rightFootRB;
+    public FootContact   leftFootContact;
+    public FootContact   rightFootContact;
 
     private Rigidbody2D rb;
     private bool _jumpRequested;
@@ -97,29 +99,20 @@ public class PlayerSkeletonRoot : MonoBehaviour
         if (leftFootRB == null || rightFootRB == null) return;
         if (footMovement == null || !footMovement.CanJump()) return;
 
-        // Hip offset: positive when the hip node has been pulled below the lowest locked foot
-        // (spring compression = stored potential energy).
+        // Hip offset: positive when hip spring is compressed below the lowest locked foot.
         float lowestFootY = footMovement.GetLockedFootY();
         float hipOffset   = Mathf.Max(0f, lowestFootY - hipNode.position.y);
 
-        // Total impulse (kg·m/s) — linear in hip offset, physically grounded in
-        // spring PE→KE: v_extra = offset * sqrt(k/m), so jumpOffsetFactor ≈ sqrt(k/m).
         float jumpImpulse = jumpSpeed + hipOffset * jumpOffsetFactor;
-
-        // Convert impulse to velocity for each body: v = J / m.
-        // Heavier feet produce less velocity from the same impulse, naturally
-        // reducing jump height without touching the jumpSpeed parameter.
         float footJumpVel = jumpImpulse / leftFootRB.mass;
 
         leftFootRB.linearVelocity  = new Vector2(leftFootRB.linearVelocity.x, footJumpVel);
         rightFootRB.linearVelocity = new Vector2(rightFootRB.linearVelocity.x, footJumpVel);
 
-        // Seed the hip spring's internal velocity using the same impulse ÷ hip mass,
-        // so it rises with the feet at a consistent rate regardless of spring tuning.
         if (hipNodeScript != null)
             hipNodeScript.ApplyJumpImpulse(jumpImpulse / hipNodeScript.mass);
 
-        // Release foot locks so they fly freely.
+        // Release foot locks so FootMovement does not re-zero the jump velocities.
         footMovement.OnJump();
     }
 }

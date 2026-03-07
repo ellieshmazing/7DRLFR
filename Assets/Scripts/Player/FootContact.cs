@@ -26,5 +26,5 @@ public class FootContact : MonoBehaviour
         lastContactNormal = col.GetContact(0).normal;
     }
 
-    void OnCollisionExit2D(Collision2D col) => _contactCount = Mathf.Max(0, _contactCount - 1);
+    void OnCollisionExit2D(Collision2D _) => _contactCount = Mathf.Max(0, _contactCount - 1);
 }

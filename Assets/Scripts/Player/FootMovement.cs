@@ -1,93 +1,105 @@
 using UnityEngine;
 
 /// <summary>
-/// Procedural walking FSM. Three-state per-foot machine (Locked / Stepping / Airborne)
-/// that replaces PlayerFeet's static spring-to-formation behavior.
+/// Procedural walking system — replaces PlayerFeet. Each foot runs a three-state
+/// FSM (Locked / Stepping / Airborne). Locked feet hold position kinematically.
+/// Stepping feet arc between start and target via velocity override. Airborne feet
+/// are gravity + spring driven, matching the old PlayerFeet spring parameters.
 ///
-/// Locked   — foot is planted; holds rb.position exactly at lockPosition each frame.
-/// Stepping — foot travels along a sinusoidal arc from start to target.
-/// Airborne — foot is physics-driven with a spring toward the hip spread position.
-///
-/// Provides GetGroundReferenceY() for PlayerHipNode and CanJump()/OnJump() for
-/// PlayerSkeletonRoot. Runs at -20, before PlayerHipNode (-15).
-///
-/// Attach to the HipNode GO alongside PlayerHipNode.
+/// Runs at order -20 so PlayerHipNode (-15) reads a fresh GetGroundReferenceY()
+/// each frame. Attach to HipNode GO alongside PlayerHipNode.
+/// Wired entirely by PlayerAssembler.
 /// </summary>
 [DefaultExecutionOrder(-20)]
 public class FootMovement : MonoBehaviour
 {
-    [Header("Config (set by PlayerAssembler)")]
+    [Tooltip("Live config SO — all foot movement params read per-frame")]
     public PlayerConfig config;
+
+    [Tooltip("Pixel-to-world conversion factor, cached at spawn")]
     public float pixelToWorld;
 
-    [Header("Wiring (set by PlayerAssembler)")]
+    [Tooltip("Torso Rigidbody2D — source of velocity and world position")]
     public Rigidbody2D torsoRB;
+
+    [Tooltip("Foot circle collider radius in world units — offsets step targets onto surfaces")]
+    public float footColliderRadius;
+
+    [Header("References (wired by PlayerAssembler)")]
     public Rigidbody2D leftFootRB;
     public Rigidbody2D rightFootRB;
-    public FootContact leftFootContact;
-    public FootContact rightFootContact;
+    public FootContact  leftFootContact;
+    public FootContact  rightFootContact;
 
-    // ---- Internal state -------------------------------------------------
+    // -------------------------------------------------------------------------
+    // Internal types
+    // -------------------------------------------------------------------------
 
-    enum FootState { Locked, Stepping, Airborne }
+    private enum FootState { Locked, Stepping, Airborne }
 
-    struct FootData
+    private class FootData
     {
         public Rigidbody2D rb;
-        public FootContact contact;
-        public FootState   state;
-        public Vector2     lockPosition;
-        public Vector2     stepStartPos;
-        public Vector2     stepTargetPos;
-        public float       stepProgress;
-        public float       stepDuration;
-        public int         side;   // -1 = left, +1 = right
+        public FootContact  contact;
+        public FootState    state = FootState.Airborne;
+        public Vector2      lockPosition;
+        public Vector2      stepStartPos;
+        public Vector2      stepTargetPos;
+        public float        stepProgress;
+        public float        stepDuration;
+        public int          side; // -1 = left, +1 = right
     }
 
-    FootData _left, _right;
-    float    _footColRadius;
-    int      _notPlayerMask;
+    private FootData _left;
+    private FootData _right;
+    private int      _notPlayerMask;
 
-    // ---- Unity lifecycle ------------------------------------------------
+    // -------------------------------------------------------------------------
+    // Lifecycle
+    // -------------------------------------------------------------------------
 
     void Awake()
     {
-        int layer = LayerMask.NameToLayer("Player");
-        _notPlayerMask = layer >= 0 ? ~(1 << layer) : ~0;
-
-        // Derive world-space collider radius from the actual CircleCollider2D.
-        var col = leftFootRB != null ? leftFootRB.GetComponent<CircleCollider2D>() : null;
-        _footColRadius = col != null ? col.radius * leftFootRB.transform.lossyScale.x : 0f;
-
-        _left  = new FootData { rb = leftFootRB,  contact = leftFootContact,  side = -1 };
-        _right = new FootData { rb = rightFootRB, contact = rightFootContact, side =  1 };
+        _notPlayerMask = ~LayerMask.GetMask("Player");
+        _left  = new FootData { side = -1, state = FootState.Airborne };
+        _right = new FootData { side = +1, state = FootState.Airborne };
     }
 
     void Start()
     {
-        // Begin airborne — feet lock on first ground contact.
-        TransitionToAirborne(ref _left);
-        TransitionToAirborne(ref _right);
+        _left.rb       = leftFootRB;
+        _left.contact  = leftFootContact;
+        _right.rb      = rightFootRB;
+        _right.contact = rightFootContact;
     }
 
     void FixedUpdate()
     {
         if (config == null || torsoRB == null) return;
 
-        Vector2 vel      = torsoRB.linearVelocity;
-        Vector2 torsoPos = torsoRB.position;
-        float   dt       = Time.fixedDeltaTime;
+        float   dt     = Time.fixedDeltaTime;
+        Vector2 vel    = torsoRB.linearVelocity;
+        float   torsoX = torsoRB.position.x;
+        float   torsoY = torsoRB.position.y;
 
-        UpdateFoot(ref _left,  ref _right, vel, torsoPos, dt);
-        UpdateFoot(ref _right, ref _left,  vel, torsoPos, dt);
-        HandleDirectionReversal(vel);
+        // Trailing foot (side * sign(vel.x) < 0) processes first — tie-break rule.
+        bool     leftFirst = _left.side * Mathf.Sign(vel.x) <= 0;
+        FootData first     = leftFirst ? _left  : _right;
+        FootData second    = leftFirst ? _right : _left;
+
+        UpdateFoot(first,  second, vel, torsoX, torsoY, dt);
+        UpdateFoot(second, first,  vel, torsoX, torsoY, dt);
+
+        HandleDirectionReversal(vel, torsoX, torsoY);
     }
 
-    // ---- Public API -----------------------------------------------------
+    // -------------------------------------------------------------------------
+    // Public API
+    // -------------------------------------------------------------------------
 
     /// <summary>
-    /// Y coordinate PlayerHipNode should spring toward.
-    /// Uses locked foot positions for stability; falls back to RB positions when airborne.
+    /// Y reference for PlayerHipNode's spring target. Returns the lowest locked
+    /// foot's Y; falls back to raw RB positions when both feet are airborne.
     /// </summary>
     public float GetGroundReferenceY()
     {
@@ -96,149 +108,152 @@ public class FootMovement : MonoBehaviour
         if (ll && rl) return Mathf.Min(_left.lockPosition.y, _right.lockPosition.y);
         if (ll)       return _left.lockPosition.y;
         if (rl)       return _right.lockPosition.y;
-        return Mathf.Min(leftFootRB.position.y, rightFootRB.position.y);
+        if (_left.rb != null && _right.rb != null)
+            return Mathf.Min(_left.rb.position.y, _right.rb.position.y);
+        return transform.position.y;
     }
 
-    /// <summary>Returns true if at least one foot is planted (Locked).</summary>
+    /// <summary>Returns true if at least one foot is Locked (jump is valid).</summary>
     public bool CanJump() =>
         _left.state == FootState.Locked || _right.state == FootState.Locked;
 
-    /// <summary>World-space Y of the lowest locked foot, for jump impulse calculation.</summary>
+    /// <summary>Y of the lowest locked foot; matches GetGroundReferenceY semantics.</summary>
     public float GetLockedFootY() => GetGroundReferenceY();
 
-    /// <summary>Called by PlayerSkeletonRoot after applying jump impulse. Releases all locks.</summary>
+    /// <summary>
+    /// Called by PlayerSkeletonRoot immediately after applying the jump impulse.
+    /// Releases all foot locks so feet can fly freely under the impulse velocity.
+    /// </summary>
     public void OnJump()
     {
-        TransitionToAirborne(ref _left);
-        TransitionToAirborne(ref _right);
+        TransitionToAirborne(_left);
+        TransitionToAirborne(_right);
     }
 
-    // ---- Per-foot FSM ---------------------------------------------------
+    // -------------------------------------------------------------------------
+    // Per-foot state machine
+    // -------------------------------------------------------------------------
 
-    void UpdateFoot(ref FootData foot, ref FootData other,
-                    Vector2 vel, Vector2 torsoPos, float dt)
+    private void UpdateFoot(FootData foot, FootData other,
+                            Vector2 vel, float torsoX, float torsoY, float dt)
     {
         switch (foot.state)
         {
             case FootState.Locked:
-            {
-                // Hold position — override physics every frame.
                 foot.rb.position       = foot.lockPosition;
                 foot.rb.linearVelocity = Vector2.zero;
                 foot.rb.gravityScale   = 0f;
 
                 if (!foot.contact.isGrounded)
                 {
-                    TransitionToAirborne(ref foot);
+                    TransitionToAirborne(foot);
                     break;
                 }
 
-                float idealX = torsoPos.x + foot.side * config.footSpreadX * pixelToWorld;
-
                 if (Mathf.Abs(vel.x) > config.idleSpeedThreshold)
                 {
-                    // Step when foot lags too far behind the ideal formation position.
+                    // Walking — step when foot falls behind its ideal position.
+                    float idealX       = torsoX + foot.side * config.footSpreadX * pixelToWorld;
                     float signedBehind = (idealX - foot.lockPosition.x) * Mathf.Sign(vel.x);
                     if (signedBehind > config.strideTriggerDistance * pixelToWorld
                         && other.state != FootState.Stepping)
-                        StartStep(ref foot, vel, torsoPos, null);
+                    {
+                        StartStep(foot, vel, torsoX, torsoY);
+                    }
                 }
                 else
                 {
-                    // Idle: correct foot toward neutral spread if displaced.
+                    // Idle — correct feet back toward neutral spread, one at a time.
+                    float idealX       = torsoX + foot.side * config.footSpreadX * pixelToWorld;
                     float displacement = Mathf.Abs(foot.lockPosition.x - idealX);
                     if (displacement > config.footSpreadX * pixelToWorld * 0.3f
                         && other.state != FootState.Stepping)
                     {
-                        float groundY = RaycastGroundY(idealX, torsoPos, foot.lockPosition.y);
-                        StartStep(ref foot, vel, torsoPos, new Vector2(idealX, groundY));
+                        float groundY = RaycastGroundY(idealX, torsoY, foot.lockPosition.y);
+                        StartStep(foot, vel, torsoX, torsoY, new Vector2(idealX, groundY));
                     }
                 }
                 break;
-            }
 
             case FootState.Stepping:
-                AdvanceStep(ref foot, dt);
+                AdvanceStep(foot, dt);
                 break;
 
             case FootState.Airborne:
-            {
                 foot.rb.gravityScale = config.footGravityScale;
-                ApplyAirborneSpring(ref foot, dt);
+
+                // Spring toward (hipX ± footSpreadX, hipY) — reuses foot spring params.
+                float hipX      = transform.position.x;
+                float hipY      = transform.position.y;
+                float stiffness = config.FootStiffness;
+                float damping   = config.FootDamping;
+                float mass      = config.footSpringMass;
+                float targetX   = hipX + foot.side * config.footSpreadX * pixelToWorld;
+
+                float xDisp  = foot.rb.position.x - targetX;
+                float yDisp  = foot.rb.position.y - hipY;
+                float xAccel = (-stiffness * xDisp - damping * foot.rb.linearVelocity.x) / mass;
+                float yAccel = (-stiffness * yDisp - damping * foot.rb.linearVelocity.y) / mass;
+
+                foot.rb.linearVelocity = new Vector2(
+                    foot.rb.linearVelocity.x + xAccel * dt,
+                    foot.rb.linearVelocity.y + yAccel * dt);
 
                 if (foot.contact.isGrounded && IsWalkable(foot.contact.lastContactNormal))
                 {
-                    LockFoot(ref foot, foot.rb.position);
+                    LockFoot(foot, foot.rb.position);
 
-                    // Catch-step: if other foot is also airborne, aim it toward neutral.
+                    // Catch-step: if other foot is also airborne, step it to neutral.
                     if (other.state == FootState.Airborne)
                     {
-                        float ox = torsoPos.x + other.side * config.footSpreadX * pixelToWorld;
-                        float oy = RaycastGroundY(ox, torsoPos, other.rb.position.y);
-                        StartStep(ref other, vel, torsoPos, new Vector2(ox, oy));
+                        float otherIdealX = transform.position.x
+                                          + other.side * config.footSpreadX * pixelToWorld;
+                        float groundY = RaycastGroundY(otherIdealX, torsoY, other.rb.position.y);
+                        StartStep(other, vel, torsoX, torsoY, new Vector2(otherIdealX, groundY));
                     }
                 }
                 break;
-            }
         }
     }
 
-    void AdvanceStep(ref FootData foot, float dt)
-    {
-        foot.stepProgress = Mathf.Min(foot.stepProgress + dt / foot.stepDuration, 1f);
+    // -------------------------------------------------------------------------
+    // State transitions
+    // -------------------------------------------------------------------------
 
-        Vector2 arcPos = EvaluateArc(foot.stepStartPos, foot.stepTargetPos,
-                                     foot.stepProgress, config.stepHeight * pixelToWorld);
-        foot.rb.linearVelocity = (arcPos - foot.rb.position) / dt;
-
-        // Early lock: walked onto a surface mid-arc.
-        if (foot.contact.isGrounded && IsWalkable(foot.contact.lastContactNormal))
-        {
-            LockFoot(ref foot, foot.rb.position);
-            return;
-        }
-
-        if (foot.stepProgress >= 1f)
-            LockFoot(ref foot, foot.stepTargetPos);
-    }
-
-    void ApplyAirborneSpring(ref FootData foot, float dt)
-    {
-        // Spring toward hip spread position (same params as old PlayerFeet).
-        float hipX = transform.position.x;
-        float hipY = transform.position.y;
-
-        float targetX   = hipX + foot.side * config.footSpreadX * pixelToWorld;
-        float stiffness = config.FootStiffness;
-        float damping   = config.FootDamping;
-        float mass      = config.footSpringMass;
-
-        float xDisp  = foot.rb.position.x - targetX;
-        float xAccel = (-stiffness * xDisp  - damping * foot.rb.linearVelocity.x) / mass;
-        float xVel   = foot.rb.linearVelocity.x + xAccel * dt;
-
-        float yDisp  = foot.rb.position.y - hipY;
-        float yAccel = (-stiffness * yDisp  - damping * foot.rb.linearVelocity.y) / mass;
-        float yVel   = foot.rb.linearVelocity.y + yAccel * dt;
-
-        foot.rb.linearVelocity = new Vector2(xVel, yVel);
-    }
-
-    // ---- Transitions ----------------------------------------------------
-
-    void StartStep(ref FootData foot, Vector2 vel, Vector2 torsoPos, Vector2? targetOverride)
+    private void StartStep(FootData foot, Vector2 vel,
+                           float torsoX, float torsoY, Vector2? target = null)
     {
         foot.stepStartPos  = foot.rb.position;
-        foot.stepTargetPos = targetOverride ?? ComputeStepTarget(ref foot, vel, torsoPos);
+        foot.stepTargetPos = target ?? ComputeStepTarget(foot, vel, torsoX, torsoY);
         foot.stepProgress  = 0f;
-        float speed = Mathf.Abs(vel.x);
-        foot.stepDuration  = Mathf.Max(config.minStepDuration,
-                                       config.baseStepDuration / (1f + speed * config.stepSpeedScale));
+        foot.stepDuration  = Mathf.Max(
+            config.minStepDuration,
+            config.baseStepDuration / (1f + Mathf.Abs(vel.x) * config.stepSpeedScale));
         foot.state           = FootState.Stepping;
         foot.rb.gravityScale = 0f;
     }
 
-    void LockFoot(ref FootData foot, Vector2 worldPos)
+    private void AdvanceStep(FootData foot, float dt)
+    {
+        foot.stepProgress = Mathf.Min(foot.stepProgress + dt / foot.stepDuration, 1f);
+
+        Vector2 arcPos = EvaluateArc(
+            foot.stepStartPos, foot.stepTargetPos, foot.stepProgress, config.stepHeight);
+        foot.rb.linearVelocity = (arcPos - foot.rb.position) / dt;
+
+        // Early lock: foot contacted walkable ground mid-arc.
+        if (foot.contact.isGrounded && IsWalkable(foot.contact.lastContactNormal))
+        {
+            LockFoot(foot, foot.rb.position);
+            return;
+        }
+
+        // Arc complete: lock at target.
+        if (foot.stepProgress >= 1f)
+            LockFoot(foot, foot.stepTargetPos);
+    }
+
+    private void LockFoot(FootData foot, Vector2 worldPos)
     {
         foot.state             = FootState.Locked;
         foot.lockPosition      = worldPos;
@@ -247,70 +262,67 @@ public class FootMovement : MonoBehaviour
         foot.rb.gravityScale   = 0f;
     }
 
-    void TransitionToAirborne(ref FootData foot)
+    private void TransitionToAirborne(FootData foot)
     {
-        foot.state           = FootState.Airborne;
-        foot.rb.gravityScale = config != null ? config.footGravityScale : 1f;
-        // Velocity is intentionally NOT reset — preserves momentum.
+        foot.state = FootState.Airborne;
+        // Velocity intentionally NOT reset — preserve momentum from prior state.
+        if (foot.rb != null)
+            foot.rb.gravityScale = config.footGravityScale;
     }
 
-    void HandleDirectionReversal(Vector2 vel)
+    private void HandleDirectionReversal(Vector2 vel, float torsoX, float torsoY)
     {
-        if (Mathf.Abs(vel.x) <= config.idleSpeedThreshold) return;
+        FootData stepping = _left.state  == FootState.Stepping ? _left
+                          : _right.state == FootState.Stepping ? _right
+                          : null;
+        if (stepping == null) return;
 
+        float stepDir = Mathf.Sign(stepping.stepTargetPos.x - stepping.stepStartPos.x);
         float moveDir = Mathf.Sign(vel.x);
 
-        if (_left.state == FootState.Stepping)
+        if (Mathf.Abs(vel.x) > config.idleSpeedThreshold
+            && moveDir != 0f
+            && moveDir != stepDir)
         {
-            float stepDir = Mathf.Sign(_left.stepTargetPos.x - _left.stepStartPos.x);
-            if (stepDir != 0f && moveDir != stepDir)
-            {
-                LockFoot(ref _left, _left.rb.position);
-                if (_right.state == FootState.Locked)
-                    StartStep(ref _right, vel, torsoRB.position, null);
-            }
-        }
-        else if (_right.state == FootState.Stepping)
-        {
-            float stepDir = Mathf.Sign(_right.stepTargetPos.x - _right.stepStartPos.x);
-            if (stepDir != 0f && moveDir != stepDir)
-            {
-                LockFoot(ref _right, _right.rb.position);
-                if (_left.state == FootState.Locked)
-                    StartStep(ref _left, vel, torsoRB.position, null);
-            }
+            LockFoot(stepping, stepping.rb.position);
+            FootData other = stepping == _left ? _right : _left;
+            if (other.state == FootState.Locked)
+                StartStep(other, vel, torsoX, torsoY);
         }
     }
 
-    // ---- Helpers --------------------------------------------------------
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
 
-    Vector2 ComputeStepTarget(ref FootData foot, Vector2 vel, Vector2 torsoPos)
+    private Vector2 ComputeStepTarget(FootData foot, Vector2 vel, float torsoX, float torsoY)
     {
-        float idealX  = torsoPos.x + foot.side * config.footSpreadX * pixelToWorld;
+        float idealX  = torsoX + foot.side * config.footSpreadX * pixelToWorld;
         float targetX = idealX + vel.x * config.strideProjectionTime;
-        float targetY = RaycastGroundY(targetX, torsoPos, foot.lockPosition.y);
+        float targetY = RaycastGroundY(targetX, torsoY, foot.lockPosition.y);
         return new Vector2(targetX, targetY);
     }
 
-    float RaycastGroundY(float x, Vector2 torsoPos, float fallbackY)
+    private float RaycastGroundY(float x, float torsoY, float fallbackY)
     {
         float rayDist    = config.stepRaycastDistance * pixelToWorld;
-        float rayOriginY = torsoPos.y + rayDist * 0.5f;
-        var   hit        = Physics2D.Raycast(new Vector2(x, rayOriginY),
-                                             Vector2.down, rayDist, _notPlayerMask);
-        return hit.collider != null && IsWalkable(hit.normal)
-            ? hit.point.y + _footColRadius
-            : fallbackY;
+        float rayOriginY = torsoY + rayDist * 0.5f;
+        var   hit        = Physics2D.Raycast(
+            new Vector2(x, rayOriginY), Vector2.down, rayDist, _notPlayerMask);
+        if (hit.collider != null && IsWalkable(hit.normal))
+            return hit.point.y + footColliderRadius;
+        return fallbackY;
     }
 
-    static Vector2 EvaluateArc(Vector2 start, Vector2 end, float t, float heightWorld)
+    private Vector2 EvaluateArc(Vector2 startPos, Vector2 targetPos, float t, float heightPx)
     {
-        float x    = Mathf.Lerp(start.x, end.x, t);
-        float yBase = Mathf.Lerp(start.y, end.y, t);
+        float heightWorld = heightPx * pixelToWorld;
+        float x     = Mathf.Lerp(startPos.x, targetPos.x, t);
+        float yBase = Mathf.Lerp(startPos.y, targetPos.y, t);
         float yArc  = yBase + heightWorld * Mathf.Sin(Mathf.PI * t);
         return new Vector2(x, yArc);
     }
 
-    bool IsWalkable(Vector2 normal) =>
+    private bool IsWalkable(Vector2 normal) =>
         Vector2.Angle(normal, Vector2.up) <= config.maxWalkableAngle;
 }

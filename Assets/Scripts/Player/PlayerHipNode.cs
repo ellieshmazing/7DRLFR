@@ -17,8 +17,14 @@ public class PlayerHipNode : MonoBehaviour
     [Tooltip("Live config SO — HipStiffness, HipDamping, hipMass read per-frame")]
     public PlayerConfig config;
 
-    [Tooltip("FootMovement on the same GO — provides GetGroundReferenceY() (wired by PlayerAssembler)")]
+    [Tooltip("FootMovement — provides GetGroundReferenceY() for hip spring target (wired by PlayerAssembler)")]
     public FootMovement footMovement;
+
+    [Tooltip("Left foot visual Rigidbody2D (wired by PlayerAssembler)")]
+    public Rigidbody2D leftFootRB;
+
+    [Tooltip("Right foot visual Rigidbody2D (wired by PlayerAssembler)")]
+    public Rigidbody2D rightFootRB;
 
     // Kept public so PlayerSkeletonRoot can read it for jump impulse division
     public float mass => config != null ? config.hipMass : 1f;
@@ -41,7 +47,9 @@ public class PlayerHipNode : MonoBehaviour
         float damping   = config.HipDamping;
         float m         = config.hipMass;
 
-        float targetY = footMovement.GetGroundReferenceY();
+        float targetY = footMovement != null
+            ? footMovement.GetGroundReferenceY()
+            : Mathf.Min(leftFootRB.position.y, rightFootRB.position.y);
 
         // Spring-damper toward targetY — mirrors NodeWiggle but Y-axis only,
         // and uses fixedDeltaTime because this runs in FixedUpdate.
