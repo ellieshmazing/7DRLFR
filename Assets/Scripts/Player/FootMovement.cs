@@ -71,6 +71,12 @@ public class FootMovement : MonoBehaviour
         _left.contact  = leftFootContact;
         _right.rb      = rightFootRB;
         _right.contact = rightFootContact;
+
+        // footColliderRadius must be world-space. The assembler sets the local-space
+        // collider radius; scale it here so RaycastGroundY offsets land correctly.
+        var col = leftFootRB != null ? leftFootRB.GetComponent<CircleCollider2D>() : null;
+        if (col != null)
+            footColliderRadius = col.radius * leftFootRB.transform.lossyScale.x;
     }
 
     void FixedUpdate()
@@ -241,8 +247,12 @@ public class FootMovement : MonoBehaviour
             foot.stepStartPos, foot.stepTargetPos, foot.stepProgress, config.stepHeight);
         foot.rb.linearVelocity = (arcPos - foot.rb.position) / dt;
 
-        // Early lock: foot contacted walkable ground mid-arc.
-        if (foot.contact.isGrounded && IsWalkable(foot.contact.lastContactNormal))
+        // Early lock: foot contacted walkable ground on the DESCENT (past arc peak).
+        // Guard on progress > 0.5 so we don't immediately re-lock on the first frame
+        // of a stride-triggered step, when the foot is still physically on the ground.
+        if (foot.stepProgress > 0.5f
+            && foot.contact.isGrounded
+            && IsWalkable(foot.contact.lastContactNormal))
         {
             LockFoot(foot, foot.rb.position);
             return;
@@ -306,7 +316,7 @@ public class FootMovement : MonoBehaviour
     private float RaycastGroundY(float x, float torsoY, float fallbackY)
     {
         float rayDist    = config.stepRaycastDistance * pixelToWorld;
-        float rayOriginY = torsoY + rayDist * 0.5f;
+        float rayOriginY = torsoY;   // cast the full distance downward from torso level
         var   hit        = Physics2D.Raycast(
             new Vector2(x, rayOriginY), Vector2.down, rayDist, _notPlayerMask);
         if (hit.collider != null && IsWalkable(hit.normal))

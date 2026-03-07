@@ -88,3 +88,16 @@ Topic: FootMovement — procedural walking FSM
 Concepts:
   - **Finite State Machine per limb**: Decomposing a character's leg behavior into discrete states (Locked/Stepping/Airborne) rather than a single spring makes each state's intent explicit and eliminates the contradictions that arise when physics, animation, and grounding logic fight over the same Rigidbody. The gait constraint (only one foot Stepping at a time) emerges naturally as a single predicate rather than a complex priority system.
   - **Kinematic override vs. physics**: Locking a foot means zeroing its velocity and snapping its position every FixedUpdate — effectively making a Dynamic RB behave kinematically without changing its type. This lets the foot participate in collision detection (still resolves contacts) while the locomotion system has total positional authority. The stable `lockPosition` bookkeeping value is what lets the hip spring target a non-jittery reference — when to trust the simulation vs. maintain your own authoritative state is a core procedural animation tradeoff.
+---
+Date: 2026-03-07
+Topic: Debug-mode scent emission override
+Concepts:
+  - **Separation of simulation and debug concerns**: The scent field knows nothing about debug mode — it just exposes a SetPositionOverride hook. The visualizer owns the decision to use it. This keeps the simulation clean while still letting the debug tool feed in artificial state.
+  - **Priority layering**: Player transform > override position > no emission. Each consumer in the stack does the simplest possible check and falls through cleanly. This pattern avoids conditional sprawl when adding debug paths to production systems.
+
+---
+Date: 2026-03-07
+Topic: FootMovement FSM — debugging stride suppression
+Concepts:
+  - **Contact-state lag in FSMs**: Physics contact callbacks fire at the end of a physics step, before the next FixedUpdate. When a foot transitions from Locked→Stepping, the ground contact registered in the previous step is still active on the first frame of Stepping — causing the "early lock" guard to fire immediately and cancel every stride. The fix is to gate such guards on a progress threshold (past the arc peak), so the foot has time to physically lift off before re-locking is allowed.
+  - **Local vs. world space collider radius**: CircleCollider2D.radius is in the GO's local space. When the GO has a non-unit scale (e.g. spriteLocalScale = 4), the world-space radius is radius × lossyScale — failing to account for this embeds step targets into the ground and cascades into incorrect ground reference heights for the hip spring.

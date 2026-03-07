@@ -77,6 +77,8 @@ public class ScentField : MonoBehaviour
     }
 
     private Transform player;
+    private Vector2   overridePosition;
+    private bool      hasPositionOverride;
     private Sample[]  samples;
     private int       head;          // next write index
     private int       count;         // valid samples currently in buffer
@@ -121,16 +123,36 @@ public class ScentField : MonoBehaviour
         lastSampleTime = Time.time - sampleInterval; // ensure first sample fires immediately
     }
 
+    // ── Debug position override ───────────────────────────────────────────────
+
+    /// <summary>
+    /// Sets a fallback emit position used when no player Transform is tracked.
+    /// Player transform always takes priority. Intended for debug/no-player scenarios.
+    /// </summary>
+    public void SetPositionOverride(Vector2 pos)
+    {
+        overridePosition    = pos;
+        hasPositionOverride = true;
+    }
+
+    public void ClearPositionOverride() => hasPositionOverride = false;
+
     // ── Per-frame emission ────────────────────────────────────────────────────
 
     void Update()
     {
-        if (player == null || samples == null) return;
+        if (samples == null) return;
+
+        Vector2 emitPos;
+        if      (player != null)       emitPos = player.position;
+        else if (hasPositionOverride)  emitPos = overridePosition;
+        else                           return;
+
         if (Time.time - lastSampleTime < sampleInterval) return;
 
         samples[head] = new Sample
         {
-            position  = player.position,
+            position  = emitPos,
             timestamp = Time.time,
             weight    = 1f
         };

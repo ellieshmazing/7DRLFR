@@ -116,6 +116,20 @@ public class ScentFieldDebugVisualizer : MonoBehaviour
     {
         if (Keyboard.current[toggleKey].wasPressedThisFrame)
             mode = (DebugMode)(((int)mode + 1) % 4);
+
+        if (ScentField.Instance == null) return;
+
+        if (mode != DebugMode.Off)
+        {
+            // Feed mouse world position into the scent field when no player is present.
+            // ScentField prioritizes player transform over this override — safe to set always.
+            Vector2 mouseWorld = Camera.main.ScreenToWorldPoint(Mouse.current.position.ReadValue());
+            ScentField.Instance.SetPositionOverride(mouseWorld);
+        }
+        else
+        {
+            ScentField.Instance.ClearPositionOverride();
+        }
     }
 
     private void FixedUpdate()

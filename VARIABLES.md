@@ -148,7 +148,9 @@ Procedural walking FSM; replaces PlayerFeet. Attach to HipNode GO alongside Play
 
 | Variable | Type | Location | Description | Behavior | Affects |
 |---|---|---|---|---|---|
-| `player` | `Transform` | `ScentField` | Reference to the player transform being tracked | Used in Update() to record player positions into the ring buffer | Source of scent emission |
+| `player` | `Transform` | `ScentField` | Reference to the player transform being tracked | Used in Update() to record player positions into the ring buffer; takes priority over overridePosition | Source of scent emission |
+| `overridePosition` | `Vector2` | `ScentField` | Fallback emit position used when no player Transform is present | Set via SetPositionOverride(); ignored when player != null; used by ScentFieldDebugVisualizer to feed mouse position | Debug/playerless scent emission |
+| `hasPositionOverride` | `bool` | `ScentField` | Gate flag for overridePosition | True when SetPositionOverride() has been called and not yet cleared | Prevents emitting at Vector2.zero by default |
 | `samples` | `Sample[]` | `ScentField` | Ring buffer of `(position, timestamp, weight)` tuples | Circular write; head advances modulo historySize; count tracks valid entries | The scent field's raw data |
 | `head` | `int` | `ScentField` | Next write index in the ring buffer | Advances each sample; wraps around at historySize | Buffer write position |
 | `count` | `int` | `ScentField` | Number of valid samples currently in the buffer | Clamped to historySize; governs Evaluate() loop bounds | How many Gaussians are summed in field evaluation |
