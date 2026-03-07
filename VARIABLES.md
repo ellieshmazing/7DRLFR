@@ -142,6 +142,40 @@ Living documentation of all meaningful variables across the project. Updated whe
 |---|---|---|---|---|---|
 | `momentum` | `Vector2` | `ScentFieldNavigator` | Normalized current heading direction | Blended toward gradient each FixedUpdate; normalized after blend | The actual direction of travel; inertia carrier |
 | `sensitivityPhase` | `float` | `ScentFieldNavigator` | Phase accumulator for the sweep-and-lock oscillator | Incremented by scentOscillationFrequency × 2π × dt; initialized random per centipede | Drives sensitivity = 0.5 + 0.5 × sin(phase) |
+| `Momentum` | `Vector2` | `ScentFieldNavigator` | Public read-only snapshot of `momentum` after normalization each FixedUpdate | Set after normalization step; used by ScentFieldDebugVisualizer for arrow rendering | Debug overlay |
+| `GradientDirection` | `Vector2` | `ScentFieldNavigator` | Public read-only result of `ComputeGradientDirection()` each FixedUpdate | Zero when field is flat; used by visualizer to draw the gradient arrow | Debug overlay |
+| `Sensitivity` | `float` | `ScentFieldNavigator` | Public read-only oscillator output [0,1] each FixedUpdate | Drives ring size and color in debug overlay | Debug overlay |
+| `IsInFallback` | `bool` | `ScentFieldNavigator` | True when `fieldAtHead < scentFallbackThreshold`; set each FixedUpdate | Triggers fallback X marker and player direction line in debug overlay | Debug overlay |
+
+---
+
+## ScentFieldDebugVisualizer (MonoBehaviour — debug only, remove before shipping)
+
+| Variable | Type | Location | Description | Behavior | Affects |
+|---|---|---|---|---|---|
+| `toggleKey` | `Key` | `ScentFieldDebugVisualizer` | InputSystem key that cycles debug modes (Off → SamplesOnly → Full → FullWithGrid) | Each press advances mode by 1, wraps at 4 | Debug mode selection |
+| `sampleMarkerMaxRadius` | `float` | `ScentFieldDebugVisualizer` | World-unit radius of a fully fresh (effective=1) sample disk | Scales down with effective weight; try 0.05–0.3 | Sample dot size |
+| `freshSampleColor` | `Color` | `ScentFieldDebugVisualizer` | Disk color for uncon­sumed (weight=1) samples | Lerped toward consumedSampleColor as raw weight decreases | Sample color fresh end |
+| `consumedSampleColor` | `Color` | `ScentFieldDebugVisualizer` | Disk color for fully consumed (weight≈0) samples | Lerped toward freshSampleColor as raw weight increases | Sample color consumed end |
+| `gradientArrowLength` | `float` | `ScentFieldDebugVisualizer` | World-unit length of the gradient direction arrow at each head | Try 0.3–1.0 | Gradient arrow size |
+| `momentumArrowLength` | `float` | `ScentFieldDebugVisualizer` | World-unit length of the momentum arrow at each head | Set slightly longer than gradient to visually distinguish them | Momentum arrow size |
+| `gradientArrowColor` | `Color` | `ScentFieldDebugVisualizer` | Color of the gradient direction arrow | — | Gradient arrow color |
+| `momentumArrowColor` | `Color` | `ScentFieldDebugVisualizer` | Color of the momentum (current heading) arrow | — | Momentum arrow color |
+| `sensitivityRingMinRadius` | `float` | `ScentFieldDebugVisualizer` | Ring radius when sensitivity = 0 (coasting phase) | Try 0.05–0.2 | Ring visual range low |
+| `sensitivityRingMaxRadius` | `float` | `ScentFieldDebugVisualizer` | Ring radius when sensitivity = 1 (snapping phase) | Try 0.25–0.6 | Ring visual range high |
+| `sensitivityCoolColor` | `Color` | `ScentFieldDebugVisualizer` | Ring color at sensitivity = 0 | Lerped toward hot at sensitivity = 1 | Ring color |
+| `sensitivityHotColor` | `Color` | `ScentFieldDebugVisualizer` | Ring color at sensitivity = 1 | — | Ring color |
+| `consumeRadiusColor` | `Color` | `ScentFieldDebugVisualizer` | Wire circle color for consume radius; alpha additionally scaled by scentConsumeRate/4 | — | Consume radius indicator |
+| `fallbackColor` | `Color` | `ScentFieldDebugVisualizer` | Color of the fallback X marker and player line | — | Fallback indicator |
+| `fallbackMarkerSize` | `float` | `ScentFieldDebugVisualizer` | World-unit arm length of the fallback X | — | Fallback X size |
+| `momentumHistoryCapacity` | `int` | `ScentFieldDebugVisualizer` | Number of past world positions stored per navigator in the ghost trail | At 50 Hz FixedUpdate, 40 = 0.8 s of trail; try 20–80 | Ghost trail length |
+| `momentumTrailColor` | `Color` | `ScentFieldDebugVisualizer` | Base color for ghost trail; alpha quadratically faded from newest to oldest | — | Trail color |
+| `gridCellSize` | `float` | `ScentFieldDebugVisualizer` | World units per heat map cell; smaller = smoother but more field evaluations | Try 0.25–1.0 | Grid resolution |
+| `gridExtent` | `float` | `ScentFieldDebugVisualizer` | Half-size of heat map in world units; grid covers 2×extent per axis | Try 5–15 | Grid coverage area |
+| `gridMaxFieldStrength` | `float` | `ScentFieldDebugVisualizer` | Field strength that maps to full hot color; values above clamp to hot | Match to scentGradientMaxStrength in config; try 3–10 | Grid color normalization |
+| `gridMaxAlpha` | `float` | `ScentFieldDebugVisualizer` | Maximum alpha of any heat map cell | Keep below 0.5 to avoid obscuring gameplay; try 0.2–0.6 | Grid transparency |
+| `gridColdColor` | `Color` | `ScentFieldDebugVisualizer` | Grid cell color at zero field strength | — | Grid cold end color |
+| `gridHotColor` | `Color` | `ScentFieldDebugVisualizer` | Grid cell color at full field strength | — | Grid hot end color |
 
 ---
 

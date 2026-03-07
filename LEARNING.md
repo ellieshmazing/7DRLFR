@@ -61,3 +61,10 @@ Topic: Competing pathfinder — scent-gradient navigation with consumed-zone sup
 Concepts:
   - **Emergent Navigation**: When complex, useful global behavior arises from a single simple local rule — "move toward where the smell is strongest" — rather than from planning. The spiral approach pattern on a stationary player is never explicitly coded; it falls out of the interaction between gradient ascent and field consumption. This distinction matters because emergent systems are often more interesting and surprising to play against than planned ones.
   - **Scalar Field Navigation**: Using a continuously-valued spatial function to guide movement, rather than a graph or geometric path. Every point in the world has a field value; steering is just climbing the gradient. This produces smooth, organic trajectories that naturally adapt to any player shape or obstacle arrangement, and gives multiple agents the ability to share a single environmental signal without explicit coordination.
+
+---
+Date: 2026-03-07
+Topic: ScentField debug visualizer — GL overlay for scalar field and navigator state
+Concepts:
+  - **Scalar Field Visualization**: A scalar field assigns a single value to every point in space. Visualizing it means sampling on a grid and mapping each value to color — the same technique used in fluid sim heat maps and physics debug overlays. Here, sampling the scent field on a world-space grid reveals the Gaussian blending between footprints, the sigma influence radius, and where decay has hollowed out old regions of the trail.
+  - **State Legibility via Direct Debug Rendering**: Complex AI behavior becomes tunable when every invisible internal variable has a visual proxy — arrows for vectors, pulsing rings for oscillators, color shifts for state flags. The gap between the gradient arrow and momentum arrow is the steering blend made visible in one glance, which would otherwise require reading logs or adding breakpoints.
