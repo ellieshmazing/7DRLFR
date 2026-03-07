@@ -101,6 +101,7 @@ public class TuningOverlay : MonoBehaviour
 
         scaler = canvasGO.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
+        scaler.scaleFactor = 2f;
 
         canvasGO.AddComponent<GraphicRaycaster>();
 

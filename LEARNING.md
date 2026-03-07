@@ -54,3 +54,10 @@ Topic: Runtime tuning system implementation — spring parameterization, live co
 Concepts:
   - **Perceptual orthogonality in parameter spaces**: Replacing raw (stiffness, damping, mass) with (frequency, dampingRatio, mass) doesn't just reduce knob count — it makes the remaining knobs *perceptually independent*. Frequency controls how fast the spring responds; dampingRatio controls how much it oscillates. Changing one doesn't alter the other's feel, which means a human tuner can evaluate each axis in isolation. This is the deep reason coordinate descent works in feel-tuning: the dimensions are chosen to be perceptually orthogonal.
   - **Live config reading vs. dual-write as an architecture tradeoff**: Scripts that read from a config SO each frame (PlayerHipNode, PlayerFeet) get instant tuning response with zero sync code. Scripts that cache values locally (NodeWiggle, Ball) require explicit dual-write from the tuning system — more code, but the caching avoids per-frame reflection or property access in hot paths. The right choice depends on how many live instances exist and whether the frame cost matters.
+
+---
+Date: 2026-03-07
+Topic: Competing pathfinder — scent-gradient navigation with consumed-zone suppression
+Concepts:
+  - **Emergent Navigation**: When complex, useful global behavior arises from a single simple local rule — "move toward where the smell is strongest" — rather than from planning. The spiral approach pattern on a stationary player is never explicitly coded; it falls out of the interaction between gradient ascent and field consumption. This distinction matters because emergent systems are often more interesting and surprising to play against than planned ones.
+  - **Scalar Field Navigation**: Using a continuously-valued spatial function to guide movement, rather than a graph or geometric path. Every point in the world has a field value; steering is just climbing the gradient. This produces smooth, organic trajectories that naturally adapt to any player shape or obstacle arrangement, and gives multiple agents the ability to share a single environmental signal without explicit coordination.

@@ -46,4 +46,39 @@ public static class AutoRespawner
         foreach (var pos in positions)
             assembler.Spawn(config, pos);
     }
+
+    /// <summary>
+    /// Destroys any existing player and spawns a fresh one at the given position.
+    /// Works even when no player currently exists.
+    /// </summary>
+    public static IEnumerator SpawnFreshPlayer(PlayerConfig config, PlayerAssembler assembler, Vector2 position)
+    {
+        var existing = Object.FindAnyObjectByType<PlayerSkeletonRoot>();
+        if (existing != null)
+        {
+            Object.Destroy(existing.gameObject);
+            yield return null;
+        }
+        assembler.Spawn(config, position);
+    }
+
+    /// <summary>
+    /// Destroys all existing centipedes and spawns fresh ones at the given positions.
+    /// Works even when no centipedes currently exist.
+    /// </summary>
+    public static IEnumerator SpawnFreshCentipedes(CentipedeConfig config, CentipedeAssembler assembler, Vector2[] positions)
+    {
+        bool anyDestroyed = false;
+        foreach (var controller in Object.FindObjectsByType<CentipedeController>(FindObjectsSortMode.None))
+        {
+            Object.Destroy(controller.gameObject);
+            anyDestroyed = true;
+        }
+
+        if (anyDestroyed)
+            yield return null;
+
+        foreach (var pos in positions)
+            assembler.Spawn(config, pos);
+    }
 }
