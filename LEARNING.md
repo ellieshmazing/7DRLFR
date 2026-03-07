@@ -101,3 +101,31 @@ Topic: FootMovement FSM — debugging stride suppression
 Concepts:
   - **Contact-state lag in FSMs**: Physics contact callbacks fire at the end of a physics step, before the next FixedUpdate. When a foot transitions from Locked→Stepping, the ground contact registered in the previous step is still active on the first frame of Stepping — causing the "early lock" guard to fire immediately and cancel every stride. The fix is to gate such guards on a progress threshold (past the arc peak), so the foot has time to physically lift off before re-locking is allowed.
   - **Local vs. world space collider radius**: CircleCollider2D.radius is in the GO's local space. When the GO has a non-unit scale (e.g. spriteLocalScale = 4), the world-space radius is radius × lossyScale — failing to account for this embeds step targets into the ground and cascades into incorrect ground reference heights for the hip spring.
+
+---
+Date: 2026-03-07
+Topic: TuningStrategy dimension design for procedural walking
+Concepts:
+  - **Dependency ordering in tuning passes**: Tuning dimensions must follow the causal chain of the mechanic — stride trigger defines *when* a step fires, and step shape defines *what that step looks like*. Evaluating arc height before trigger cadence is correct confounds the two axes of feel, making both harder to isolate. Bottom-up ordering (trigger → shape → spring) mirrors how the system builds on itself.
+  - **Separating setup parameters from feel parameters**: Variables like `maxWalkableAngle` and `stepRaycastDistance` are constraints that should be set correctly once, not swept for feel. True feel dimensions contain variables with a continuous perceptual gradient (low ↔ high produces a clearly different sensation). Mixing setup constants into feel dimensions wastes tuning rounds and obscures the subjective signal.
+
+---
+Date: 2026-03-07
+Topic: Deprecating CentipedePathfinder in favor of ScentFieldNavigator
+Concepts:
+  - **Emergent Navigation vs. Planned Navigation**: Arc-based pathfinders compute an explicit geometric route to the target. Scent-gradient navigators have no route at all — the path emerges from following local field gradients. Emergent approaches are often simpler to tune and produce more surprising, organic behavior because the complexity lives in the environment (the field), not the agent.
+  - **Dead Code Debt**: Keeping two competing systems in a codebase — even when only one is active — creates ongoing maintenance cost: documentation drift, config fields that do nothing, and confusion about which path is "real." Committing to one system and deleting the other makes the design legible and prevents future regressions from accidentally re-enabling the old path.
+
+---
+Date: 2026-03-07
+Topic: Updating tuning dimension registry after removing arc pathfinder
+Concepts:
+  - **Coordinate Descent Ordering**: When you restructure a tuning dimension sequence, the order still must follow the dependency chain — each dimension should only be tuned after the variables it depends on are locked. Collapsing arc-specific dims and renumbering the scent dims means the scent system now tunes in the right order relative to base `speed` (dim 12 → 13–17), preserving the deliberate bottom-up dependency logic.
+  - **Tuning as Documentation**: A dimension definition (name, variables, scenario, ranges) is more than a runtime config — it's a compressed specification of *what the variable controls perceptually*. Keeping it synchronized with the codebase is part of the same discipline as keeping VARIABLES.md in sync: when a variable is removed from the system, its tuning entry must be removed too, or the tuning workflow silently operates on fields that no longer exist.
+
+---
+Date: 2026-03-07
+Topic: Tuning system dimension design for procedural walking
+Concepts:
+  - **Coordinate descent ordering**: When tuning variables that feed into each other, the order of dimensions matters as much as the dimensions themselves. Walk Shape (trigger geometry) must precede Walk Timing (duration/speed) because the cadence only reads correctly once you know where and when steps fire — evaluating timing on top of broken shape produces confounded judgments.
+  - **Init-only vs live variables**: Distinguishing variables that must take effect at spawn (rb.mass, gravityScale) from those readable per-frame determines whether the tuning system can sweep them continuously or must batch-respawn. FootMovement's FSM vars are all live-readable, making them cheap to tune — a key advantage of the per-frame config pattern.
