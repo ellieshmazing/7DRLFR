@@ -17,6 +17,9 @@ public class PlayerHipNode : MonoBehaviour
     [Tooltip("Live config SO — HipStiffness, HipDamping, hipMass read per-frame")]
     public PlayerConfig config;
 
+    [Tooltip("FootMovement — provides GetGroundReferenceY() for hip spring target (wired by PlayerAssembler)")]
+    public FootMovement footMovement;
+
     [Tooltip("Left foot visual Rigidbody2D (wired by PlayerAssembler)")]
     public Rigidbody2D leftFootRB;
 
@@ -38,13 +41,15 @@ public class PlayerHipNode : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (leftFootRB == null || rightFootRB == null || config == null) return;
+        if (footMovement == null || config == null) return;
 
         float stiffness = config.HipStiffness;
         float damping   = config.HipDamping;
         float m         = config.hipMass;
 
-        float targetY = Mathf.Min(leftFootRB.position.y, rightFootRB.position.y);
+        float targetY = footMovement != null
+            ? footMovement.GetGroundReferenceY()
+            : Mathf.Min(leftFootRB.position.y, rightFootRB.position.y);
 
         // Spring-damper toward targetY — mirrors NodeWiggle but Y-axis only,
         // and uses fixedDeltaTime because this runs in FixedUpdate.

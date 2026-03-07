@@ -27,6 +27,46 @@ public class ScentField : MonoBehaviour
         if (Instance == this) Instance = null;
     }
 
+    // ── Debug read API ────────────────────────────────────────────────────────
+
+    /// <summary>Snapshot of a single ring-buffer entry for external debug rendering.</summary>
+    public struct DebugSample
+    {
+        public Vector2 position;
+        public float   timestamp;
+        public float   weight;    // current consumed weight [0, 1]
+    }
+
+    /// <summary>Time constant used in temporal decay; exposed for debug rendering.</summary>
+    public float DecayTime => decayTime;
+
+    /// <summary>
+    /// Fills <paramref name="output"/> with every sample whose effective weight
+    /// (weight × temporal decay) exceeds 0.005. Returns the number of entries written.
+    /// <paramref name="output"/> must be at least <c>historySize</c> long (512 is safe).
+    /// </summary>
+    public int GetDebugSamples(DebugSample[] output, float currentTime)
+    {
+        if (samples == null || count == 0) return 0;
+
+        int written = 0;
+        for (int i = 0; i < count; i++)
+        {
+            ref Sample s = ref samples[i];
+            float age      = currentTime - s.timestamp;
+            float temporal = Mathf.Exp(-age / decayTime);
+            if (s.weight * temporal < 0.005f) continue;
+
+            output[written++] = new DebugSample
+            {
+                position  = s.position,
+                timestamp = s.timestamp,
+                weight    = s.weight,
+            };
+        }
+        return written;
+    }
+
     // ── Sample storage ────────────────────────────────────────────────────────
 
     private struct Sample

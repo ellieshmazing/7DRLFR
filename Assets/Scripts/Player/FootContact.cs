@@ -10,10 +10,21 @@ using UnityEngine;
 /// </summary>
 public class FootContact : MonoBehaviour
 {
-    public bool isGrounded => _contactCount > 0;
+    public bool    isGrounded       => _contactCount > 0;
+    public Vector2 lastContactNormal { get; private set; }
 
     private int _contactCount;
 
-    void OnCollisionEnter2D(Collision2D _) => _contactCount++;
-    void OnCollisionExit2D(Collision2D _)  => _contactCount = Mathf.Max(0, _contactCount - 1);
+    void OnCollisionEnter2D(Collision2D col)
+    {
+        _contactCount++;
+        lastContactNormal = col.GetContact(0).normal;
+    }
+
+    void OnCollisionStay2D(Collision2D col)
+    {
+        lastContactNormal = col.GetContact(0).normal;
+    }
+
+    void OnCollisionExit2D(Collision2D _) => _contactCount = Mathf.Max(0, _contactCount - 1);
 }

@@ -2,7 +2,9 @@
 
 ## Goal
 
-A runtime tuning system that lets the developer efficiently discover optimal variable values for BallWorld's Player and Centipede systems by *playing the game*. The system replaces raw stiffness/damping spring parameters with perceptually meaningful frequency/dampingRatio pairs (reducing coupled knobs), groups ~40 variables into 14 ordered tuning dimensions, and provides a multi-phase workflow: continuous sweep to bracket viable ranges, A/B forced-choice comparison to converge on preferred values, and cross-validation to catch interaction effects. Tuned values write directly to ScriptableObject assets. Named profiles are saved as SO duplicates in organized subfolders. A visual overlay shows current tuning state including a computed spring step-response waveform. Init-only variables trigger automatic entity respawning when changed.
+A runtime tuning system that lets the developer efficiently discover optimal variable values for BallWorld's Player and Centipede systems by *playing the game*. The system replaces raw stiffness/damping spring parameters with perceptually meaningful frequency/dampingRatio pairs (reducing coupled knobs), groups ~50 variables into 19 ordered tuning dimensions, and provides a multi-phase workflow: continuous sweep to bracket viable ranges, A/B forced-choice comparison to converge on preferred values, and cross-validation to catch interaction effects. Tuned values write directly to ScriptableObject assets. Named profiles are saved as SO duplicates in organized subfolders. A visual overlay shows current tuning state including a computed spring step-response waveform. Init-only variables trigger automatic entity respawning when changed.
+
+Dimensions 1–14 apply to both pathfinder modes. When `useScentNavigator == true`, dimensions 12–13 (arc-specific: `minTurnRadius`, `arcAngleVariance`, `replanInterval`) are skipped automatically, and dimensions 15–19 (scent-specific) are appended. When using the arc pathfinder, dimensions 15–19 are skipped.
 
 ---
 
@@ -643,6 +645,22 @@ foreach pos in positions:
 | `wiggleDampingRatio` | `float` | `0.28` | Ball spring damping ratio; try 0.1–1.2; lower = more wobble after impacts, higher = rigid tracking |
 | `wiggleMass` | `float` | `1.0` | Ball spring mass; try 0.3–3.0; affects detachment energy threshold — higher = harder to knock balls off |
 
+### Scent Navigator — CentipedeConfig (used when `useScentNavigator == true`)
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `scentDecayTime` | `float` | `8.0` | Trail persistence time constant (seconds); try 3–20; lower = centipede only follows fresh tracks; higher = long-lived memory enables wide-area spiraling. Read per-frame by ScentField if refactored (see Implementation Notes). |
+| `scentSigma` | `float` | `1.5` | Gaussian spatial spread of each footprint (world units); try 0.5–3.0; lower = narrow precise trail, centipede must stay close to follow it; higher = broad cloud, gradient is smoother and more globally directional. Read per-frame by ScentField if refactored. |
+| `scentGradientSampleRadius` | `float` | `0.8` | Radius of the 8-point gradient sampling ring around the head; try 0.3–2.0; lower = responds to very local field differences; higher = integrates a wider neighborhood, producing smoother but less reactive steering. |
+| `scentSteeringBlend` | `float` | `4.0` | Turn rate toward gradient at full oscillator sensitivity (blends/sec); try 1–10; lower = wide lazy arcs, committed heading; higher = sharp reactive turns toward fresh scent. |
+| `scentConsumeRadius` | `float` | `0.6` | World-unit radius of scent erasure as centipede passes; try 0.3–1.5; wider = more aggressive suppression, forces tighter inward spirals on stationary players. |
+| `scentConsumeRate` | `float` | `2.0` | Suppression weight per second at the centipede center; try 0.5–5.0; higher = trail erased quickly, backtracking impossible; lower = leaves partial wake, centipede may retrace. |
+| `scentOscillationFrequency` | `float` | `0.35` | Sweep-and-lock cycle rate in Hz; try 0.1–1.0; lower = long ballistic sweeps (deliberate, predatory); higher = rapid snap-lock cycles (nervous, unpredictable). |
+| `scentSpeedBoost` | `float` | `1.0` | Extra speed (world units/sec) when on a hot trail; try 0–3.0; higher = centipede surges on fresh scent, more tactically dangerous; 0 = constant speed regardless of trail quality. |
+| `scentGradientMaxStrength` | `float` | `5.0` | Forward field strength that yields full speed boost; try 1–10; calibrate against your `scentDecayTime`/`scentSigma` combination — if boost never triggers, reduce this; if always at max, increase it. |
+| `scentFallbackThreshold` | `float` | `0.05` | Field strength below which direct pursuit activates; try 0.01–0.2; higher = centipede switches to direct chase sooner when field is weak; lower = keeps following gradient longer. |
+| `scentFallbackBlend` | `float` | `0.8` | Blend rate toward player during direct fallback; try 0.2–2.0; lower = sluggish reaction to player position; higher = snappy direct pursuit when field is cold. |
+
 ---
 
 ## Implementation Notes
@@ -675,6 +693,16 @@ Each dimension is a TuningDimensionDef ScriptableObject. Create one asset per ro
 | 13 | Pathing Behavior | `arcAngleVariance` (10–120°), `replanInterval` (0.5–4s) | — | **Yes** | Watch approach patterns for 30+ seconds. High variance = unpredictable. Low replan = adaptive. |
 | 14 | Wriggle Feel | `waveAmplitude` (0.1–1.0), `waveFrequency` (0.5–5), `wavePhaseOffsetPerNode` (0.1–1.0) | — | **Yes** | Watch centipede approach from a distance. Evaluate character and organic feel. |
 
+#### Scent Navigator Dimensions (tune instead of 12–13 when `useScentNavigator == true`)
+
+| # | Dimension Name | Variables (fieldName) | Ranges | Init-only? | Test Scenario |
+|---|---|---|---|---|---|
+| 15 | Scent Trail | `scentDecayTime` (3–20), `scentSigma` (0.5–3.0) | — | No* | Let player stand still 10 seconds, move away, stand still again. Watch centipede follow the ghost path. High decayTime = long-lived memory. High sigma = blurry wide trail, gradient activates earlier. (*Requires ScentField live-read refactor — see Implementation Notes.) |
+| 16 | Scent Consumption | `scentConsumeRate` (0.5–5.0), `scentConsumeRadius` (0.3–1.5) | — | No | Stand completely still. Watch centipede spiral in. High rate + wide radius = tight decisive spiral that closes fast. Low rate = looser circles, centipede may drift past and arc back. |
+| 17 | Hunting Rhythm | `scentSteeringBlend` (1.0–10.0), `scentOscillationFrequency` (0.1–1.0), `scentGradientSampleRadius` (0.3–2.0) | — | No | Run gentle curves for 20+ seconds. Watch heading changes. Low blend + low oscillation = slow deliberate sweep. High blend + high oscillation = jittery reactive zigzag. High sample radius = smooth global steering. |
+| 18 | Trail Speed | `scentSpeedBoost` (0–3.0), `scentGradientMaxStrength` (1.0–10.0) | — | No | Sprint in a straight line, then stop abruptly. Watch if centipede surges. Calibrate `scentGradientMaxStrength` first (sweep until boost is clearly visible), then tune `scentSpeedBoost` for threat level. |
+| 19 | Fallback Behavior | `scentFallbackThreshold` (0.01–0.2), `scentFallbackBlend` (0.2–2.0) | — | No | Hide behind cover for 30+ seconds until field fully decays. High threshold = centipede switches to direct chase quickly. High blend = fast snap-to-player once fallback activates. |
+
 ### Tuning Order Rationale
 
 The order is not arbitrary — it follows the dependency chain:
@@ -692,6 +720,13 @@ The order is not arbitrary — it follows the dependency chain:
 2. Geometry before destruction because nodeRadius affects ball mass (quadratic scaling), which affects detachment energy.
 3. Destruction before pathing because fragility determines threat level — pathing speed should be tuned against it.
 4. Wriggle last because it's visual polish.
+
+**Scent Navigator (dimensions 15–19, replaces 12–13):**
+1. Scent Trail first because `scentDecayTime` and `scentSigma` define the signal all other behaviors are reacting to. Wrong trail shape makes every other dimension impossible to evaluate — the centipede either has no signal or a field that's so broad every direction looks the same.
+2. Consumption before Rhythm because the spiral behavior (consumption) is the core distinguishing mechanic of this system. Tune the spiral feel before layering in the sweep-lock character on top.
+3. Hunting Rhythm after consumption because `scentSteeringBlend` and `scentOscillationFrequency` modulate how the centipede responds to the field — they only make sense once the field and consumption are producing meaningful gradients.
+4. Trail Speed is secondary feel — the surge on a hot trail is a refinement. Tune it after the basic approach behavior is correct. `scentGradientMaxStrength` is a calibration constant that should be set relative to observed field values; tune it first within this dimension.
+5. Fallback is an edge case by design. It only fires when the field is cold, which happens rarely in normal gameplay. Tune it last.
 
 ### Scale Independence
 
@@ -747,4 +782,10 @@ The tuning system excludes playerScale. After tuning at a chosen scale, if you l
 
 8. **Cross-validation scope**: Only perturb dimensions within the same entity. Don't perturb centipede variables when cross-validating the player, and vice versa. Run Player cross-validation first, then Centipede cross-validation.
 
-9. **Computed property stiffness/damping must be recalculated on BOTH frequency and dampingRatio changes**: When tuning `hipFrequency`, the live instance needs both its stiffness AND damping updated (both depend on ω). The sync mapping must handle this — a single fieldName change may require writing multiple instance fields.
+10. **Conditional dimension skipping for scent/arc navigator**: When `CentipedeConfig.useScentNavigator == true`, TuningManager must skip dimensions 12 and 13 at runtime — they contain arc-only fields (`minTurnRadius`, `arcAngleVariance`, `replanInterval`) that have no effect on ScentFieldNavigator. Conversely, when using the arc pathfinder, skip dimensions 15–19. Detect this by inspecting the target config's `useScentNavigator` bool before entering a dimension. Dimension 12's `speed` variable is shared — it remains relevant for both navigators, but in scent mode the entire dimension is replaced by dimensions 15–19 which tune scent-specific speed behavior alongside the base `speed` (kept at its current value from dimension 12's earlier arc-mode pass).
+
+11. **`scentDecayTime` and `scentSigma` are not currently live**: `ScentField` copies these two values from config at `Initialize()` into private fields (`decayTime`, `sigma`) and uses those copies in `Evaluate()`. Without a refactor they would require respawn. Preferred fix: store a `CentipedeConfig` reference in `ScentField` instead of copying, and read `config.scentDecayTime` / `config.scentSigma` directly inside `Evaluate()`. This is a one-line change per field and enables live tuning without respawn. Mark them `requiresRespawn: false` after this refactor. If the refactor is deferred, mark them `requiresRespawn: true` and also call `ScentField.Instance.Clear()` alongside the respawn so the new config values govern a fresh field (not a stale field initialized under the old values).
+
+12. **Scent speed boost calibration (`scentGradientMaxStrength`)**: This is not a feel variable — it's a normalization constant. Before tuning `scentSpeedBoost`, use Sweep phase to find a value where `trailHeat` visibly modulates speed (not stuck at 0 or clamped at 1). A typical calibrated value is 2–3× the `Evaluate()` return when the centipede is squarely on the player's trail. If the boost never seems to activate, lower this value; if it's always at max, raise it.
+
+13. **Computed property stiffness/damping must be recalculated on BOTH frequency and dampingRatio changes**: When tuning `hipFrequency`, the live instance needs both its stiffness AND damping updated (both depend on ω). The sync mapping must handle this — a single fieldName change may require writing multiple instance fields.

@@ -45,7 +45,14 @@ public class ScentFieldNavigator : MonoBehaviour
     private float   sensitivityPhase;   // sweep-and-lock oscillator phase
     private float   collisionCooldown;
 
-    public Transform Target { get; private set; }
+    public Transform       Target           { get; private set; }
+
+    // ── Debug read API (consumed by ScentFieldDebugVisualizer) ────────────────
+    public Vector2         Momentum         { get; private set; }
+    public Vector2         GradientDirection { get; private set; }
+    public float           Sensitivity      { get; private set; }
+    public bool            IsInFallback     { get; private set; }
+    public CentipedeConfig Config           => config;
 
     // ── Initialization ────────────────────────────────────────────────────────
 
@@ -81,9 +88,11 @@ public class ScentFieldNavigator : MonoBehaviour
         // ── 1. Advance sweep-and-lock oscillator ─────────────────────────────
         sensitivityPhase += config.scentOscillationFrequency * Mathf.PI * 2f * dt;
         float sensitivity = 0.5f + 0.5f * Mathf.Sin(sensitivityPhase); // [0, 1]
+        Sensitivity = sensitivity;
 
         // ── 2. Compute scent gradient ─────────────────────────────────────────
         Vector2 gradient = ComputeGradientDirection();
+        GradientDirection = gradient;
 
         // ── 3. Blend gradient into momentum (inertia-weighted) ────────────────
         if (gradient.sqrMagnitude > 0.001f)
@@ -94,7 +103,8 @@ public class ScentFieldNavigator : MonoBehaviour
 
         // ── 4. Fallback: field is empty or too weak → nudge toward player ─────
         float fieldAtHead = field.Evaluate(rb.position);
-        if (fieldAtHead < config.scentFallbackThreshold)
+        IsInFallback = fieldAtHead < config.scentFallbackThreshold;
+        if (IsInFallback)
         {
             Vector2 toPlayer = GetTargetPosition() - rb.position;
             if (toPlayer.sqrMagnitude > 0.001f)
@@ -103,6 +113,7 @@ public class ScentFieldNavigator : MonoBehaviour
 
         if (momentum.sqrMagnitude > 0.001f)
             momentum = momentum.normalized;
+        Momentum = momentum;
 
         // ── 5. Speed boost proportional to forward gradient strength ──────────
         float forwardStrength = field.Evaluate(rb.position + momentum * config.scentGradientSampleRadius);
