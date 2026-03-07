@@ -495,6 +495,30 @@ MonoBehaviour:
   - tile: {fileID: 11400000, guid: fdf1afdddfd1eb245a78d256503dce87, type: 2}
     weight: 40
   tileNoiseFrequency: 0.12
+  surfaceTiles:
+  - tile: {fileID: 11400000, guid: c03233d51da23fe49b7165af235d7e0b, type: 2}
+    weight: 50
+  - tile: {fileID: 11400000, guid: 8954cf079b6b2604f87a4d72ae6566ff, type: 2}
+    weight: 50
+  surfaceDepth: 2
+  surfaceFuzzFrequency: 0.25
+  surfaceFuzzAmplitude: 2
+  surfaceTileNoiseFrequency: 0.15
+  trunkTile: {fileID: 11400000, guid: 8b482f2d39bb3fe43a0681dd2a618cd5, type: 2}
+  leavesTile: {fileID: 11400000, guid: 989c58d72b7921b4dad2e9da5bf7fee1, type: 2}
+  treeFrequency: 0.374
+  treePlacementScale: 0.45
+  trunkHeightMin: 4
+  trunkHeightMax: 18
+  canopyWidthMin: 5
+  canopyWidthMax: 12
+  canopyHeightMin: 2
+  canopyHeightMax: 4
+  canopyWarpScale: 1.6
+  canopyWarpAmplitude: 11
+  treeClearance: 2
+  treeClearanceTolerance: 3
+  treeMinSpacing: 4
   macroFrequency: 0.01
   macroAmplitude: 8
   broadFrequency: 0.03
@@ -847,8 +871,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAssembler
   defaultSprite: {fileID: -839099904, guid: ec8e09fd763b58a4a8089a76d0052281, type: 3}
-  jumpSpeed: 20
-  jumpOffsetFactor: 10
   testConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
   testPosition: {x: 0, y: 0}
 --- !u!1660057539 &9223372036854775807
