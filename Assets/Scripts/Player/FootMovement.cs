@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// Procedural walking system. Each foot runs a three-state FSM
@@ -325,24 +326,43 @@ public class FootMovement : MonoBehaviour
                 }
                 else
                 {
-                    // Idle — correct feet back toward neutral spread, one at a time.
-                    // Hysteresis prevents spring oscillation from re-triggering continuously:
-                    // disarmed after firing; re-armed only once displacement falls below the
-                    // smaller hysteresis band.
                     float idealX = torsoX + foot.side * config.footSpreadX * pixelToWorld;
-                    float displacement = Mathf.Abs(foot.lockPosition.x - idealX);
 
-                    if (!foot.idleCorrectionArmed
-                        && displacement < config.idleCorrectionHysteresis * pixelToWorld)
-                        foot.idleCorrectionArmed = true;
+                    // Idle + input: if the player presses a direction, step immediately
+                    // without the strideTriggerDistance guard. This removes the delay
+                    // between pressing a key and the first step animating.
+                    var kb = Keyboard.current;
+                    float rawInput = kb != null
+                        ? ((kb.dKey.isPressed || kb.rightArrowKey.isPressed ? 1f : 0f)
+                           - (kb.aKey.isPressed || kb.leftArrowKey.isPressed ? 1f : 0f))
+                        : 0f;
 
-                    if (foot.idleCorrectionArmed
-                        && displacement > config.idleCorrectionThreshold * pixelToWorld
-                        && other.state != FootState.Stepping)
+                    if (rawInput != 0f)
                     {
-                        foot.idleCorrectionArmed = false;
-                        float groundY = RaycastGroundY(idealX, torsoY, foot.lockPosition.y);
-                        StartStep(foot, other, vel, torsoX, torsoY, new Vector2(idealX, groundY));
+                        float signedBehind = (idealX - foot.lockPosition.x) * rawInput;
+                        if (signedBehind > 0f && other.state != FootState.Stepping)
+                            StartStep(foot, other, vel, torsoX, torsoY);
+                    }
+                    else
+                    {
+                        // Idle correction — correct feet back toward neutral spread, one at a time.
+                        // Hysteresis prevents spring oscillation from re-triggering continuously:
+                        // disarmed after firing; re-armed only once displacement falls below the
+                        // smaller hysteresis band.
+                        float displacement = Mathf.Abs(foot.lockPosition.x - idealX);
+
+                        if (!foot.idleCorrectionArmed
+                            && displacement < config.idleCorrectionHysteresis * pixelToWorld)
+                            foot.idleCorrectionArmed = true;
+
+                        if (foot.idleCorrectionArmed
+                            && displacement > config.idleCorrectionThreshold * pixelToWorld
+                            && other.state != FootState.Stepping)
+                        {
+                            foot.idleCorrectionArmed = false;
+                            float groundY = RaycastGroundY(idealX, torsoY, foot.lockPosition.y);
+                            StartStep(foot, other, vel, torsoX, torsoY, new Vector2(idealX, groundY));
+                        }
                     }
                 }
                 break;
