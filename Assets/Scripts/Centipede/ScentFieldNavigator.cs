@@ -56,10 +56,29 @@ public class ScentFieldNavigator : MonoBehaviour
 
     // ── Initialization ────────────────────────────────────────────────────────
 
+    private void OnEnable()
+    {
+        PlayerRegistry.OnPlayerChanged += OnPlayerChanged;
+        // Sync with any player that already exists
+        if (PlayerRegistry.PlayerTransform != null)
+            Target = PlayerRegistry.PlayerTransform;
+    }
+
+    private void OnDisable()
+    {
+        PlayerRegistry.OnPlayerChanged -= OnPlayerChanged;
+    }
+
+    private void OnPlayerChanged(Transform playerTransform)
+    {
+        Target = playerTransform; // null when player is destroyed → mouse fallback in GetTargetPosition
+    }
+
     public void Initialize(CentipedeConfig cfg, Transform playerTarget, ScentField scentField)
     {
         config = cfg;
-        Target = playerTarget;
+        // Prefer the live registry; fall back to the explicitly passed transform
+        Target = PlayerRegistry.PlayerTransform != null ? PlayerRegistry.PlayerTransform : playerTarget;
         field  = scentField;
         rb     = GetComponent<Rigidbody2D>();
 

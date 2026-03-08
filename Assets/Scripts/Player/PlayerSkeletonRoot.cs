@@ -46,6 +46,11 @@ public class PlayerSkeletonRoot : MonoBehaviour
         rb.constraints  = RigidbodyConstraints2D.FreezeRotation;
     }
 
+    void OnDestroy()
+    {
+        PlayerRegistry.Unregister(transform);
+    }
+
     void Update()
     {
         // Buffer the jump request so it isn't lost between Update and FixedUpdate.

@@ -212,6 +212,8 @@ public class PlayerAssembler : MonoBehaviour
         // Activating triggers Awake then Start on the complete hierarchy
         root.SetActive(true);
 
+        PlayerRegistry.Register(root.transform);
+
         return root;
     }
 

@@ -129,3 +129,10 @@ Topic: Tuning system dimension design for procedural walking
 Concepts:
   - **Coordinate descent ordering**: When tuning variables that feed into each other, the order of dimensions matters as much as the dimensions themselves. Walk Shape (trigger geometry) must precede Walk Timing (duration/speed) because the cadence only reads correctly once you know where and when steps fire — evaluating timing on top of broken shape produces confounded judgments.
   - **Init-only vs live variables**: Distinguishing variables that must take effect at spawn (rb.mass, gravityScale) from those readable per-frame determines whether the tuning system can sweep them continuously or must batch-respawn. FootMovement's FSM vars are all live-readable, making them cheap to tune — a key advantage of the per-frame config pattern.
+
+---
+Date: 2026-03-07
+Topic: Player registry and auto-targeting
+Concepts:
+  - **Observer Pattern**: Systems subscribe to a shared event rather than polling or holding direct references. `PlayerRegistry.OnPlayerChanged` lets the camera and navigator react instantly to player spawn/death without coupling them to `PlayerAssembler`.
+  - **Graceful Degradation**: When the primary target is absent, a system falls back to sensible behavior (mouse follow) rather than failing. The fallback keeps the game playable in editor dev sessions where no player exists yet.

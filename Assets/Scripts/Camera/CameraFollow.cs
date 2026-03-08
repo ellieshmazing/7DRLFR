@@ -1,14 +1,21 @@
-﻿using UnityEngine;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// Smooth follow camera. Attach to your scene's Camera object.
 /// Reads smoothing and offset values from a CameraConfig asset.
 /// Falls back to Inspector values if no config is assigned.
+///
+/// Target priority:
+///   1. PlayerRegistry (auto-populated when a player is spawned/destroyed)
+///   2. Mouse world position (when no player exists)
+/// The Inspector "target" field can still override this at edit-time,
+/// but will be replaced at runtime if a player is registered.
 /// </summary>
 public class SmoothFollowCamera : MonoBehaviour
 {
     [Header("Target")]
-    [Tooltip("The transform this camera will follow. Assign your player here.")]
+    [Tooltip("Optional manual override. At runtime, PlayerRegistry takes precedence if a player exists.")]
     public Transform target;
 
     [Header("Config")]
@@ -33,18 +40,37 @@ public class SmoothFollowCamera : MonoBehaviour
 
     // -------------------------------------------------------------------------
 
+    private void Awake()
+    {
+        PlayerRegistry.OnPlayerChanged += OnPlayerChanged;
+
+        // Sync with any player that already exists (e.g. spawned before this camera)
+        if (PlayerRegistry.PlayerTransform != null)
+            target = PlayerRegistry.PlayerTransform;
+    }
+
+    private void OnDestroy()
+    {
+        PlayerRegistry.OnPlayerChanged -= OnPlayerChanged;
+    }
+
+    private void OnPlayerChanged(Transform playerTransform)
+    {
+        target = playerTransform; // null when player is destroyed → falls back to mouse
+    }
+
     private void Start()
     {
         if (config != null)
         {
-            _smoothness = config.smoothing;
-            _positionOffset = config.positionOffset;
-            _rotationOffset = config.rotationOffset;
+            _smoothness      = config.smoothing;
+            _positionOffset  = config.positionOffset;
+            _rotationOffset  = config.rotationOffset;
         }
         else
         {
             Debug.LogWarning("[SmoothFollowCamera] No CameraConfig assigned — using Inspector fallback values.");
-            _smoothness = smoothness;
+            _smoothness     = smoothness;
             _positionOffset = positionOffset;
             _rotationOffset = rotationOffset;
         }
@@ -52,13 +78,9 @@ public class SmoothFollowCamera : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (target == null)
-        {
-            Debug.LogWarning("[SmoothFollowCamera] No target assigned.");
-            return;
-        }
+        Vector3 followPos = GetFollowPosition();
 
-        Vector3 desiredPosition = target.position + _positionOffset;
+        Vector3 desiredPosition = followPos + _positionOffset;
 
         transform.position = Vector3.Lerp(
             transform.position,
@@ -72,5 +94,22 @@ public class SmoothFollowCamera : MonoBehaviour
             desiredRotation,
             _smoothness * Time.deltaTime
         );
+    }
+
+    private Vector3 GetFollowPosition()
+    {
+        if (target != null)
+            return target.position;
+
+        // No player — follow mouse cursor in world space
+        if (Mouse.current != null)
+        {
+            Vector2 mouseScreen = Mouse.current.position.ReadValue();
+            Vector3 mouseWorld  = Camera.main.ScreenToWorldPoint(new Vector3(mouseScreen.x, mouseScreen.y, Mathf.Abs(Camera.main.transform.position.z)));
+            mouseWorld.z = 0f;
+            return mouseWorld;
+        }
+
+        return transform.position; // stationary fallback
     }
 }
