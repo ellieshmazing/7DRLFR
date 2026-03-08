@@ -227,3 +227,17 @@ Topic: Body integrity constraints — leash, wall suppression, step collision
 Concepts:
   - **Layered Constraint Defense**: A single constraint rarely covers all failure modes. The body integrity system uses five layers: wall suppression (prevents force), leash spring (corrects drift), hard clamp (caps separation), step pre-check (prevents bad steps), and arc collision (catches mid-step failures). Each layer is cheap and simple; their overlap creates robustness. This mirrors how platformer physics stacks coyote time, input buffering, and apex tolerance — each catches a different timing failure.
   - **Position Constraint vs. Force Constraint**: The leash uses a quadratic spring in the soft zone (force-based, allows natural deceleration) and a hard position clamp at the boundary (instant correction). Force-only constraints allow overshoot; position-only constraints cause teleporting. The blend — spring for steady-state, clamp for emergency — is the standard approach in ragdoll joint limits and IK solvers.
+
+---
+Date: 2026-03-08
+Topic: Impact crouch system — landing compression, energy storage, and footfall impulse
+Concepts:
+  - **Energy Layering**: The impact crouch system separates two concerns that land at the same moment: the visual snap (squashPunch, decays fast) and the gameplay state (crouchAmount, holds until dissipated or released). Separating them lets the visual feedback be tuned independently of the mechanical window — a design principle common in action games where "juice" (visual response) and "feel" (state effect) are authored on different timelines to avoid coupling.
+  - **Skill Expression Window**: The crouchDissipationRate is a design lever for how much timing skill the bounce-jump rewards. A long window makes the system forgiving and accessible; a short one makes it a tight execution mechanic. This is a common pattern — coyote time, input buffering, and apex forgiveness all tune the size of a skill window without removing the skill itself.
+
+---
+Date: 2026-03-08
+Topic: Body Integrity tuning dimension documentation
+Concepts:
+  - **Defensive vs. expressive mechanics**: Some systems exist not to create feel but to enforce invariants — they are invisible when working correctly. Body integrity (leash, ground probe, separation limit) is a defensive layer that prevents the expressive procedural walking system from producing incoherent states. The design discipline is to tune defensive parameters until they never fire in normal play, then stop.
+  - **Failure-mode tuning**: Defensive parameters cannot be tuned by feel because correct behavior produces no sensation. The only reliable method is to deliberately stress-test edge cases — wall corners, thin ledges, sprint-to-stop transitions — and observe whether the system silently holds coherence. This is the inverse of feel tuning, where you iterate toward a positive sensation rather than away from a negative one.
