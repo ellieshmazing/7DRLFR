@@ -52,7 +52,18 @@ public class PlayerConfig : ScriptableObject
     [Min(0.1f)] public float moveForce = 15f;
     [Tooltip("Range: 2–15. Top speed feel.")]
     [Min(0.1f)] public float maxSpeed = 5f;
-    // TEST: Run left-right. Start and stop. Try to dodge.
+    [Tooltip("Force multiplier when airborne (0 = no air control, 1 = full). try 0.15–0.4")]
+    [Range(0f, 1f)] public float airControlRatio = 0.25f;
+    [Tooltip("Linear damping when grounded. Higher = quicker stops. try 3–8")]
+    [Min(0f)] public float groundDamping = 5f;
+    [Tooltip("Linear damping when airborne. Lower = more momentum preservation. try 0.3–1.5")]
+    [Min(0f)] public float airDamping = 0.5f;
+    [Tooltip("How fast damping transitions between ground/air values (units/s). " +
+             "Prevents jarring speed loss on landing. try 10–30")]
+    [Min(1f)] public float dampingTransitionSpeed = 15f;
+    [Tooltip("Force multiplier for direction reversal at max speed while grounded. try 1.0–2.0")]
+    [Min(0f)] public float turnBoostFactor = 1.5f;
+    // TEST: Run left-right. Start and stop. Try to dodge. Jump and check air control.
 
     [Header("3. Walking Trigger")]
     [Tooltip("Range: 1–12 px. Low = twitchy constant stepping. High = shuffling lag.")]
@@ -117,11 +128,31 @@ public class PlayerConfig : ScriptableObject
     // TEST: Stand still. Run. Jump. Evaluate silhouette proportions and stability feel.
 
     [Header("9. Jump Feel")]
-    [Tooltip("Range: 3–20. Base jump impulse (kg·m/s); actual velocity = jumpSpeed / footMass.")]
+    [Tooltip("Range: 3–20. Base jump velocity (wu/s). Directly sets foot velocity on jump.")]
     [Min(0f)] public float jumpSpeed = 8f;
-    [Tooltip("Range: 0–25. Extra impulse per world-unit of hip compression.")]
+    [Tooltip("Range: 0–25. Extra velocity per world-unit of hip compression.")]
     [Min(0f)] public float jumpOffsetFactor = 10f;
-    // TEST: Jump from flat ground (tests jumpSpeed). Crouch into ground then jump (tests offsetFactor). Cross a gap.
+    [Tooltip("How much horizontal speed contributes to jump direction. " +
+             "0 = always vertical. try 0.05–0.3")]
+    [Min(0f)] public float forwardJumpFactor = 0.15f;
+    [Tooltip("Horizontal speed below which jumps are perfectly vertical. " +
+             "Prevents accidental lean at low speeds. try 0.3–0.8")]
+    [Min(0f)] public float directionalJumpDeadzone = 0.5f;
+    [Tooltip("Y velocity multiplier when jump is released early. " +
+             "Lower = more height control. X is preserved (hop dash). try 0.3–0.6")]
+    [Range(0f, 1f)] public float variableJumpCutMultiplier = 0.45f;
+    [Tooltip("Seconds after leaving ground where jump is still valid. try 0.06–0.15")]
+    [Min(0f)] public float coyoteTime = 0.1f;
+    [Tooltip("Seconds before landing where a jump input is buffered. try 0.06–0.12")]
+    [Min(0f)] public float jumpBufferTime = 0.1f;
+    [Tooltip("Max upward velocity at which feet can still lock to ground " +
+             "(apex tolerance). try 0.1–0.5")]
+    [Min(0f)] public float landingVelocityTolerance = 0.3f;
+    [Tooltip("Seconds after a jump where foot X spring is suppressed, " +
+             "letting feet carry launch momentum visually. try 0.04–0.1")]
+    [Min(0f)] public float jumpCoastTime = 0.06f;
+    // TEST: Jump from flat ground. Sprint and jump (directional). Tap vs hold space (variable height).
+    // Walk off ledge and jump (coyote). Press jump just before landing (buffer). Crouch then jump.
 
     [Header("10. Gun Feel")]
     [Tooltip("Range: 3–25 wu/s. World units per second of fired projectiles.")]
@@ -176,6 +207,58 @@ public class PlayerConfig : ScriptableObject
 
     [Tooltip("[TEMP] Maximum random projectile diameter in world units")]
     [Min(0.01f)] public float tempMaxProjectileDiameter = 0.8f;
+
+    // ════════════════════════════════════════════════════════════════════════════════════════════
+    // CROUCH & FOOTFALL
+    // ════════════════════════════════════════════════════════════════════════════════════════════
+
+    [Header("Crouch")]
+    [Tooltip("Max crouch depth in source pixels. try 3–8")]
+    [Min(0f)] public float maxCrouchDepth = 5f;
+    [Tooltip("Speed of crouch compression in px/s. Release is 2x this. try 15–40")]
+    [Min(0.1f)] public float crouchSpeed = 25f;
+    // TEST: Hold down while standing. Watch torso lower. Jump from crouch (should be higher).
+
+    [Header("Footfall")]
+    [Tooltip("Forward impulse applied to torso each time a foot locks from stepping. " +
+             "Scaled down near maxSpeed to prevent runaway. try 0.1–1.0")]
+    [Min(0f)] public float footfallImpulse = 0.3f;
+    [Tooltip("Minimum horizontal speed for footfall impulse to fire. try 0.3–1.0")]
+    [Min(0f)] public float footfallMinSpeed = 0.3f;
+    // TEST: Walk slowly and feel steps. Sprint — the rhythm should accelerate.
+
+    // ════════════════════════════════════════════════════════════════════════════════════════════
+    // WEIGHT
+    // ════════════════════════════════════════════════════════════════════════════════════════════
+
+    [Header("Weight")]
+    [Tooltip("Base torso RB mass (no ammo). try 1–3")]
+    [Min(0.1f)] public float baseTorsoMass = 1f;
+    [Tooltip("Mass added per unit of ammo. try 0.01–0.1")]
+    [Min(0f)] public float ammoWeightPerUnit = 0.02f;
+    // TEST: Set high ammo weight. Jump height and acceleration should decrease subtly.
+
+    // ════════════════════════════════════════════════════════════════════════════════════════════
+    // WALL INTERACTION
+    // ════════════════════════════════════════════════════════════════════════════════════════════
+
+    [Header("Wall Interaction")]
+    [Tooltip("Max downward speed during wall slide. try 1.0–3.0")]
+    [Min(0f)] public float maxWallSlideSpeed = 2f;
+    [Tooltip("Foot gravity scale during wall slide. " +
+             "Should match torso wall slide behavior to prevent separation. try 0.3–0.7")]
+    [Min(0f)] public float wallSlideFootGravityScale = 0.5f;
+    // TEST: Fall against a wall while holding toward it. Should slide slowly.
+
+    // ════════════════════════════════════════════════════════════════════════════════════════════
+    // FOOT DAMPING
+    // ════════════════════════════════════════════════════════════════════════════════════════════
+
+    [Header("Foot RB Damping")]
+    [Tooltip("Foot linear damping when any foot is grounded. try 2–6")]
+    [Min(0f)] public float footGroundDamping = 4f;
+    [Tooltip("Foot linear damping when airborne. Lower = less spring fighting. try 0.1–1.0")]
+    [Min(0f)] public float footAirDamping = 0.3f;
 
     // ════════════════════════════════════════════════════════════════════════════════════════════
     // FOOT MOVEMENT — SECONDARY PARAMETERS

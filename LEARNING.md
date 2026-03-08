@@ -199,3 +199,10 @@ Topic: Step-based tuning sweep for init-only variables
 Concepts:
   - **Discrete vs. Continuous Parameter Spaces**: Some game parameters (like collider radius or pathfinder grid resolution) only take effect after a full respawn, making continuous sweeps meaningless — the entity lives its whole life at one value. A discrete step-and-observe loop is the correct mental model for these: set, respawn, watch, repeat. The step size (10-25% of range) trades coverage for observation time.
   - **Ping-Pong Iteration**: Rather than sweeping monotonically (missing the high or low end) or randomly (revisiting values), a direction-reversing walk guarantees full coverage of the parameter space with predictable, human-followable progression — the same property the sine sweep provides for continuous variables, just discretized.
+
+---
+Date: 2026-03-08
+Topic: Movement overhaul — foot-gated locomotion, directional jumping, forgiveness systems
+Concepts:
+  - **Foot-gated ground control**: Tying horizontal acceleration to foot contact state (locked = full force, airborne = reduced) makes the procedural walking animation mechanically truthful rather than decorative. The player reads the feet to understand the system: when feet grip the ground, they have control. When airborne, they're committed to their arc. This is the core of Rain World's movement philosophy — the animation IS the physics, not a skin over it.
+  - **Forgiveness vs. skill ceiling**: Coyote time and jump buffering are mathematically tiny grace windows (~100ms) that catch honest timing errors without reducing the skill ceiling. The critical design distinction is separating `isGrounded` (any foot locked, no grace — used for force gating and damping) from `canJump` (includes coyote window — used ONLY for jump eligibility). Conflating the two would grant full ground control during coyote time, making ledge transitions feel inconsistent. The separation ensures forgiveness helps jumping without leaking into movement physics.
