@@ -171,3 +171,10 @@ Topic: Jump grounding — foot re-lock fix
 Concepts:
   - **Intent-gated state transitions**: Gating an FSM transition on velocity direction (y < 0) converts a raw physics fact (collision contact) into a game-logic fact (the foot is genuinely descending). Without this gate, physics events that are technically true but semantically wrong (contact persisting for one frame after a jump) can drive the FSM into incorrect states.
   - **Physics vs. game-logic lag**: Collision callbacks (OnCollisionExit2D) fire asynchronously relative to gameplay code, creating a gap where `isGrounded` can remain true while the entity has logically left the ground. The velocity check bridges this gap without arbitrary timers.
+
+---
+Date: 2026-03-07
+Topic: Tuning dimension reorganization — scent navigation & procedural walking
+Concepts:
+  - **Dimension deprecation hygiene**: Tuning parameters belong to specific mechanical systems. When a system is replaced (arc-based pathing → scent navigation), its tuning dimensions become invalid garbage — they reference fields that no longer exist, and leaving them in the array would cause reflection errors at runtime. Treating the dimension list as living documentation that must stay synchronized with the config forces you to notice when mechanics diverge.
+  - **Parameter taxonomy**: Not every config field belongs in a tuning dimension. Some params are structural (nodeCount, scentHistorySize), some are tech constants (stepRaycastDistance), and some are [TEMP] placeholders. Choosing which to expose for interactive tuning — and which to leave as raw SO fields — is itself a design decision: it defines the *tunable surface* of the game feel.

@@ -10,24 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ff60679b078f6a84cafb8f957d07cd55, type: 3}
-  m_Name: 06_StanceGeometry
+  m_Name: 06_HipSpring
   m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
-  dimensionName: Stance Geometry
-  testScenario: Stand still. Run. Jump. Evaluate silhouette proportions and stability
-    feel.
+  dimensionName: Hip Spring
+  testScenario: Jump and land. Watch torso bob. Higher frequency = faster recovery.
+    Low damping = head-bobbing.
   variables:
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
-    fieldName: standHeight
-    min: 6
-    max: 20
-    defaultValue: 12
+    fieldName: hipFrequency
+    min: 5
+    max: 25
+    defaultValue: 10.95
     requiresRespawn: 0
     liveSync: 0
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
-    fieldName: footSpreadX
-    min: 2
-    max: 10
-    defaultValue: 4
+    fieldName: hipDampingRatio
+    min: 0.2
+    max: 1.2
+    defaultValue: 0.46
     requiresRespawn: 0
     liveSync: 0
   sweepDuration: 10

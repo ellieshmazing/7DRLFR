@@ -10,24 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ff60679b078f6a84cafb8f957d07cd55, type: 3}
-  m_Name: 05_TorsoSpring
+  m_Name: 10_GunFeel
   m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
-  dimensionName: Torso Spring
-  testScenario: Change direction rapidly. Watch torso visual lag behind skeleton
-    node. Pure visual polish.
+  dimensionName: Gun Feel
+  testScenario: Shoot at targets at near, mid, and far range. Hold fire button for
+    sustained fire.
   variables:
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
-    fieldName: torsoFrequency
-    min: 4
-    max: 20
-    defaultValue: 8.94
+    fieldName: firingSpeed
+    min: 3
+    max: 25
+    defaultValue: 10
     requiresRespawn: 0
-    liveSync: 1
+    liveSync: 0
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
-    fieldName: torsoDampingRatio
-    min: 0.1
-    max: 1.5
-    defaultValue: 0.28
+    fieldName: fireCooldown
+    min: 0.05
+    max: 0.5
+    defaultValue: 0.25
     requiresRespawn: 0
-    liveSync: 1
+    liveSync: 0
   sweepDuration: 10

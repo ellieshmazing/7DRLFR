@@ -4,7 +4,7 @@
 
 A runtime tuning system that lets the developer efficiently discover optimal variable values for BallWorld's Player and Centipede systems by *playing the game*. The system replaces raw stiffness/damping spring parameters with perceptually meaningful frequency/dampingRatio pairs (reducing coupled knobs), groups ~60 variables into 21 ordered tuning dimensions, and provides a multi-phase workflow: continuous sweep to bracket viable ranges, A/B forced-choice comparison to converge on preferred values, and cross-validation to catch interaction effects. Tuned values write directly to ScriptableObject assets. Named profiles are saved as SO duplicates in organized subfolders. A visual overlay shows current tuning state including a computed spring step-response waveform. Init-only variables trigger automatic entity respawning when changed.
 
-Dimensions 1–16 apply to both pathfinder modes. When `useScentNavigator == true`, dimensions 14–15 (arc-specific: `minTurnRadius`, `arcAngleVariance`, `replanInterval`) are skipped automatically, and dimensions 17–21 (scent-specific) are appended. When using the arc pathfinder, dimensions 17–21 are skipped.
+Dimensions 1–14 apply to both pathfinder modes. Dimension 14 (Pathing Speed) tunes only `speed` — `minTurnRadius` was removed when the arc pathfinder was deprecated. Dimensions 15–16 (Pathing Behavior, Wriggle Feel) are currently deprecated: their variables (`arcAngleVariance`, `replanInterval`, `waveAmplitude`, `waveFrequency`, `wavePhaseOffsetPerNode`) no longer exist in CentipedeConfig and should be skipped. When `useScentNavigator == true`, also run dimensions 17–21 (scent-specific). When using the arc pathfinder, skip 17–21.
 
 ---
 
@@ -147,7 +147,7 @@ Init-only variables (footMass → rb.mass, footGravityScale → rb.gravityScale,
 
 **Concept:** Coordinate descent — group coupled variables into perceptual dimensions, tune one dimension at a time in dependency order.
 
-**Role:** Structures ~50 raw variables into 16 cognitively tractable tuning passes. Each dimension isolates one axis of feel.
+**Role:** Structures ~50 raw variables into 21 ordered tuning passes (14 active + 2 deprecated arc dims + 5 scent nav dims). Each dimension isolates one axis of feel.
 
 **Logic:**
 ```
@@ -705,9 +705,9 @@ Each dimension is a TuningDimensionDef ScriptableObject. Create one asset per ro
 | 11 | Body Spring | `wiggleFrequency` (4–20), `wiggleDampingRatio` (0.1–1.2) | — | No | Watch centipede traverse. Hit it with a projectile. Observe wobble and recovery. |
 | 12 | Body Geometry | `followDistance` (0.1–0.8), `nodeRadius` (0.05–0.4) | — | **Yes** | Watch centipede at rest and in motion. Evaluate spacing and body proportions. |
 | 13 | Destruction | `detachDistance` (0.2–1.5) | — | No | Shoot centipede with different projectile sizes. How hard is it to break? Too easy = trivial. Too hard = frustrating. |
-| 14 | Pathing Speed | `speed` (1–8), `minTurnRadius` (0.5–4) | — | **Yes** | Let centipede chase. Feel the threat level. High speed + low turn radius = aggressive. |
-| 15 | Pathing Behavior | `arcAngleVariance` (10–120°), `replanInterval` (0.5–4s) | — | **Yes** | Watch approach patterns for 30+ seconds. High variance = unpredictable. Low replan = adaptive. |
-| 16 | Wriggle Feel | `waveAmplitude` (0.1–1.0), `waveFrequency` (0.5–5), `wavePhaseOffsetPerNode` (0.1–1.0) | — | **Yes** | Watch centipede approach from a distance. Evaluate character and organic feel. |
+| 14 | Pathing Speed | `speed` (1–8) | — | **Yes** | Let centipede chase. Feel the threat level. Higher speed = more aggressive. (`minTurnRadius` removed — arc pathfinder deprecated.) |
+| ~~15~~ | ~~Pathing Behavior~~ | ~~`arcAngleVariance`, `replanInterval`~~ | — | — | **Deprecated** — fields removed from CentipedeConfig. Skip. |
+| ~~16~~ | ~~Wriggle Feel~~ | ~~`waveAmplitude`, `waveFrequency`, `wavePhaseOffsetPerNode`~~ | — | — | **Deprecated** — fields removed from CentipedeConfig. Skip. |
 
 #### Scent Navigator Dimensions (tune instead of 14–15 when `useScentNavigator == true`)
 
@@ -738,7 +738,7 @@ The order is not arbitrary — it follows the dependency chain:
 1. Body Spring first because it defines the centipede's visual character.
 2. Geometry before destruction because nodeRadius affects ball mass (quadratic scaling), which affects detachment energy.
 3. Destruction before pathing because fragility determines threat level — pathing speed should be tuned against it.
-4. Wriggle last because it's visual polish.
+4. Dims 15–16 (Pathing Behavior, Wriggle Feel) are deprecated — skip them.
 
 **Scent Navigator (dimensions 17–21, replaces 14–15):**
 1. Scent Trail first because `scentDecayTime` and `scentSigma` define the signal all other behaviors are reacting to. Wrong trail shape makes every other dimension impossible to evaluate — the centipede either has no signal or a field that's so broad every direction looks the same.
@@ -781,7 +781,7 @@ The tuning system excludes playerScale. After tuning at a chosen scale, if you l
 - `TuningOverlay.cs` — Canvas-based UI overlay with waveform rendering
 - `AutoRespawner.cs` — coroutine-based destroy-and-respawn for init-only variable changes
 - `SpringParams.cs` — static helper class with ComputeStiffness/ComputeDamping
-- 21× TuningDimensionDef assets (one per dimension, configured in Inspector; dims 14–15 and 17–21 are conditional on navigator mode)
+- 21× TuningDimensionDef assets (one per dimension, configured in Inspector; dims 15–16 are deprecated placeholders; dims 17–21 are scent-navigator-only)
 
 ### Edge Cases
 
@@ -801,7 +801,7 @@ The tuning system excludes playerScale. After tuning at a chosen scale, if you l
 
 8. **Cross-validation scope**: Only perturb dimensions within the same entity. Don't perturb centipede variables when cross-validating the player, and vice versa. Run Player cross-validation first, then Centipede cross-validation.
 
-10. **Conditional dimension skipping for scent/arc navigator**: When `CentipedeConfig.useScentNavigator == true`, TuningManager must skip dimensions 14 and 15 at runtime — they contain arc-only fields (`minTurnRadius`, `arcAngleVariance`, `replanInterval`) that have no effect on ScentFieldNavigator. Conversely, when using the arc pathfinder, skip dimensions 17–21. Detect this by inspecting the target config's `useScentNavigator` bool before entering a dimension. Dimension 14's `speed` variable is shared — it remains relevant for both navigators, but in scent mode the entire dimension is replaced by dimensions 17–21 which tune scent-specific speed behavior alongside the base `speed` (kept at its current value from dimension 14's earlier arc-mode pass).
+10. **Conditional dimension skipping for scent/arc navigator**: Dimensions 15 and 16 are fully deprecated — their variables (`arcAngleVariance`, `replanInterval`, `waveAmplitude`, `waveFrequency`, `wavePhaseOffsetPerNode`) no longer exist in CentipedeConfig. TuningManager should skip them unconditionally (reflection lookup will fail). Dimension 14 (`speed` only) is valid for both navigators. Dimensions 17–21 are scent-navigator-specific: skip them when using the arc pathfinder. Detect navigator mode by inspecting `CentipedeConfig.useScentNavigator` before entering each dimension.
 
 11. **`scentDecayTime` and `scentSigma` are not currently live**: `ScentField` copies these two values from config at `Initialize()` into private fields (`decayTime`, `sigma`) and uses those copies in `Evaluate()`. Without a refactor they would require respawn. Preferred fix: store a `CentipedeConfig` reference in `ScentField` instead of copying, and read `config.scentDecayTime` / `config.scentSigma` directly inside `Evaluate()`. This is a one-line change per field and enables live tuning without respawn. Mark them `requiresRespawn: false` after this refactor. If the refactor is deferred, mark them `requiresRespawn: true` and also call `ScentField.Instance.Clear()` alongside the respawn so the new config values govern a fresh field (not a stale field initialized under the old values).
 

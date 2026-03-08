@@ -10,11 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ff60679b078f6a84cafb8f957d07cd55, type: 3}
-  m_Name: 03_FootSpring
+  m_Name: 05_FootSpring
   m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
   dimensionName: Foot Spring
-  testScenario: Run and stop suddenly. Watch feet settle. Change direction. Low damping
-    = swingy feet.
+  testScenario: Jump and land; watch feet during airborne phase and on touchdown.
+    Low damping = feet oscillate past formation; high = feet snap immediately. (Spring
+    governs airborne phase only; Locked/Stepping feet are position-driven.)
   variables:
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
     fieldName: footFrequency
