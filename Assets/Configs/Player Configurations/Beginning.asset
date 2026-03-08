@@ -14,13 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerConfig
   playerScale: 1
   footMass: 0.1
-  footGravityScale: 1
-  moveForce: 13.03
+  footGravityScale: 10
+  moveForce: 9.388902
   maxSpeed: 15
-  strideTriggerDistance: 7.7376146
+  airControlRatio: 0.25
+  groundDamping: 5
+  airDamping: 0.5
+  dampingTransitionSpeed: 15
+  turnBoostFactor: 1.5
+  strideTriggerDistance: 1.0810666
   idleSpeedThreshold: 0.2939936
   strideProjectionTime: 0.25
-  stepHeight: 1.9209137
+  stepHeight: 7.8692307
   baseStepDuration: 0.2
   minStepDuration: 0.06
   stepSpeedScale: 0.3
@@ -38,6 +43,13 @@ MonoBehaviour:
   footOffsetY: 8
   jumpSpeed: 5
   jumpOffsetFactor: 15
+  forwardJumpFactor: 0.15
+  directionalJumpDeadzone: 0.5
+  variableJumpCutMultiplier: 0.45
+  coyoteTime: 0.1
+  jumpBufferTime: 0.1
+  landingVelocityTolerance: 0.3
+  jumpCoastTime: 0.06
   firingSpeed: 3.2645638
   fireCooldown: 0.27074963
   torsoLayers:
@@ -77,10 +89,31 @@ MonoBehaviour:
   projectileGrowTime: 0.15
   tempMinProjectileDiameter: 0.2
   tempMaxProjectileDiameter: 0.8
+  impactCrouchFactor: 0.5
+  crouchDepthRatio: 0.4
+  crouchDissipationRate: 15
+  impactSquashOvershoot: 1
+  squashPunchDecayRate: 40
+  landingCaptureWindow: 0.05
+  footfallImpulse: 0.3
+  footfallMinSpeed: 0.3
+  baseTorsoMass: 1
+  ammoWeightPerUnit: 0.02
+  maxWallSlideSpeed: 2
+  wallSlideFootGravityScale: 0.5
+  footGroundDamping: 4
+  footAirDamping: 0.3
   maxWalkableAngle: 50
   stepRaycastDistance: 30
   footXLockThreshold: 1
   footXLockVelocity: 0.1
   footXUnlockThreshold: 3
+  leashSoftRadius: 6
+  leashHardRadius: 10
+  leashForceMult: 3
+  maxFootSeparation: 20
+  groundProbeDistance: 2
+  edgeLandingNudge: 0.5
+  minStepDistance: 1
   torsoNodeGizmoColor: {r: 0, g: 1, b: 1, a: 1}
   footNodeGizmoColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
