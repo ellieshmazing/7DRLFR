@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c652bb2bcdf483d45b0b007d756c6fa8, type: 3}
-  m_Name: Beginning
+  m_Name: Tuner
   m_EditorClassIdentifier: Assembly-CSharp::PlayerConfig
   playerScale: 1
-  footMass: 1.57
+  footMass: 1.265
   footGravityScale: 1
   moveForce: 13.03
   maxSpeed: 15
@@ -64,11 +64,11 @@ MonoBehaviour:
     localOffset: {x: 4.5, y: 0.5}
     sortingOrder: 2
   leftFoot:
-    sprite: {fileID: -1420021654, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    sprite: {fileID: 2243031002349522149, guid: f01fda41aa7dbc34282b83335302e5b8, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
     sortingOrder: -1
   rightFoot:
-    sprite: {fileID: 2096353187, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    sprite: {fileID: -9037969273874986696, guid: f01fda41aa7dbc34282b83335302e5b8, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
     sortingOrder: -1
   projectileDef: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}

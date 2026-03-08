@@ -48,6 +48,8 @@ public class FootMovement : MonoBehaviour
         public float        stepProgress;
         public float        stepDuration;
         public int          side; // -1 = left, +1 = right
+        public bool         xLocked;
+        public float        lockedX;
     }
 
     private FootData _left;
@@ -182,21 +184,19 @@ public class FootMovement : MonoBehaviour
             case FootState.Airborne:
                 foot.rb.gravityScale = config.footGravityScale;
 
-                // Spring toward (hipX ± footSpreadX, hipY) — reuses foot spring params.
-                float hipX      = transform.position.x;
-                float hipY      = transform.position.y;
-                float stiffness = config.FootStiffness;
-                float damping   = config.FootDamping;
-                float mass      = config.footSpringMass;
-                float targetX   = hipX + foot.side * config.footSpreadX * pixelToWorld;
+                float hipX = transform.position.x;
+                float hipY = transform.position.y;
 
-                float xDisp  = foot.rb.position.x - targetX;
+                // X: spring with settle-lock so foot tracks hip horizontally.
+                UpdateAirborneX(foot, hipX, dt);
+
+                // Y: standard spring toward hip; gravity applied by physics engine.
                 float yDisp  = foot.rb.position.y - hipY;
-                float xAccel = (-stiffness * xDisp - damping * foot.rb.linearVelocity.x) / mass;
-                float yAccel = (-stiffness * yDisp - damping * foot.rb.linearVelocity.y) / mass;
-
+                float yAccel = (-config.FootStiffness * yDisp
+                               - config.FootDamping * foot.rb.linearVelocity.y)
+                               / config.footSpringMass;
                 foot.rb.linearVelocity = new Vector2(
-                    foot.rb.linearVelocity.x + xAccel * dt,
+                    foot.rb.linearVelocity.x,
                     foot.rb.linearVelocity.y + yAccel * dt);
 
                 if (foot.contact.isGrounded
@@ -225,6 +225,7 @@ public class FootMovement : MonoBehaviour
     private void StartStep(FootData foot, Vector2 vel,
                            float torsoX, float torsoY, Vector2? target = null)
     {
+        foot.xLocked      = false;
         foot.stepStartPos  = foot.rb.position;
         foot.stepTargetPos = target ?? ComputeStepTarget(foot, vel, torsoX, torsoY);
         foot.stepProgress  = 0f;
@@ -266,11 +267,13 @@ public class FootMovement : MonoBehaviour
         foot.rb.position       = worldPos;
         foot.rb.linearVelocity = Vector2.zero;
         foot.rb.gravityScale   = 0f;
+        foot.xLocked           = false;
     }
 
     private void TransitionToAirborne(FootData foot)
     {
-        foot.state = FootState.Airborne;
+        foot.state   = FootState.Airborne;
+        foot.xLocked = false;
         // Velocity intentionally NOT reset — preserve momentum from prior state.
         if (foot.rb != null)
             foot.rb.gravityScale = config.footGravityScale;
@@ -300,6 +303,51 @@ public class FootMovement : MonoBehaviour
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Applies a horizontal spring toward the foot's ideal X (hipX ± footSpreadX).
+    /// Once displacement and velocity both settle below threshold, the X is pinned
+    /// kinematically (xLocked) so it tracks the hip with zero wobble. The lock
+    /// releases if the hip moves far enough that the foot needs to catch up again.
+    /// </summary>
+    private void UpdateAirborneX(FootData foot, float hipX, float dt)
+    {
+        float targetX = hipX + foot.side * config.footSpreadX * pixelToWorld;
+        float xDisp   = foot.rb.position.x - targetX;
+        float xVel    = foot.rb.linearVelocity.x;
+
+        if (foot.xLocked)
+        {
+            float unlockWu = config.footXUnlockThreshold * pixelToWorld;
+            if (Mathf.Abs(xDisp) > unlockWu)
+            {
+                foot.xLocked = false;
+                // Fall through to spring below.
+            }
+            else
+            {
+                // Hold x at the locked position; y remains spring/gravity driven.
+                foot.rb.position       = new Vector2(foot.lockedX, foot.rb.position.y);
+                foot.rb.linearVelocity = new Vector2(0f, foot.rb.linearVelocity.y);
+                return;
+            }
+        }
+
+        // Standard spring-damper on X.
+        float xAccel = (-config.FootStiffness * xDisp - config.FootDamping * xVel)
+                       / config.footSpringMass;
+        foot.rb.linearVelocity = new Vector2(xVel + xAccel * dt, foot.rb.linearVelocity.y);
+
+        // Settle-lock: once near target with low velocity, pin x to stop oscillation.
+        float lockWu = config.footXLockThreshold * pixelToWorld;
+        if (Mathf.Abs(xDisp) < lockWu && Mathf.Abs(xVel) < config.footXLockVelocity)
+        {
+            foot.xLocked           = true;
+            foot.lockedX           = targetX;
+            foot.rb.position       = new Vector2(targetX, foot.rb.position.y);
+            foot.rb.linearVelocity = new Vector2(0f, foot.rb.linearVelocity.y);
+        }
+    }
 
     private Vector2 ComputeStepTarget(FootData foot, Vector2 vel, float torsoX, float torsoY)
     {
