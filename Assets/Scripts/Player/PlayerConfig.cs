@@ -295,6 +295,28 @@ public class PlayerConfig : ScriptableObject
     [Min(0f)] public float footXUnlockThreshold = 3f;
 
     // ════════════════════════════════════════════════════════════════════════════════════════════
+    // BODY INTEGRITY
+    // ════════════════════════════════════════════════════════════════════════════════════════════
+
+    [Header("Body Leash")]
+    [Tooltip("Distance from foot center X where the leash spring begins pulling the torso back, in source pixels. try 4–10; lower = tighter body")]
+    [Min(0f)] public float leashSoftRadius = 6f;
+    [Tooltip("Hard clamp distance from foot center X, in source pixels. Must be > leashSoftRadius. try 8–16")]
+    [Min(0f)] public float leashHardRadius = 10f;
+    [Tooltip("Leash force at hard boundary as a multiple of moveForce. Quadratic ramp from soft to hard. try 2–5; higher = softer hard-clamp feel")]
+    [Min(0f)] public float leashForceMult = 3f;
+
+    [Header("Step Integrity")]
+    [Tooltip("Max horizontal distance between two feet, in source pixels. Step targets clamped to this. try 12–30")]
+    [Min(0f)] public float maxFootSeparation = 20f;
+    [Tooltip("Downward raycast from locked foot to verify ground, in source pixels. try 1–4; too low risks false positives")]
+    [Min(0.1f)] public float groundProbeDistance = 2f;
+    [Tooltip("Inward nudge when locking on a tilted contact normal (platform edge), in source pixels. try 0.3–1.5")]
+    [Min(0f)] public float edgeLandingNudge = 0.5f;
+    [Tooltip("Minimum step distance after obstacle pre-check shortening, in source pixels. Below this the step is skipped. try 0.5–2")]
+    [Min(0f)] public float minStepDistance = 1f;
+
+    // ════════════════════════════════════════════════════════════════════════════════════════════
     // DEBUG
     // ════════════════════════════════════════════════════════════════════════════════════════════
 
