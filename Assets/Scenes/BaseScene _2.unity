@@ -2272,8 +2272,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAssembler
   defaultSprite: {fileID: -839099904, guid: ec8e09fd763b58a4a8089a76d0052281, type: 3}
-  jumpSpeed: 8
-  jumpOffsetFactor: 10
   testConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
   testPosition: {x: 0, y: 0}
 --- !u!1 &2043817052
