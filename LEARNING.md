@@ -150,3 +150,17 @@ Topic: Dead code removal — old foot system
 Concepts:
   - **System Archaeology**: When replacing a system incrementally, the old code often lingers past its death date — referenced in comments, stale hierarchy docs, and vestigial base classes. Periodically sweeping for orphaned files and ghost references keeps the codebase honest and prevents future readers from being misled about how the system actually works.
   - **Minimal Interface Principle**: `PlayerSkeletonNode` used to expose tree traversal, snapping, and world-position helpers that the new `FootMovement` system never calls. Stripping it to just `localOffset` + gizmo makes its true contract obvious — it's a tagged scene object, not a behavior node.
+
+---
+Date: 2026-03-07
+Topic: Jump mechanic and procedural foot-hip spring coupling
+Concepts:
+  - **Coupled oscillators**: When two springs reference each other as targets (hip chases foot Y, foot chases hip Y), they form a coupled oscillator — each influences the other's equilibrium. The emergent behavior (realistic mutual wobble during flight) arises from the interaction, not from either spring alone. This is a common source of organic feel in procedural animation.
+  - **Execution order as logic**: Placing jump velocity assignment at order -10 (after FootMovement locks at -20) is a deliberate architectural choice where script execution order IS the control flow. The lock zeroes the velocity, then the jump overwrites it — this only works because the pipeline is deterministic. Breaking that ordering would silently break the mechanic.
+
+---
+Date: 2026-03-07
+Topic: Ball type extension system — OnLaunch hooks and composable behavior
+Concepts:
+  - **Lifecycle hooks as extension points**: Rather than subclassing Ball for each type, the system exposes named hooks (OnLaunch, OnFixedUpdate, OnCollision) that fire at meaningful moments. Each hook is a seam — a place where behavior can be injected without modifying the host class. The richer the hook vocabulary, the more types you can create without touching core code.
+  - **ScriptableObject as strategy pattern**: Using ScriptableObjects for BallEffect and BallMovementOverride is the Unity idiom for the Strategy pattern — swapping an algorithm at data time rather than compile time. One BallDefinition asset composes up to three strategies (sprite/mass, movement, effect), and the same strategy asset can be shared across multiple definitions without duplication.
