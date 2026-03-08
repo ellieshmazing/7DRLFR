@@ -10,25 +10,31 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ff60679b078f6a84cafb8f957d07cd55, type: 3}
-  m_Name: 18_ScentConsumption
+  m_Name: 16_BodyGeometry
   m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
-  dimensionName: Scent Consumption
-  testScenario: Stand completely still. Watch centipede spiral in. High rate + wide
-    radius = tight decisive spiral that closes fast. Low rate = looser circles, centipede
-    may drift past and arc back.
+  dimensionName: Body Geometry
+  testScenario: Watch centipede at rest and in motion. Evaluate silhouette spacing
+    and proportions. Shoot off a tail and check split length feels threatening.
   variables:
   - targetConfig: {fileID: 11400000, guid: d91345cba6825f74f8f0e8dabfb8cb5d, type: 2}
-    fieldName: scentConsumeRate
-    min: 0.5
-    max: 5
-    defaultValue: 2
-    requiresRespawn: 0
+    fieldName: nodeCount
+    min: 2
+    max: 20
+    defaultValue: 8
+    requiresRespawn: 1
     liveSync: 0
   - targetConfig: {fileID: 11400000, guid: d91345cba6825f74f8f0e8dabfb8cb5d, type: 2}
-    fieldName: scentConsumeRadius
-    min: 0.3
-    max: 1.5
-    defaultValue: 0.6
-    requiresRespawn: 0
+    fieldName: followDistance
+    min: 0.1
+    max: 0.8
+    defaultValue: 0.3
+    requiresRespawn: 1
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: d91345cba6825f74f8f0e8dabfb8cb5d, type: 2}
+    fieldName: nodeRadius
+    min: 0.05
+    max: 0.3
+    defaultValue: 0.15
+    requiresRespawn: 1
     liveSync: 0
   sweepDuration: 10

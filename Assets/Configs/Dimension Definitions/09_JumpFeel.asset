@@ -1,0 +1,83 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff60679b078f6a84cafb8f957d07cd55, type: 3}
+  m_Name: 09_JumpFeel
+  m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
+  dimensionName: Jump Feel
+  testScenario: Flat jump (jumpSpeed). Sprint-jump for lean (forwardJumpFactor). Tap
+    vs hold Space (variableJumpCutMultiplier). Walk off ledge and late-jump (coyoteTime).
+    Press jump before landing (jumpBufferTime).
+  variables:
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: jumpSpeed
+    min: 2
+    max: 20
+    defaultValue: 8
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: jumpOffsetFactor
+    min: 0
+    max: 25
+    defaultValue: 10
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: forwardJumpFactor
+    min: 0
+    max: 0.3
+    defaultValue: 0.1
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: directionalJumpDeadzone
+    min: 0
+    max: 1
+    defaultValue: 0.2
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: variableJumpCutMultiplier
+    min: 0
+    max: 0.9
+    defaultValue: 0.5
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: coyoteTime
+    min: 0
+    max: 0.2
+    defaultValue: 0.1
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: jumpBufferTime
+    min: 0
+    max: 0.2
+    defaultValue: 0.1
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: landingVelocityTolerance
+    min: 0
+    max: 0.5
+    defaultValue: 0.15
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: jumpCoastTime
+    min: 0
+    max: 0.12
+    defaultValue: 0.05
+    requiresRespawn: 0
+    liveSync: 0
+  sweepDuration: 10

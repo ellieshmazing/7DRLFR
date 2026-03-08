@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff60679b078f6a84cafb8f957d07cd55, type: 3}
+  m_Name: 14_GunFeel
+  m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
+  dimensionName: Gun Feel
+  testScenario: Shoot targets at near, mid, and far range. Hold fire for sustained
+    rhythm. Watch barrel emergence illusion. Shoot different sizes at centipede and
+    compare impact.
+  variables:
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: firingSpeed
+    min: 4
+    max: 25
+    defaultValue: 10
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: fireCooldown
+    min: 0.05
+    max: 0.8
+    defaultValue: 0.25
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: projectileInitialScale
+    min: 0.01
+    max: 0.3
+    defaultValue: 0.05
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: projectileGrowTime
+    min: 0.05
+    max: 0.4
+    defaultValue: 0.15
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: tempMinProjectileDiameter
+    min: 0.1
+    max: 0.5
+    defaultValue: 0.2
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: tempMaxProjectileDiameter
+    min: 0.2
+    max: 1
+    defaultValue: 0.5
+    requiresRespawn: 0
+    liveSync: 0
+  sweepDuration: 10
