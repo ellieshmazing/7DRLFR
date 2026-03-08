@@ -72,7 +72,13 @@ public class PlayerConfig : ScriptableObject
     [Min(0f)] public float idleSpeedThreshold = 0.5f;
     [Tooltip("Range: 0.02–0.4 s. How far ahead feet reach on fast strides.")]
     [Min(0f)] public float strideProjectionTime = 0.15f;
-    // TEST: Run at various speeds. Watch when feet step.
+    [Tooltip("Range: 1–6 px. Displacement from neutral at which idle correction fires a step. " +
+             "Replaces the old hardcoded 30% of footSpreadX. try 2–4")]
+    [Min(0f)] public float idleCorrectionThreshold = 2f;
+    [Tooltip("Range: 0.3–2 px. Displacement must fall below this before idle correction can fire again. " +
+             "Must be < idleCorrectionThreshold. try 0.5–1.5")]
+    [Min(0f)] public float idleCorrectionHysteresis = 0.75f;
+    // TEST: Stand still. Feet should settle without bouncing. Nudge torso — feet should correct once, then hold.
 
     [Header("4. Step Shape")]
     [Tooltip("Range: 1–12 px. High stepHeight = marching lift; low = shuffle.")]
