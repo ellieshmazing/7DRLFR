@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc27011ce0fdd3145830529c6b9c6859, type: 3}
+  m_Name: FireballEffect
+  m_EditorClassIdentifier: Assembly-CSharp::FireballEffect
+  fireTrailPrefab: {fileID: 7369429393956366048, guid: 55795063939375b4aa8a7e1af9bd1323, type: 3}
+  launchSound: {fileID: 0}
+  launchVolume: 0.8
+  explosionPrefab: {fileID: 3626991430138298493, guid: e54c6be7f62c58f44b61ce481a15d979, type: 3}
+  impactSound: {fileID: 0}
+  impactVolume: 1
+  explosionRadius: 1.5
+  explosionForce: 10

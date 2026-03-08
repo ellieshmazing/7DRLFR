@@ -8,6 +8,8 @@ using UnityEngine;
 public enum BallType
 {
     Standard,
+    Fire,
+    Sticky,
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -80,6 +82,13 @@ public abstract class BallEffect : ScriptableObject
     /// Default implementation does nothing.
     /// </summary>
     public virtual void OnLaunch(Ball ball, Rigidbody2D rb, Vector2 launchVelocity) { }
+
+    /// <summary>
+    /// Called every Update tick while the ball is alive.
+    /// Override to drive per-frame logic such as a trail following the ball.
+    /// Default implementation does nothing.
+    /// </summary>
+    public virtual void OnUpdate(Ball ball) { }
 
     /// <summary>
     /// Called when this ball enters a collision. Active in both Centipede Mode and free mode.

@@ -57,7 +57,7 @@ public class Ball : MonoBehaviour
     public Rigidbody2D Rigidbody => rb;
 
     // ── Cached layer IDs (shared across all Ball instances) ───────────────────
-    private static int layerDefault   = -1;
+    private static int layerDefault = -1;
     private static int layerCentipede = -1;
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -85,9 +85,9 @@ public class Ball : MonoBehaviour
         // Compute localScale so the sprite displays at exactly `diameter` world units,
         // regardless of the sprite's authored PPU. circ.radius in local space is set to
         // half the sprite's natural world diameter so world-space radius = diameter/2. ✓
-        float spriteWorldDiam  = SpriteWorldDiameter(definition.sprite);
-        transform.localScale   = Vector3.one * (diameter / spriteWorldDiam);
-        circ.radius            = spriteWorldDiam * 0.5f;
+        float spriteWorldDiam = SpriteWorldDiameter(definition.sprite);
+        transform.localScale = Vector3.one * (diameter / spriteWorldDiam);
+        circ.radius = spriteWorldDiam * 0.5f;
 
         // Mass scales with cross-sectional area for consistent feel across sizes
         rb.mass = definition.baseMass * diameter * diameter;
@@ -123,17 +123,17 @@ public class Ball : MonoBehaviour
         EnsureComponents();
 
         inCentipedeMode = enabled;
-        linkedNode      = node;
-        springVelocity  = Vector2.zero;
+        linkedNode = node;
+        springVelocity = Vector2.zero;
 
         if (enabled)
         {
-            rb.bodyType    = RigidbodyType2D.Kinematic;
+            rb.bodyType = RigidbodyType2D.Kinematic;
             gameObject.layer = layerCentipede >= 0 ? layerCentipede : 0;
         }
         else
         {
-            rb.bodyType    = RigidbodyType2D.Dynamic;
+            rb.bodyType = RigidbodyType2D.Dynamic;
             gameObject.layer = layerDefault >= 0 ? layerDefault : 0;
         }
     }
@@ -176,7 +176,26 @@ public class Ball : MonoBehaviour
         Launch(launchVelocity);
     }
 
+    /// <summary>
+    /// Destroys this ball cleanly: disables collision and physics response immediately
+    /// so the ball stops interacting with the world, then destroys the GameObject.
+    /// Safe to call from within a collision callback.
+    /// </summary>
+    public void DestroySelf()
+    {
+        // Disable collider and physics immediately so no further collisions fire
+        circ.enabled = false;
+        rb.simulated = false;
+
+        Destroy(gameObject);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
+
+    void Update()
+    {
+        def?.effect?.OnUpdate(this);
+    }
 
     void FixedUpdate()
     {
@@ -201,11 +220,11 @@ public class Ball : MonoBehaviour
     {
         if (linkedNode == null) return;
 
-        Vector2 anchor       = (Vector2)linkedNode.transform.position;
-        Vector2 currentPos   = rb.position;
+        Vector2 anchor = (Vector2)linkedNode.transform.position;
+        Vector2 currentPos = rb.position;
         Vector2 displacement = currentPos - anchor;
 
-        Vector2 springForce  = -springStiffness * displacement;
+        Vector2 springForce = -springStiffness * displacement;
         Vector2 dampingForce = -springDamping * springVelocity;
         Vector2 acceleration = (springForce + dampingForce) / springMass;
 
@@ -224,11 +243,11 @@ public class Ball : MonoBehaviour
     {
         if (sr != null) return;
 
-        if (!TryGetComponent(out sr))   sr   = gameObject.AddComponent<SpriteRenderer>();
+        if (!TryGetComponent(out sr)) sr = gameObject.AddComponent<SpriteRenderer>();
         if (!TryGetComponent(out circ)) circ = gameObject.AddComponent<CircleCollider2D>();
-        if (!TryGetComponent(out rb))   rb   = gameObject.AddComponent<Rigidbody2D>();
+        if (!TryGetComponent(out rb)) rb = gameObject.AddComponent<Rigidbody2D>();
 
-        if (layerDefault   < 0) layerDefault   = LayerMask.NameToLayer("Default");
+        if (layerDefault < 0) layerDefault = LayerMask.NameToLayer("Default");
         if (layerCentipede < 0) layerCentipede = LayerMask.NameToLayer("Centipede");
     }
 }
