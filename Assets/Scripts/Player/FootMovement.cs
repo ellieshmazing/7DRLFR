@@ -199,7 +199,9 @@ public class FootMovement : MonoBehaviour
                     foot.rb.linearVelocity.x + xAccel * dt,
                     foot.rb.linearVelocity.y + yAccel * dt);
 
-                if (foot.contact.isGrounded && IsWalkable(foot.contact.lastContactNormal))
+                if (foot.contact.isGrounded
+                    && IsWalkable(foot.contact.lastContactNormal)
+                    && foot.rb.linearVelocity.y < 0f)
                 {
                     LockFoot(foot, foot.rb.position);
 
