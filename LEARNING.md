@@ -136,3 +136,10 @@ Topic: Player registry and auto-targeting
 Concepts:
   - **Observer Pattern**: Systems subscribe to a shared event rather than polling or holding direct references. `PlayerRegistry.OnPlayerChanged` lets the camera and navigator react instantly to player spawn/death without coupling them to `PlayerAssembler`.
   - **Graceful Degradation**: When the primary target is absent, a system falls back to sensible behavior (mouse follow) rather than failing. The fallback keeps the game playable in editor dev sessions where no player exists yet.
+
+---
+Date: 2026-03-07
+Topic: Dead code removal — old foot system
+Concepts:
+  - **System Archaeology**: When replacing a system incrementally, the old code often lingers past its death date — referenced in comments, stale hierarchy docs, and vestigial base classes. Periodically sweeping for orphaned files and ghost references keeps the codebase honest and prevents future readers from being misled about how the system actually works.
+  - **Minimal Interface Principle**: `PlayerSkeletonNode` used to expose tree traversal, snapping, and world-position helpers that the new `FootMovement` system never calls. Stripping it to just `localOffset` + gizmo makes its true contract obvious — it's a tagged scene object, not a behavior node.
