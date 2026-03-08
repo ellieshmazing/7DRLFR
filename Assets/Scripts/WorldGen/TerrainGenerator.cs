@@ -119,9 +119,10 @@ public class TerrainGenerator : MonoBehaviour
     /// Creates and returns the shared decoration Tilemap under the Grid.
     /// Call once from ChunkManager.Start() before any chunks are generated.
     /// </summary>
-    public Tilemap CreateDecorationTilemap()
+    public Tilemap CreateTreeLayerTilemap()
     {
-        GameObject go = new GameObject("DecorationLayer");
+        GameObject go = new GameObject("TreeLayer");
+        go.tag = "Destructible";
         go.transform.SetParent(tilemapGrid.transform, false);
         go.transform.localPosition = Vector3.zero;
 
@@ -154,14 +155,15 @@ public class TerrainGenerator : MonoBehaviour
         chunkGO.transform.SetParent(tilemapGrid.transform, false);
         chunkGO.transform.localPosition = new Vector3(worldOriginX, 0, 0);
 
+        chunkGO.tag = "Destructible";
         Tilemap tilemap = chunkGO.AddComponent<Tilemap>();
         chunkGO.AddComponent<TilemapRenderer>();
         TilemapCollider2D collider = chunkGO.AddComponent<TilemapCollider2D>();
 
-        Rigidbody2D rb = chunkGO.AddComponent<Rigidbody2D>();
-        rb.bodyType = RigidbodyType2D.Static;
-        chunkGO.AddComponent<CompositeCollider2D>();
-        collider.compositeOperation = Collider2D.CompositeOperation.Merge;
+        // Per-tile colliders — required for destructible blocks so each tile's
+        // collider is removed automatically when the tile is cleared, with no
+        // composite rebuild needed.
+        collider.useDelaunayMesh = false;
 
         int globalTileXStart = chunkIndex * chunkWidth;
 

@@ -50,7 +50,7 @@ public class ChunkManager : MonoBehaviour
         }
 
         // Create the shared decoration Tilemap once, as a sibling of chunk Tilemaps.
-        _decoTilemap = terrainGenerator.CreateDecorationTilemap();
+        _decoTilemap = terrainGenerator.CreateTreeLayerTilemap();
 
         terrainGenerator.InitSeed();
 
