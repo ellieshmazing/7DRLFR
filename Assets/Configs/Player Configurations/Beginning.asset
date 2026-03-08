@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Beginning
   m_EditorClassIdentifier: Assembly-CSharp::PlayerConfig
   playerScale: 1
-  footMass: 1.57
+  footMass: 0.1
   footGravityScale: 1
   moveForce: 13.03
   maxSpeed: 15

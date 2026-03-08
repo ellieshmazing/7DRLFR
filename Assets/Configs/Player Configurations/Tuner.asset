@@ -70,7 +70,7 @@ MonoBehaviour:
   rightFoot:
     sprite: {fileID: -9037969273874986696, guid: f01fda41aa7dbc34282b83335302e5b8, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
-    sortingOrder: -1
+    sortingOrder: 5
   projectileDef: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
   firingPointOffset: 8
   projectileInitialScale: 0.05
