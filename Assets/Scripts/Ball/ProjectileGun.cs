@@ -72,7 +72,7 @@ public sealed class ProjectileGun : MonoBehaviour
         var scaleGrow = projectileGO.AddComponent<ProjectileScaleGrow>();
         scaleGrow.Initialize(targetLocalScale, growTime);
 
-        ball.Detach((Vector2)transform.right * firingSpeed);
+        ball.Launch((Vector2)transform.right * firingSpeed);
     }
 
     /// <summary>TEMPORARY — Replace with projectile queue implementation.</summary>

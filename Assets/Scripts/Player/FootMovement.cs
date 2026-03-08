@@ -1,10 +1,10 @@
 using UnityEngine;
 
 /// <summary>
-/// Procedural walking system — replaces PlayerFeet. Each foot runs a three-state
-/// FSM (Locked / Stepping / Airborne). Locked feet hold position kinematically.
+/// Procedural walking system. Each foot runs a three-state FSM
+/// (Locked / Stepping / Airborne). Locked feet hold position kinematically.
 /// Stepping feet arc between start and target via velocity override. Airborne feet
-/// are gravity + spring driven, matching the old PlayerFeet spring parameters.
+/// are gravity + spring driven using the foot spring params from PlayerConfig.
 ///
 /// Runs at order -20 so PlayerHipNode (-15) reads a fresh GetGroundReferenceY()
 /// each frame. Attach to HipNode GO alongside PlayerHipNode.
@@ -71,12 +71,6 @@ public class FootMovement : MonoBehaviour
         _left.contact  = leftFootContact;
         _right.rb      = rightFootRB;
         _right.contact = rightFootContact;
-
-        // footColliderRadius must be world-space. The assembler sets the local-space
-        // collider radius; scale it here so RaycastGroundY offsets land correctly.
-        var col = leftFootRB != null ? leftFootRB.GetComponent<CircleCollider2D>() : null;
-        if (col != null)
-            footColliderRadius = col.radius * leftFootRB.transform.lossyScale.x;
     }
 
     void FixedUpdate()

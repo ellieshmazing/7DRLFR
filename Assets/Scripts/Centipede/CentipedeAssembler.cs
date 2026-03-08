@@ -72,18 +72,10 @@ public class CentipedeAssembler : MonoBehaviour
         if (origMouseFollow != null)
             Destroy(origMouseFollow);
 
-        if (config.useScentNavigator)
-        {
-            ScentField field = ScentField.GetOrCreate();
-            field.Initialize(playerTarget, config);
-            var navigator = root.AddComponent<ScentFieldNavigator>();
-            navigator.Initialize(config, playerTarget, field);
-        }
-        else
-        {
-            var pathfinder = root.AddComponent<CentipedePathfinder>();
-            pathfinder.Initialize(config, playerTarget);
-        }
+        ScentField field = ScentField.GetOrCreate();
+        field.Initialize(playerTarget, config);
+        var navigator = root.AddComponent<ScentFieldNavigator>();
+        navigator.Initialize(config, playerTarget, field);
 
         lastSpawnedNodes  = new List<SkeletonNode>(nodeList);
         lastSpawnedBalls  = new List<Ball>(ballList);
