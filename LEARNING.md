@@ -136,3 +136,10 @@ Topic: Player registry and auto-targeting
 Concepts:
   - **Observer Pattern**: Systems subscribe to a shared event rather than polling or holding direct references. `PlayerRegistry.OnPlayerChanged` lets the camera and navigator react instantly to player spawn/death without coupling them to `PlayerAssembler`.
   - **Graceful Degradation**: When the primary target is absent, a system falls back to sensible behavior (mouse follow) rather than failing. The fallback keeps the game playable in editor dev sessions where no player exists yet.
+
+---
+Date: 2026-03-07
+Topic: footColliderRadius bug diagnosis
+Concepts:
+  - **Single Source of Truth**: When two code paths produce the same value via different routes (assembler vs. Start()), one is necessarily wrong or redundant. The diagnostic question is always which one is authoritative — here, the assembler should own all wiring, and Start() was silently patching a mistake rather than the two being equivalent alternatives.
+  - **Local vs. World Space in Physics**: Collider radii are local-space values that Unity scales by the object's lossyScale for physics. A formula like `col.radius * lossyScale.x` recovers the world-space radius — but the simpler expression `0.5f * playerScale` reaches the same value without reading runtime component state, making it better as a setup-time computation.
