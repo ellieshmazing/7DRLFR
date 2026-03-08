@@ -71,12 +71,6 @@ public class FootMovement : MonoBehaviour
         _left.contact  = leftFootContact;
         _right.rb      = rightFootRB;
         _right.contact = rightFootContact;
-
-        // footColliderRadius must be world-space. The assembler sets the local-space
-        // collider radius; scale it here so RaycastGroundY offsets land correctly.
-        var col = leftFootRB != null ? leftFootRB.GetComponent<CircleCollider2D>() : null;
-        if (col != null)
-            footColliderRadius = col.radius * leftFootRB.transform.lossyScale.x;
     }
 
     void FixedUpdate()

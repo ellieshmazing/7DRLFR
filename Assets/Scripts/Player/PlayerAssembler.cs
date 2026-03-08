@@ -191,7 +191,7 @@ public class PlayerAssembler : MonoBehaviour
         footMovement.config             = config;
         footMovement.pixelToWorld       = pixelToWorld;
         footMovement.torsoRB            = torsoRB;
-        footMovement.footColliderRadius = colRadius;
+        footMovement.footColliderRadius = 0.5f * config.playerScale;  // world-space radius: sprite is 1 playerScale wide
         footMovement.leftFootRB         = leftFootRB;
         footMovement.rightFootRB        = rightFootRB;
         footMovement.leftFootContact    = leftFootRB.GetComponent<FootContact>();
