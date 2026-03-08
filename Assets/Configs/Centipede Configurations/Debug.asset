@@ -13,26 +13,16 @@ MonoBehaviour:
   m_Name: Debug
   m_EditorClassIdentifier: Assembly-CSharp::CentipedeConfig
   nodeCount: 10
-  followDistance: 0.111999996
+  followDistance: 0.189
   nodeRadius: 1.005498
   nodeColor: {r: 1, g: 1, b: 1, a: 1}
-  wiggleFrequency: 4.797771
+  wiggleFrequency: 7.414345
   wiggleDampingRatio: 0.2750178
   wiggleMass: 1
   ballDefinition: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
-  detachDistance: 0.20489998
-  speed: 1.05
-  minTurnRadius: 3.9242067
-  arcAngleVariance: 9.900001
-  replanInterval: 1.3218192
-  replanJitter: 0.4
-  maxReplanAttempts: 8
-  waveAmplitude: 0.107999995
-  waveFrequency: 0.66645026
-  wavePhaseOffsetPerNode: 0.21714967
+  detachDistance: 0.23439877
+  speed: 1.6800001
   collisionCooldownDuration: 0.5
-  targetArrivalRadius: 0.5
-  useScentNavigator: 0
   scentHistorySize: 200
   scentSampleInterval: 0.1
   scentDecayTime: 8

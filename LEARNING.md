@@ -164,3 +164,10 @@ Topic: Ball type extension system — OnLaunch hooks and composable behavior
 Concepts:
   - **Lifecycle hooks as extension points**: Rather than subclassing Ball for each type, the system exposes named hooks (OnLaunch, OnFixedUpdate, OnCollision) that fire at meaningful moments. Each hook is a seam — a place where behavior can be injected without modifying the host class. The richer the hook vocabulary, the more types you can create without touching core code.
   - **ScriptableObject as strategy pattern**: Using ScriptableObjects for BallEffect and BallMovementOverride is the Unity idiom for the Strategy pattern — swapping an algorithm at data time rather than compile time. One BallDefinition asset composes up to three strategies (sprite/mass, movement, effect), and the same strategy asset can be shared across multiple definitions without duplication.
+
+---
+Date: 2026-03-07
+Topic: Jump grounding — foot re-lock fix
+Concepts:
+  - **Intent-gated state transitions**: Gating an FSM transition on velocity direction (y < 0) converts a raw physics fact (collision contact) into a game-logic fact (the foot is genuinely descending). Without this gate, physics events that are technically true but semantically wrong (contact persisting for one frame after a jump) can drive the FSM into incorrect states.
+  - **Physics vs. game-logic lag**: Collision callbacks (OnCollisionExit2D) fire asynchronously relative to gameplay code, creating a gap where `isGrounded` can remain true while the entity has logically left the ground. The velocity check bridges this gap without arbitrary timers.

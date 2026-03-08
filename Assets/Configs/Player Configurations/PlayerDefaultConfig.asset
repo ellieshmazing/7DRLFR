@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: PlayerDefaultConfig
   m_EditorClassIdentifier: Assembly-CSharp::PlayerConfig
   playerScale: 1
-  moveForce: 28.591795
+  moveForce: 5.406443
   maxSpeed: 13.334759
-  standHeight: 6.058602
+  standHeight: 6.1094
   footSpreadX: 3.2143004
   footOffsetY: 8
   torsoLayers:
@@ -31,19 +31,19 @@ MonoBehaviour:
     color: {r: 1, g: 1, b: 1, a: 1}
     localOffset: {x: 0, y: 9.5}
     sortingOrder: 1
-  torsoFrequency: 4.091158
+  torsoFrequency: 4.126907
   torsoDampingRatio: 0.23015043
   torsoMass: 1
-  hipFrequency: 5.145158
+  hipFrequency: 5.1816993
   hipDampingRatio: 0.4656513
   hipMass: 1
-  footFrequency: 5.1763573
+  footFrequency: 5.0579195
   footDampingRatio: 0.6833185
   footSpringMass: 0.5
-  jumpSpeed: 3.077877
+  jumpSpeed: 3.1304445
   jumpOffsetFactor: 21.163866
-  footMass: 0.784
-  footGravityScale: 2.8989656
+  footMass: 0.24499999
+  footGravityScale: 1
   armOrbitRadius: 10
   armLayers:
   - sprite: {fileID: -1628136530, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
@@ -56,7 +56,7 @@ MonoBehaviour:
     sortingOrder: 2
   projectileDef: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
   firingPointOffset: 8
-  firingSpeed: 3.0747323
+  firingSpeed: 3.2645638
   fireCooldown: 0.27074963
   projectileInitialScale: 0.05
   projectileGrowTime: 0.15

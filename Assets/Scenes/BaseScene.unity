@@ -472,6 +472,7 @@ MonoBehaviour:
   centipedeConfig: {fileID: 11400000, guid: 4507b4f9ff99c3647bded542d64881cd, type: 2}
   playerAssembler: {fileID: 2012067122}
   centipedeAssembler: {fileID: 1685109566}
+  followCamera: {fileID: 519420033}
   dimensionDefs:
   - {fileID: 11400000, guid: ad79bc7abf5782749a4098ad2c0c9dad, type: 2}
   - {fileID: 11400000, guid: cce9d273f163e844fb4bc9451aad1799, type: 2}
