@@ -341,7 +341,15 @@ public class FootMovement : MonoBehaviour
                     {
                         float signedBehind = (idealX - foot.lockPosition.x) * rawInput;
                         if (signedBehind > 0f && other.state != FootState.Stepping)
-                            StartStep(foot, other, vel, torsoX, torsoY);
+                        {
+                            // Project step target assuming continued MoveForce application.
+                            // Average displacement under constant accel: Δx = v0·T + ½·a·T²
+                            // → effective vel = v0 + ½·(F/m)·T, so the existing formula gives
+                            //   the right target: idealX + projVelX * T.
+                            float accel = rawInput * config.moveForce / torsoRB.mass;
+                            float projVelX = vel.x + 0.5f * accel * config.strideProjectionTime;
+                            StartStep(foot, other, new Vector2(projVelX, vel.y), torsoX, torsoY);
+                        }
                     }
                     else
                     {
