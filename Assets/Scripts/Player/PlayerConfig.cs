@@ -212,12 +212,26 @@ public class PlayerConfig : ScriptableObject
     // CROUCH & FOOTFALL
     // ════════════════════════════════════════════════════════════════════════════════════════════
 
-    [Header("Crouch")]
-    [Tooltip("Max crouch depth in source pixels. try 3–8")]
-    [Min(0f)] public float maxCrouchDepth = 5f;
-    [Tooltip("Speed of crouch compression in px/s. Release is 2x this. try 15–40")]
-    [Min(0.1f)] public float crouchSpeed = 25f;
-    // TEST: Hold down while standing. Watch torso lower. Jump from crouch (should be higher).
+    [Header("Impact Crouch")]
+    [Tooltip("Multiplier converting landing speed (wu/s) to crouch depth (source px). try 0.3–1.0")]
+    [Min(0f)] public float impactCrouchFactor = 0.5f;
+    [Tooltip("Fraction of standHeight that defines max crouch depth. " +
+             "Higher = more energy storage, bigger jumps at cap. try 0.2–0.6")]
+    [Range(0f, 1f)] public float crouchDepthRatio = 0.4f;
+    [Tooltip("Source pixels per second of crouch decay when not frozen. " +
+             "Controls timing window before stored energy is lost. try 8–30")]
+    [Min(0.1f)] public float crouchDissipationRate = 15f;
+    [Tooltip("Visual overshoot multiplier on landing. 1.0 = natural spring only. " +
+             "Values above 1.0 add extra compression that decays quickly. try 1.0–2.0")]
+    [Min(1f)] public float impactSquashOvershoot = 1f;
+    [Tooltip("Source pixels per second of squash punch decay. " +
+             "Should be faster than crouchDissipationRate. try 25–60")]
+    [Min(0.1f)] public float squashPunchDecayRate = 40f;
+    [Tooltip("Seconds to accumulate max landing speed across both feet. try 0.03–0.08")]
+    [Min(0.01f)] public float landingCaptureWindow = 0.05f;
+    // TEST: Jump and land. Watch torso compress on impact. Jump again during compression (should be higher).
+    // Sprint-jump off ledge and land — compression should scale with fall speed.
+    // Hold down after landing — compression should freeze. Release — should dissipate.
 
     [Header("Footfall")]
     [Tooltip("Forward impulse applied to torso each time a foot locks from stepping. " +
