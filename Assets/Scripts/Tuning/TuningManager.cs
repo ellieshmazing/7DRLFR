@@ -234,7 +234,7 @@ public class TuningManager : MonoBehaviour
         if (!respawnPending) return;
         respawnPending = false;
 
-        if (respawnTargetConfig is PlayerConfig pc)
+        if (respawnTargetConfig is PlayerConfig)
         {
             // Defer respawn until a foot is grounded to avoid mid-air respawn glitches
             var player = FindAnyObjectByType<PlayerSkeletonRoot>();
@@ -250,13 +250,15 @@ public class TuningManager : MonoBehaviour
             }
             stepRespawnPending = false;
             postRespawnLockout = respawnObservationWindow;
-            StartCoroutine(AutoRespawner.RespawnPlayer(pc, playerAssembler));
+            // Always use playerConfig (TuningManager's canonical config) — not the dimension
+            // def's targetConfig, which may be a different asset with stale visual settings.
+            StartCoroutine(AutoRespawner.RespawnPlayer(playerConfig, playerAssembler));
         }
-        else if (respawnTargetConfig is CentipedeConfig cc)
+        else if (respawnTargetConfig is CentipedeConfig)
         {
             stepRespawnPending = false;
             postRespawnLockout = respawnObservationWindow;
-            StartCoroutine(RespawnCentipedesAndUpdateCamera(cc, centipedeAssembler));
+            StartCoroutine(RespawnCentipedesAndUpdateCamera(centipedeConfig, centipedeAssembler));
         }
     }
 
