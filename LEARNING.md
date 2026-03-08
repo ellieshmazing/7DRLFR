@@ -178,3 +178,31 @@ Topic: Tuning dimension reorganization — scent navigation & procedural walking
 Concepts:
   - **Dimension deprecation hygiene**: Tuning parameters belong to specific mechanical systems. When a system is replaced (arc-based pathing → scent navigation), its tuning dimensions become invalid garbage — they reference fields that no longer exist, and leaving them in the array would cause reflection errors at runtime. Treating the dimension list as living documentation that must stay synchronized with the config forces you to notice when mechanics diverge.
   - **Parameter taxonomy**: Not every config field belongs in a tuning dimension. Some params are structural (nodeCount, scentHistorySize), some are tech constants (stepRaycastDistance), and some are [TEMP] placeholders. Choosing which to expose for interactive tuning — and which to leave as raw SO fields — is itself a design decision: it defines the *tunable surface* of the game feel.
+
+---
+Date: 2026-03-07
+Topic: Player tuning guide — expanded dimension documentation
+Concepts:
+  - **Parameterization legibility**: Exposing springs as (frequency, dampingRatio) rather than raw stiffness/damping lets a tuner reason about "snappiness" and "bounciness" independently — two knobs that map directly to perceptible qualities. When a parameter space has been carefully chosen, documentation can teach intuition rather than just describe values.
+  - **Spring stacking**: Layering two springs in sequence (foot spring → hip spring → torso spring) lets each carry a distinct perceptual job (weight of landing, body momentum, visual aliveness) while composing naturally. The risk is resonance — two underdamped springs at similar frequencies will reinforce each other into muddy oscillation.
+
+---
+Date: 2026-03-07
+Topic: Centipede and Scent Navigator tuning documentation
+Concepts:
+  - **Emergent behavior from local rules**: The scent navigator never plans a path — the centipede's route to the player emerges entirely from local gradient-following on a sum of decaying Gaussians. The hunting rhythm, spiral, and territory-splitting between multiple centipedes are all emergent consequences of three simple per-frame operations: sample, blend, consume.
+  - **Parameter orthogonality as design tool**: Variables like `wiggleFrequency` and `detachDistance` each control a distinct aspect of a mechanic (energy threshold vs. displacement threshold), which makes them tunable independently. Identifying where two parameters are truly orthogonal vs. tightly coupled (like `scentSigma` and `scentGradientMaxStrength`) is a core documentation discipline — it tells the tester which knobs to reach for without disturbing other knobs.
+
+---
+Date: 2026-03-07
+Topic: Step-based tuning sweep for init-only variables
+Concepts:
+  - **Discrete vs. Continuous Parameter Spaces**: Some game parameters (like collider radius or pathfinder grid resolution) only take effect after a full respawn, making continuous sweeps meaningless — the entity lives its whole life at one value. A discrete step-and-observe loop is the correct mental model for these: set, respawn, watch, repeat. The step size (10-25% of range) trades coverage for observation time.
+  - **Ping-Pong Iteration**: Rather than sweeping monotonically (missing the high or low end) or randomly (revisiting values), a direction-reversing walk guarantees full coverage of the parameter space with predictable, human-followable progression — the same property the sine sweep provides for continuous variables, just discretized.
+
+---
+Date: 2026-03-08
+Topic: Movement overhaul — foot-gated locomotion, directional jumping, forgiveness systems
+Concepts:
+  - **Foot-gated ground control**: Tying horizontal acceleration to foot contact state (locked = full force, airborne = reduced) makes the procedural walking animation mechanically truthful rather than decorative. The player reads the feet to understand the system: when feet grip the ground, they have control. When airborne, they're committed to their arc. This is the core of Rain World's movement philosophy — the animation IS the physics, not a skin over it.
+  - **Forgiveness vs. skill ceiling**: Coyote time and jump buffering are mathematically tiny grace windows (~100ms) that catch honest timing errors without reducing the skill ceiling. The critical design distinction is separating `isGrounded` (any foot locked, no grace — used for force gating and damping) from `canJump` (includes coyote window — used ONLY for jump eligibility). Conflating the two would grant full ground control during coyote time, making ledge transitions feel inconsistent. The separation ensures forgiveness helps jumping without leaking into movement physics.

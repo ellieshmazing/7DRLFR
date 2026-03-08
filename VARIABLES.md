@@ -43,6 +43,28 @@ Living documentation of all meaningful variables across the project. Updated whe
 | `stepSpeedScale` | `float` | `PlayerConfig` | How much horizontal speed shortens step duration: `duration = base / (1 + speed * scale)` | Lower = uniform cadence regardless of speed; higher = dramatically faster steps when running | Speed responsiveness of walk animation |
 | `idleSpeedThreshold` | `float` (wu/s) | `PlayerConfig` | Speed below which the player is considered idle; triggers idle stance correction | Lower = corrects sooner after stopping; higher = tolerates slow drift without correcting | Transition between walking and idle recovery behavior |
 | `stepRaycastDistance` | `float` (px) | `PlayerConfig` | Downward raycast distance when probing for step target ground | Must exceed torso-to-ground distance; lower = misses far drops | Terrain adaptability of step target Y |
+| `airControlRatio` | `float` | `PlayerConfig` | Force multiplier when airborne (0 = no air control, 1 = full) | Scales moveForce when no feet are locked; 0.25 default means 25% air control | Horizontal movement in air |
+| `groundDamping` | `float` | `PlayerConfig` | Torso RB linear damping when grounded | Higher = quicker stops and direction changes; default 5.0 | Torso deceleration on ground |
+| `airDamping` | `float` | `PlayerConfig` | Torso RB linear damping when airborne | Lower = more momentum preservation through jumps; default 0.5 | Torso deceleration in air |
+| `dampingTransitionSpeed` | `float` | `PlayerConfig` | Rate at which damping lerps between ground/air values (units/s) | Prevents jarring speed loss on landing; default 15.0 | Landing smoothness |
+| `turnBoostFactor` | `float` | `PlayerConfig` | Force multiplier for direction reversal at max speed while grounded | Lets player change direction even at max speed; default 1.5 | Turn responsiveness |
+| `forwardJumpFactor` | `float` | `PlayerConfig` | How much horizontal speed contributes to jump direction | 0 = always vertical; at 0.15, sprint-jumps lean forward | Jump arc angle |
+| `directionalJumpDeadzone` | `float` | `PlayerConfig` | Horizontal speed below which jumps are perfectly vertical | Prevents accidental lean at low speeds; default 0.5 wu/s | Jump direction reliability |
+| `variableJumpCutMultiplier` | `float` | `PlayerConfig` | Y velocity multiplier when jump button released early | Lower = more height control; X is preserved for hop dash; default 0.45 | Variable jump height, hop dash |
+| `coyoteTime` | `float` | `PlayerConfig` | Seconds after leaving ground where jump is still valid | Grace period for ledge jumps; default 0.1s | Jump forgiveness |
+| `jumpBufferTime` | `float` | `PlayerConfig` | Seconds before landing where jump input is buffered | Pre-landing jump queuing; default 0.1s | Landing-jump forgiveness |
+| `landingVelocityTolerance` | `float` | `PlayerConfig` | Max upward velocity at which feet can still lock to ground | Allows apex landings; default 0.3 wu/s | Foot locking reliability |
+| `jumpCoastTime` | `float` | `PlayerConfig` | Seconds after jump where foot X spring is suppressed | Lets feet carry launch velocity visually; default 0.06s | Visual launch coherence |
+| `maxCrouchDepth` | `float` | `PlayerConfig` | Maximum crouch depth in source pixels | Controls how far the torso lowers when crouching; default 5 px | Crouch range, jump power bonus |
+| `crouchSpeed` | `float` | `PlayerConfig` | Rate of crouch compression in px/s (release is 2x) | Controls how fast crouch engages/disengages; default 25 px/s | Crouch responsiveness |
+| `footfallImpulse` | `float` | `PlayerConfig` | Forward impulse on torso each time a foot locks from stepping | Creates rhythm of step-driven acceleration; scaled down near maxSpeed; default 0.3 | Step-driven acceleration feel |
+| `footfallMinSpeed` | `float` | `PlayerConfig` | Minimum horizontal speed for footfall impulse to fire | Prevents impulse at very low speeds; default 0.3 wu/s | Footfall activation threshold |
+| `footGroundDamping` | `float` | `PlayerConfig` | Foot RB linear damping when any foot is grounded | Moderate damping when on ground; default 4.0 | Foot ground behavior |
+| `footAirDamping` | `float` | `PlayerConfig` | Foot RB linear damping when airborne | Low damping prevents spring fighting in air; default 0.3 | Foot air responsiveness |
+| `baseTorsoMass` | `float` | `PlayerConfig` | Base torso Rigidbody2D mass with no ammo | Foundation for weight system; jump scales by baseTorsoMass / currentMass; default 1.0 | Base movement feel, weight system |
+| `ammoWeightPerUnit` | `float` | `PlayerConfig` | Mass added to torso per unit of ammo | Controls weight scaling per ammo; default 0.02 | Dynamic weight from ammo |
+| `maxWallSlideSpeed` | `float` | `PlayerConfig` | Maximum downward speed during wall slide | Clamps torso fall speed when sliding a wall; default 2.0 wu/s | Wall slide descent rate |
+| `wallSlideFootGravityScale` | `float` | `PlayerConfig` | Foot gravity scale during wall slide | Must match torso wall slide behavior to prevent feet/torso separation; default 0.5 | Foot/torso coherence during wall slide |
 
 ---
 

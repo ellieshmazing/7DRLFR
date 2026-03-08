@@ -63,7 +63,8 @@ public class PlayerAssembler : MonoBehaviour
         // --- Torso physics body ---
         var torsoRB = root.AddComponent<Rigidbody2D>();
         torsoRB.gravityScale  = 0f;
-        torsoRB.linearDamping = 3f;
+        torsoRB.mass          = config.baseTorsoMass;
+        torsoRB.linearDamping = config.groundDamping;
         torsoRB.constraints   = RigidbodyConstraints2D.FreezeRotation;
 
         // --- Torso skeleton node (root of gizmo tree) ---
@@ -187,11 +188,16 @@ public class PlayerAssembler : MonoBehaviour
                               config.rightFoot, spriteLocalScale, colRadius, config);
 
         // --- FootMovement (on HipNode) ---
+        // Derive foot collider radius from truth (actual collider * scale)
+        // rather than a parallel calculation. colRadius is in local space;
+        // multiply by lossyScale.x to get world-space radius.
+        float footWorldRadius = colRadius * spriteLocalScale;
+
         var footMovement = hipGO.AddComponent<FootMovement>();
         footMovement.config             = config;
         footMovement.pixelToWorld       = pixelToWorld;
         footMovement.torsoRB            = torsoRB;
-        footMovement.footColliderRadius = 0.5f * config.playerScale;  // world-space radius: sprite is 1 playerScale wide
+        footMovement.footColliderRadius = footWorldRadius;
         footMovement.leftFootRB         = leftFootRB;
         footMovement.rightFootRB        = rightFootRB;
         footMovement.leftFootContact    = leftFootRB.GetComponent<FootContact>();
@@ -244,10 +250,11 @@ public class PlayerAssembler : MonoBehaviour
         var rb = go.AddComponent<Rigidbody2D>();
         rb.mass          = config.footMass;
         rb.gravityScale  = config.footGravityScale;
-        rb.linearDamping = 4f;
+        rb.linearDamping = config.footGroundDamping;
         rb.constraints   = RigidbodyConstraints2D.FreezeRotation;
 
-        go.AddComponent<FootContact>();
+        var fc = go.AddComponent<FootContact>();
+        fc.wallAngleThreshold = config.maxWalkableAngle;
 
         return rb;
     }

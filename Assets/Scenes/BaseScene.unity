@@ -468,7 +468,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d14a03b633365bc4d83d38aa57c18fb0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TuningManager
-  playerConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+  playerConfig: {fileID: 11400000, guid: ca747f7b063f9c64aa0da79696a4ca9a, type: 2}
   centipedeConfig: {fileID: 11400000, guid: 4507b4f9ff99c3647bded542d64881cd, type: 2}
   playerAssembler: {fileID: 2012067122}
   centipedeAssembler: {fileID: 1685109566}
@@ -476,6 +476,8 @@ MonoBehaviour:
   dimensionDefs:
   - {fileID: 11400000, guid: ad79bc7abf5782749a4098ad2c0c9dad, type: 2}
   - {fileID: 11400000, guid: cce9d273f163e844fb4bc9451aad1799, type: 2}
+  - {fileID: 11400000, guid: a1b2c3d4e5f678901234abcd5678ef01, type: 2}
+  - {fileID: 11400000, guid: b2c3d4e5f678901234abcd5678ef0102, type: 2}
   - {fileID: 11400000, guid: c74cf9783e80e69419df6b8e3625e57f, type: 2}
   - {fileID: 11400000, guid: 3ea485721c33be344abe57c42229fc0f, type: 2}
   - {fileID: 11400000, guid: e07c666c85171e949a5c8f28503336d4, type: 2}
@@ -486,8 +488,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e2adbe73fd2e6274db36c03c72a1a93b, type: 2}
   - {fileID: 11400000, guid: 388063a88452952458ec8eb645bc70e5, type: 2}
   - {fileID: 11400000, guid: 683a0552a56aa6041b09828097bca056, type: 2}
-  - {fileID: 11400000, guid: 7f5d27f85bea13d4183922969c3a105f, type: 2}
-  - {fileID: 11400000, guid: c1c8a9bbef4fcb249b59920221246129, type: 2}
+  - {fileID: 11400000, guid: c3d4e5f678901234abcd5678ef010217, type: 2}
+  - {fileID: 11400000, guid: d4e5f678901234abcd5678ef01021718, type: 2}
+  - {fileID: 11400000, guid: e5f678901234abcd5678ef0102171819, type: 2}
+  - {fileID: 11400000, guid: f678901234abcd5678ef010217181920, type: 2}
+  - {fileID: 11400000, guid: 7890abcd1234ef5678010217181920ab, type: 2}
   tuningToggleKey: 4
   nextDimensionKey: 3
   logKey: 43
@@ -500,19 +505,20 @@ MonoBehaviour:
   skipDimensionKey: 52
   sweepSpeedMultiplier: 1
   abSwapInterval: 3
+  respawnObservationWindow: 5
   abEpsilon: 0.02
   crossValPerturbation: 0.1
   crossValVariants: 4
   overlayWidth: 320
   overlayOpacity: 0.85
-  playerSpawnPosition: {x: 0, y: 1}
+  playerSpawnPosition: {x: 0, y: 0}
   centipedeSpawnPosition: {x: 0, y: 3}
   centipedeSpawnCount: 1
   centipedeSpawnSpacing: 3
   abToneFreqA: 880
   abToneFreqB: 550
   abToneDuration: 0.12
-  abToneVolume: 10
+  abToneVolume: 1
 --- !u!4 &1050510440
 Transform:
   m_ObjectHideFlags: 0
@@ -1405,7 +1411,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAssembler
   defaultSprite: {fileID: -839099904, guid: ec8e09fd763b58a4a8089a76d0052281, type: 3}
-  testConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+  testConfig: {fileID: 11400000, guid: ca747f7b063f9c64aa0da79696a4ca9a, type: 2}
   testPosition: {x: 0, y: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
