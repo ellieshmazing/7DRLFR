@@ -74,4 +74,15 @@ public class PlayerHipNode : MonoBehaviour
     {
         hipVelocityY = upwardVelocity;
     }
+
+    /// <summary>
+    /// Cuts the hip's upward velocity by the given multiplier for variable
+    /// jump height. Called by PlayerSkeletonRoot when the player releases
+    /// jump early while still ascending.
+    /// </summary>
+    public void ApplyJumpCut(float multiplier)
+    {
+        if (hipVelocityY > 0f)
+            hipVelocityY *= multiplier;
+    }
 }
