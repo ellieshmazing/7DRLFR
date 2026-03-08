@@ -57,6 +57,7 @@ public class FootMovement : MonoBehaviour
         public int side; // -1 = left, +1 = right
         public bool xLocked;
         public float lockedX;
+        public bool idleCorrectionArmed = true;
     }
 
     private FootData _left;
@@ -325,11 +326,21 @@ public class FootMovement : MonoBehaviour
                 else
                 {
                     // Idle — correct feet back toward neutral spread, one at a time.
+                    // Hysteresis prevents spring oscillation from re-triggering continuously:
+                    // disarmed after firing; re-armed only once displacement falls below the
+                    // smaller hysteresis band.
                     float idealX = torsoX + foot.side * config.footSpreadX * pixelToWorld;
                     float displacement = Mathf.Abs(foot.lockPosition.x - idealX);
-                    if (displacement > config.footSpreadX * pixelToWorld * 0.3f
+
+                    if (!foot.idleCorrectionArmed
+                        && displacement < config.idleCorrectionHysteresis * pixelToWorld)
+                        foot.idleCorrectionArmed = true;
+
+                    if (foot.idleCorrectionArmed
+                        && displacement > config.idleCorrectionThreshold * pixelToWorld
                         && other.state != FootState.Stepping)
                     {
+                        foot.idleCorrectionArmed = false;
                         float groundY = RaycastGroundY(idealX, torsoY, foot.lockPosition.y);
                         StartStep(foot, other, vel, torsoX, torsoY, new Vector2(idealX, groundY));
                     }
@@ -491,6 +502,12 @@ public class FootMovement : MonoBehaviour
             }
         }
 
+        // Re-arm idle correction on fresh landings so the foot can correct if it
+        // lands off-neutral. Keep disarmed when completing a correction step
+        // (Stepping → Locked) so the hysteresis band must clear before re-firing.
+        if (previousState == FootState.Airborne)
+            foot.idleCorrectionArmed = true;
+
         foot.state = FootState.Locked;
         foot.lockPosition = worldPos;
         foot.rb.position = worldPos;
@@ -522,6 +539,7 @@ public class FootMovement : MonoBehaviour
     {
         foot.state = FootState.Airborne;
         foot.xLocked = false;
+        foot.idleCorrectionArmed = true; // will land fresh; eligible for correction immediately
         // Velocity intentionally NOT reset — preserve momentum from prior state.
         if (foot.rb != null)
             foot.rb.gravityScale = config.footGravityScale;
