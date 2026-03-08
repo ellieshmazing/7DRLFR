@@ -54,6 +54,8 @@ public class TuningManager : MonoBehaviour
     [Header("Tuning Parameters")]
     [SerializeField] float sweepSpeedMultiplier = 1f;
     [SerializeField] float abSwapInterval = 3f;
+    [Tooltip("Seconds the sweep pauses after each init-only respawn, letting the player observe the new value before continuing")]
+    [SerializeField] float respawnObservationWindow = 2f;
     [SerializeField] float abEpsilon = 0.02f;
     [SerializeField] float crossValPerturbation = 0.10f;
     [SerializeField] int crossValVariants = 4;
@@ -82,6 +84,11 @@ public class TuningManager : MonoBehaviour
     float sweepElapsed;
     List<float> loggedValues = new List<float>();
 
+    // Step-based sweep (requiresRespawn variables)
+    float sweepStepCurrentValue;
+    int sweepStepDirection = 1; // +1 ascending, -1 descending
+    bool stepRespawnPending;    // true between ApplyValue and the respawn actually executing
+
     // AB
     float abLo, abHi, abA, abB;
     float abSwapTimer;
@@ -104,6 +111,7 @@ public class TuningManager : MonoBehaviour
     ScriptableObject respawnTargetConfig;
     float lastAppliedRespawnValue;
     Coroutine activeSpawnCoroutine;
+    float postRespawnLockout; // sweep pause + respawn block after each init-only respawn
 
     // ── Public properties (for overlay) ──────────────────────────────────────
 
@@ -240,10 +248,14 @@ public class TuningManager : MonoBehaviour
                     return;
                 }
             }
+            stepRespawnPending = false;
+            postRespawnLockout = respawnObservationWindow;
             StartCoroutine(AutoRespawner.RespawnPlayer(pc, playerAssembler));
         }
         else if (respawnTargetConfig is CentipedeConfig cc)
         {
+            stepRespawnPending = false;
+            postRespawnLockout = respawnObservationWindow;
             StartCoroutine(RespawnCentipedesAndUpdateCamera(cc, centipedeAssembler));
         }
     }
@@ -255,7 +267,21 @@ public class TuningManager : MonoBehaviour
         var v = CurrentVariable;
         if (CurrentDimension == null) return;
 
-        sweepElapsed += Time.deltaTime * sweepSpeedMultiplier;
+        // Init-only variables use a step-based ping-pong instead of the continuous sine.
+        if (v.requiresRespawn)
+        {
+            UpdateSweepStep(kb, v);
+            return;
+        }
+
+        // ── Continuous sine sweep (live variables) ────────────────────────────
+
+        // During the post-respawn observation window the sweep is frozen but input
+        // still works — the player can log the current value or lock early.
+        if (postRespawnLockout > 0f)
+            postRespawnLockout -= Time.deltaTime;
+        else
+            sweepElapsed += Time.deltaTime * sweepSpeedMultiplier;
 
         float normalized = (Mathf.Sin(sweepElapsed * 2f * Mathf.PI / CurrentDimension.sweepDuration
                                       - Mathf.PI / 2f) + 1f) / 2f;
@@ -267,26 +293,72 @@ public class TuningManager : MonoBehaviour
 
         if (kb[lockKey].wasPressedThisFrame)
         {
+            postRespawnLockout = 0f;
             TransitionToAB();
             return;
         }
 
-        // Throttle respawn for init-only variables: quantize to 1% steps
-        if (v.requiresRespawn)
+        if (postRespawnLockout > 0f) return;
+
+        ApplyValue(v, value);
+    }
+
+    /// <summary>
+    /// Step-based sweep for requiresRespawn variables.
+    /// After each respawn observation window, advances by respawnStepFraction of the range
+    /// and bounces direction at the bounds — a linear ping-pong mirroring the sine reversal.
+    /// </summary>
+    void UpdateSweepStep(Keyboard kb, TuningVariable v)
+    {
+        // Tick down the observation lockout; don't advance while the player is watching.
+        if (postRespawnLockout > 0f)
+            postRespawnLockout -= Time.deltaTime;
+
+        float range = v.max - v.min;
+        SweepNormalized = range > 0f
+            ? Mathf.Clamp01((sweepStepCurrentValue - v.min) / range)
+            : 0f;
+
+        if (kb[logKey].wasPressedThisFrame)
+            loggedValues.Add(sweepStepCurrentValue);
+
+        if (kb[lockKey].wasPressedThisFrame)
         {
-            float step = (v.max - v.min) * 0.01f;
-            if (step > 0f)
+            postRespawnLockout = 0f;
+            TransitionToAB();
+            return;
+        }
+
+        if (postRespawnLockout > 0f) return;
+
+        // Block re-entry while waiting for a queued respawn to actually execute.
+        // QueueRespawn only sets respawnPending; for players, LateUpdate defers
+        // the actual spawn (and thus postRespawnLockout) until grounded. Without
+        // this guard every airborne frame would advance the step again.
+        if (stepRespawnPending) return;
+
+        // First call after EnterSweep: apply min immediately (lastAppliedRespawnValue is NaN).
+        // Subsequent calls: advance by one step before applying.
+        if (!float.IsNaN(lastAppliedRespawnValue))
+        {
+            float stepSize = Mathf.Max(CurrentDimension.respawnStepFraction * range, 1e-6f);
+            sweepStepCurrentValue += stepSize * sweepStepDirection;
+
+            if (sweepStepDirection > 0 && sweepStepCurrentValue >= v.max)
             {
-                float quantized = Mathf.Round(value / step) * step;
-                if (!float.IsNaN(lastAppliedRespawnValue)
-                    && Mathf.Approximately(quantized, lastAppliedRespawnValue))
-                    return;
-                lastAppliedRespawnValue = quantized;
-                value = quantized;
+                sweepStepCurrentValue = v.max;
+                sweepStepDirection = -1;
+            }
+            else if (sweepStepDirection < 0 && sweepStepCurrentValue <= v.min)
+            {
+                sweepStepCurrentValue = v.min;
+                sweepStepDirection = 1;
             }
         }
 
-        ApplyValue(v, value);
+        lastAppliedRespawnValue = sweepStepCurrentValue;
+        stepRespawnPending = true;
+        ApplyValue(v, sweepStepCurrentValue);
     }
 
     void TransitionToAB()
@@ -690,6 +762,11 @@ public class TuningManager : MonoBehaviour
         sweepElapsed = 0f;
         loggedValues.Clear();
         lastAppliedRespawnValue = float.NaN;
+        postRespawnLockout = 0f;
+
+        sweepStepCurrentValue = CurrentVariable.min;
+        sweepStepDirection = 1;
+        stepRespawnPending = false;
     }
 
     void EnterAB(float lo, float hi)

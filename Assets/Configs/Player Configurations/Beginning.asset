@@ -42,8 +42,8 @@ MonoBehaviour:
   footSpringMass: 1
   jumpSpeed: 5
   jumpOffsetFactor: 15
-  footMass: 1
-  footGravityScale: 1
+  footMass: 2.0176952
+  footGravityScale: 0.459
   armOrbitRadius: 10
   armLayers:
   - sprite: {fileID: -1628136530, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}

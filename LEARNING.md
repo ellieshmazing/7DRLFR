@@ -192,3 +192,10 @@ Topic: Centipede and Scent Navigator tuning documentation
 Concepts:
   - **Emergent behavior from local rules**: The scent navigator never plans a path — the centipede's route to the player emerges entirely from local gradient-following on a sum of decaying Gaussians. The hunting rhythm, spiral, and territory-splitting between multiple centipedes are all emergent consequences of three simple per-frame operations: sample, blend, consume.
   - **Parameter orthogonality as design tool**: Variables like `wiggleFrequency` and `detachDistance` each control a distinct aspect of a mechanic (energy threshold vs. displacement threshold), which makes them tunable independently. Identifying where two parameters are truly orthogonal vs. tightly coupled (like `scentSigma` and `scentGradientMaxStrength`) is a core documentation discipline — it tells the tester which knobs to reach for without disturbing other knobs.
+
+---
+Date: 2026-03-07
+Topic: Step-based tuning sweep for init-only variables
+Concepts:
+  - **Discrete vs. Continuous Parameter Spaces**: Some game parameters (like collider radius or pathfinder grid resolution) only take effect after a full respawn, making continuous sweeps meaningless — the entity lives its whole life at one value. A discrete step-and-observe loop is the correct mental model for these: set, respawn, watch, repeat. The step size (10-25% of range) trades coverage for observation time.
+  - **Ping-Pong Iteration**: Rather than sweeping monotonically (missing the high or low end) or randomly (revisiting values), a direction-reversing walk guarantees full coverage of the parameter space with predictable, human-followable progression — the same property the sine sweep provides for continuous variables, just discretized.
