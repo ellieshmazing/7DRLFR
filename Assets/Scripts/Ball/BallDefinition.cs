@@ -44,25 +44,45 @@ public class BallDefinition : ScriptableObject
 /// <summary>
 /// Abstract ScriptableObject base for custom Ball movement equations.
 /// Subclass to override how a non-Centipede-Mode ball moves each physics step
-/// (e.g. sticky, homing, bouncy).
-/// Return true to suppress the default Unity physics for that frame.
+/// (e.g. homing, boomerang, gravity-well orbit).
+///
+/// Override <see cref="OnLaunch"/> to initialize per-shot state (e.g. acquire a
+/// homing target). Override <see cref="OnFixedUpdate"/> to apply forces or
+/// directly set velocity each physics step. To take full control of the body
+/// (e.g. make it follow a path), switch it to Kinematic via rb.bodyType inside
+/// OnFixedUpdate; remember to switch back to Dynamic if it returns to normal physics.
 /// </summary>
 public abstract class BallMovementOverride : ScriptableObject
 {
+    /// <summary>
+    /// Called once when the ball transitions to free-physics mode (fired or detached).
+    /// Override to initialize per-shot state: lock a homing target, set a timer, etc.
+    /// Default implementation does nothing.
+    /// </summary>
+    public virtual void OnLaunch(Ball ball, Rigidbody2D rb, Vector2 launchVelocity) { }
+
     /// <summary>Called each FixedUpdate for balls that are not in Centipede Mode.</summary>
-    /// <returns>True if default physics should be suppressed this frame.</returns>
-    public abstract bool OnFixedUpdate(Ball ball, Rigidbody2D rb, float dt);
+    public abstract void OnFixedUpdate(Ball ball, Rigidbody2D rb, float dt);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// <summary>
-/// Abstract ScriptableObject base for Ball collision effects.
-/// Subclass to implement unique per-type effects (e.g. splash, explosion, stick).
+/// Abstract ScriptableObject base for Ball collision and launch effects.
+/// Subclass to implement unique per-type effects (e.g. explosion, fire trail, sticky).
 /// Active in both Centipede Mode and free physics mode.
 /// </summary>
 public abstract class BallEffect : ScriptableObject
 {
-    /// <summary>Called when this ball enters a collision.</summary>
+    /// <summary>
+    /// Called once when the ball transitions to free-physics mode (fired or detached).
+    /// Override to start a particle trail, play a launch sound, arm a fuse timer, etc.
+    /// Default implementation does nothing.
+    /// </summary>
+    public virtual void OnLaunch(Ball ball, Rigidbody2D rb, Vector2 launchVelocity) { }
+
+    /// <summary>
+    /// Called when this ball enters a collision. Active in both Centipede Mode and free mode.
+    /// </summary>
     public abstract void OnCollision(Ball ball, Collision2D collision);
 }
