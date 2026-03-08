@@ -76,6 +76,12 @@ public class FootMovement : MonoBehaviour
     // back under the hip.
     private float _jumpCoastTimer;
 
+    // Landing velocity capture: accumulates max downward speed across both
+    // feet over a short window so PlayerSkeletonRoot can convert it to crouch.
+    private float _capturedLandingSpeed;
+    private float _landingCaptureTimer;
+    private bool  _landingReady;
+
     // -------------------------------------------------------------------------
     // Lifecycle
     // -------------------------------------------------------------------------
@@ -126,6 +132,14 @@ public class FootMovement : MonoBehaviour
         UpdateFoot(second, first,  vel, torsoX, torsoY, dt);
 
         HandleDirectionReversal(vel, torsoX, torsoY);
+
+        // --- Landing capture window ---
+        if (_landingCaptureTimer > 0f)
+        {
+            _landingCaptureTimer -= dt;
+            if (_landingCaptureTimer <= 0f)
+                _landingReady = true;
+        }
 
         // Invariant: at most one foot may be Stepping at a time.
         Debug.Assert(!(_left.state == FootState.Stepping && _right.state == FootState.Stepping),
@@ -204,6 +218,23 @@ public class FootMovement : MonoBehaviour
     public void SetWallSliding(bool sliding)
     {
         _isWallSliding = sliding;
+    }
+
+    /// <summary>
+    /// Returns the maximum downward velocity captured during the most recent
+    /// landing window, then clears internal state. Returns 0 if no landing
+    /// is pending. Called by PlayerSkeletonRoot each FixedUpdate.
+    /// </summary>
+    public float ConsumeLastLandingSpeed()
+    {
+        if (_landingReady)
+        {
+            _landingReady = false;
+            float result = _capturedLandingSpeed;
+            _capturedLandingSpeed = 0f;
+            return result;
+        }
+        return 0f;
     }
 
     // -------------------------------------------------------------------------
@@ -343,6 +374,10 @@ public class FootMovement : MonoBehaviour
     private void LockFoot(FootData foot, Vector2 worldPos)
     {
         FootState previousState = foot.state;
+
+        // Capture landing velocity BEFORE zeroing — must precede state mutations.
+        if (previousState == FootState.Airborne)
+            CaptureLandingVelocity(foot);
 
         foot.state             = FootState.Locked;
         foot.lockPosition      = worldPos;
@@ -485,4 +520,12 @@ public class FootMovement : MonoBehaviour
 
     private bool IsWalkable(Vector2 normal) =>
         Vector2.Angle(normal, Vector2.up) <= config.maxWalkableAngle;
+
+    private void CaptureLandingVelocity(FootData foot)
+    {
+        float speed = Mathf.Abs(foot.rb.linearVelocity.y);
+        _capturedLandingSpeed = Mathf.Max(_capturedLandingSpeed, speed);
+        _landingCaptureTimer = config.landingCaptureWindow;
+        _landingReady = false;
+    }
 }

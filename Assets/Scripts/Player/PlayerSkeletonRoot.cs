@@ -11,9 +11,10 @@ using UnityEngine.InputSystem;
 ///      falloff near maxSpeed; direction-reversal boost on ground.
 ///   3. Lerp linearDamping between groundDamping and airDamping at
 ///      dampingTransitionSpeed — smooth landing transitions, no jarring brake.
-///   4. Crouch: hold down while isGrounded to compress standHeight. The hip
-///      naturally lowers, loading energy for the jump offset system.
-///      Crouch decays smoothly (never snaps) to avoid torso visual pop.
+///   4. Impact crouch: landing velocity converts to crouch compression via
+///      impactCrouchFactor. Stored energy feeds the jump offset system.
+///      Holding down freezes dissipation (but blocks movement). Squash
+///      punch adds visual overshoot on landing. Crouch decays linearly.
 ///   5. Torso Y constraint: velocity-override to hipNode.Y + effectiveStandHeight.
 ///   6. Hip X lock: hipNode.X = torso.X.
 ///   7. Variable jump height: releasing space while ascending cuts Y velocity
@@ -58,8 +59,11 @@ public class PlayerSkeletonRoot : MonoBehaviour
     private bool  _jumpHeldLastFrame;
     private bool  _jumpedThisPress;
 
-    // --- Crouch ---
-    private float _crouchAmount; // in source pixels (0 to maxCrouchDepth)
+    // --- Impact crouch ---
+    private float _crouchAmount;        // source pixels (0 to standHeight * crouchDepthRatio)
+    private float _squashPunch;         // visual-only extra compression (source pixels)
+    private bool  _crouchFrozen;        // true while holding down with stored crouch
+    private float _lastImpactIntensity; // 0–1 normalized landing severity
 
     // --- Damping lerp ---
     private float _currentDamping;
@@ -129,6 +133,10 @@ public class PlayerSkeletonRoot : MonoBehaviour
             - (kb.aKey.isPressed || kb.leftArrowKey.isPressed  ? 1f : 0f)
             : 0f;
 
+        // Suppress horizontal input while crouch energy is frozen.
+        if (_crouchFrozen)
+            h = 0f;
+
         float effectiveForce = isGrounded ? moveForce : moveForce * airControlRatio;
         float hSpeed = Mathf.Abs(rb.linearVelocity.x);
 
@@ -159,24 +167,49 @@ public class PlayerSkeletonRoot : MonoBehaviour
             config.dampingTransitionSpeed * dt);
         rb.linearDamping = _currentDamping;
 
-        // --- 4. Crouch (gated on isGrounded, NOT canJump) ---
-        bool downHeld = kb != null &&
-            (kb.sKey.isPressed || kb.downArrowKey.isPressed);
-
-        if (isGrounded && downHeld)
+        // --- 4. Impact crouch ---
+        // 4a. Consume landing speed from FootMovement and convert to crouch.
+        if (footMovement != null)
         {
-            _crouchAmount = Mathf.MoveTowards(_crouchAmount, config.maxCrouchDepth,
-                config.crouchSpeed * dt);
+            float landingSpeed = footMovement.ConsumeLastLandingSpeed();
+            if (landingSpeed > 0f)
+            {
+                float maxDepth = standHeight * config.crouchDepthRatio;
+                float newCrouch = Mathf.Min(landingSpeed * config.impactCrouchFactor, maxDepth);
+                _crouchAmount = Mathf.Max(_crouchAmount, newCrouch);
+                _squashPunch = _crouchAmount * (config.impactSquashOvershoot - 1f);
+                _lastImpactIntensity = maxDepth > 0f ? _crouchAmount / maxDepth : 0f;
+            }
+        }
+
+        // 4b. Dissipation and freeze.
+        bool downHeld = kb != null
+            && (kb.sKey.isPressed || kb.downArrowKey.isPressed);
+
+        if (!isGrounded)
+        {
+            _crouchFrozen = false;
+            _crouchAmount = Mathf.MoveTowards(_crouchAmount, 0f,
+                config.crouchDissipationRate * dt);
+        }
+        else if (downHeld && _crouchAmount > 0f)
+        {
+            _crouchFrozen = true;
         }
         else
         {
-            // Release at 2x compress speed — smooth, never snaps.
+            _crouchFrozen = false;
             _crouchAmount = Mathf.MoveTowards(_crouchAmount, 0f,
-                config.crouchSpeed * 2f * dt);
+                config.crouchDissipationRate * dt);
         }
 
+        // 4c. Squash punch always decays (independent of freeze).
+        _squashPunch = Mathf.MoveTowards(_squashPunch, 0f,
+            config.squashPunchDecayRate * dt);
+
         // --- 5. Torso Y: converge to hipNode.Y + effectiveStandHeight ---
-        float effectiveStandHeight = (standHeight - _crouchAmount) * pixelToWorld;
+        float visualCrouch = _crouchAmount + _squashPunch;
+        float effectiveStandHeight = (standHeight - visualCrouch) * pixelToWorld;
         float desiredY    = hipNode.position.y + effectiveStandHeight;
         float yCorrection = (desiredY - rb.position.y) / dt;
         rb.linearVelocity = new Vector2(rb.linearVelocity.x, yCorrection);
@@ -213,6 +246,7 @@ public class PlayerSkeletonRoot : MonoBehaviour
 
         _jumpBufferTimer = 0f;
         _jumpedThisPress = true;
+        _crouchFrozen = false;
 
         // Hip compression: positive when hip is below lowest locked foot.
         float lowestFootY = footMovement.GetLockedFootY();
@@ -338,4 +372,17 @@ public class PlayerSkeletonRoot : MonoBehaviour
 
     /// <summary>Current total ammo weight (read-only).</summary>
     public float CurrentAmmoWeight => _currentAmmoWeight;
+
+    // -------------------------------------------------------------------------
+    // Impact Crouch API
+    // -------------------------------------------------------------------------
+
+    /// <summary>Normalized 0–1 intensity of the most recent landing impact.</summary>
+    public float LastImpactIntensity => _lastImpactIntensity;
+
+    /// <summary>Current crouch as a 0–1 ratio of max crouch depth.</summary>
+    public float CrouchRatio =>
+        config != null && config.standHeight * config.crouchDepthRatio > 0f
+            ? _crouchAmount / (config.standHeight * config.crouchDepthRatio)
+            : 0f;
 }
