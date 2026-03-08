@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 [CreateAssetMenu(fileName = "FireballEffect", menuName = "Ball Effects/Fireball")]
 public class FireballEffect : BallEffect
@@ -15,6 +16,14 @@ public class FireballEffect : BallEffect
     public float explosionRadius = 1.5f;
     public float explosionForce = 10f;
 
+    [Header("Tilemap Destruction")]
+    [Tooltip("Tag shared by all destructible Tilemap GameObjects in the scene.")]
+    public string tilemapTag = "Destructible";
+    [Tooltip("Particle effect spawned at each broken tile position.")]
+    public GameObject tileBreakPrefab;
+    [Tooltip("Max random delay in seconds between each tile break effect firing.")]
+    public float tileBreakMaxDelay = 0.05f;
+
     public override void OnLaunch(Ball ball, Rigidbody2D rb, Vector2 launchVelocity)
     {
         if (fireTrailPrefab != null)
@@ -22,7 +31,6 @@ public class FireballEffect : BallEffect
             GameObject trail = Instantiate(fireTrailPrefab, ball.transform.position, Quaternion.identity);
             trail.AddComponent<TrailCleanup>();
 
-            // Store the trail on the ball itself so each instance tracks its own
             BallState state = ball.gameObject.AddComponent<BallState>();
             state.trail = trail;
         }
@@ -51,6 +59,7 @@ public class FireballEffect : BallEffect
         if (impactSound != null)
             AudioSource.PlayClipAtPoint(impactSound, hitPoint, impactVolume);
 
+        // Physics force on nearby rigidbodies
         Collider2D[] hits = Physics2D.OverlapCircleAll(hitPoint, explosionRadius);
         foreach (Collider2D hit in hits)
         {
@@ -64,7 +73,38 @@ public class FireballEffect : BallEffect
             }
         }
 
-        // Retrieve this ball's own trail and clean it up
+        // Erase tiles within explosion radius on all tagged Tilemaps
+        foreach (GameObject tilemapObj in GameObject.FindGameObjectsWithTag(tilemapTag))
+        {
+            Tilemap tilemap = tilemapObj.GetComponent<Tilemap>();
+            if (tilemap == null) continue;
+
+            Vector3 cellSize = tilemap.cellSize;
+
+            for (float x = hitPoint.x - explosionRadius; x <= hitPoint.x + explosionRadius; x += cellSize.x)
+            {
+                for (float y = hitPoint.y - explosionRadius; y <= hitPoint.y + explosionRadius; y += cellSize.y)
+                {
+                    Vector2 samplePoint = new Vector2(x, y);
+                    if (Vector2.Distance(samplePoint, hitPoint) > explosionRadius) continue;
+
+                    Vector3Int cellPos = tilemap.WorldToCell(new Vector3(samplePoint.x, samplePoint.y, 0f));
+                    if (tilemap.HasTile(cellPos))
+                    {
+                        if (tileBreakPrefab != null)
+                        {
+                            Vector3 tileWorldCenter = tilemap.GetCellCenterWorld(cellPos);
+                            float delay = Random.Range(0f, tileBreakMaxDelay);
+                            SpawnTileBreakEffect(tileWorldCenter, delay);
+                        }
+
+                        tilemap.SetTile(cellPos, null);
+                    }
+                }
+            }
+        }
+
+        // Clean up trail
         BallState state = ball.gameObject.GetComponent<BallState>();
         if (state != null && state.trail != null)
         {
@@ -73,5 +113,29 @@ public class FireballEffect : BallEffect
         }
 
         ball.DestroySelf();
+    }
+
+    private void SpawnTileBreakEffect(Vector3 position, float delay)
+    {
+        // Use a MonoBehaviour on the ball to run the coroutine before it's destroyed
+        CoroutineRunner.Instance.StartCoroutine(SpawnAfterDelay(position, delay));
+    }
+
+    private System.Collections.IEnumerator SpawnAfterDelay(Vector3 position, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        if (tileBreakPrefab != null)
+        {
+            GameObject tileBreak = Instantiate(tileBreakPrefab, position, Quaternion.identity);
+
+            // Auto-destroy after all particle systems finish
+            ParticleSystem[] systems = tileBreak.GetComponentsInChildren<ParticleSystem>();
+            float longestDuration = 0f;
+            foreach (ParticleSystem ps in systems)
+                longestDuration = Mathf.Max(longestDuration, ps.main.duration + ps.main.startLifetime.constantMax);
+
+            Destroy(tileBreak, longestDuration);
+        }
     }
 }

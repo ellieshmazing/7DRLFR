@@ -20,3 +20,6 @@ MonoBehaviour:
   impactVolume: 1
   explosionRadius: 1.5
   explosionForce: 10
+  tilemapTag: Destructible
+  tileBreakPrefab: {fileID: 2834625944902208876, guid: dc296e5596f3ddc43b83386747ce4717, type: 3}
+  tileBreakMaxDelay: 0.05
