@@ -178,3 +178,17 @@ Topic: Tuning dimension reorganization — scent navigation & procedural walking
 Concepts:
   - **Dimension deprecation hygiene**: Tuning parameters belong to specific mechanical systems. When a system is replaced (arc-based pathing → scent navigation), its tuning dimensions become invalid garbage — they reference fields that no longer exist, and leaving them in the array would cause reflection errors at runtime. Treating the dimension list as living documentation that must stay synchronized with the config forces you to notice when mechanics diverge.
   - **Parameter taxonomy**: Not every config field belongs in a tuning dimension. Some params are structural (nodeCount, scentHistorySize), some are tech constants (stepRaycastDistance), and some are [TEMP] placeholders. Choosing which to expose for interactive tuning — and which to leave as raw SO fields — is itself a design decision: it defines the *tunable surface* of the game feel.
+
+---
+Date: 2026-03-07
+Topic: Player tuning guide — expanded dimension documentation
+Concepts:
+  - **Parameterization legibility**: Exposing springs as (frequency, dampingRatio) rather than raw stiffness/damping lets a tuner reason about "snappiness" and "bounciness" independently — two knobs that map directly to perceptible qualities. When a parameter space has been carefully chosen, documentation can teach intuition rather than just describe values.
+  - **Spring stacking**: Layering two springs in sequence (foot spring → hip spring → torso spring) lets each carry a distinct perceptual job (weight of landing, body momentum, visual aliveness) while composing naturally. The risk is resonance — two underdamped springs at similar frequencies will reinforce each other into muddy oscillation.
+
+---
+Date: 2026-03-07
+Topic: Centipede and Scent Navigator tuning documentation
+Concepts:
+  - **Emergent behavior from local rules**: The scent navigator never plans a path — the centipede's route to the player emerges entirely from local gradient-following on a sum of decaying Gaussians. The hunting rhythm, spiral, and territory-splitting between multiple centipedes are all emergent consequences of three simple per-frame operations: sample, blend, consume.
+  - **Parameter orthogonality as design tool**: Variables like `wiggleFrequency` and `detachDistance` each control a distinct aspect of a mechanic (energy threshold vs. displacement threshold), which makes them tunable independently. Identifying where two parameters are truly orthogonal vs. tightly coupled (like `scentSigma` and `scentGradientMaxStrength`) is a core documentation discipline — it tells the tester which knobs to reach for without disturbing other knobs.
