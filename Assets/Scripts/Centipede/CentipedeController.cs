@@ -264,12 +264,12 @@ public class CentipedeController : MonoBehaviour
             newMouseFollow.deadZone = origMouseFollow.deadZone;
         }
 
-        // Mirror CentipedePathfinder from the original head, if present.
-        var origPathfinder = GetComponent<CentipedePathfinder>();
-        if (origPathfinder != null)
+        // Mirror ScentFieldNavigator from the original head, if present.
+        var origNavigator = GetComponent<ScentFieldNavigator>();
+        if (origNavigator != null)
         {
-            var newPathfinder = newHeadGO.AddComponent<CentipedePathfinder>();
-            newPathfinder.Initialize(config, origPathfinder.Target);
+            var newNavigator = newHeadGO.AddComponent<ScentFieldNavigator>();
+            newNavigator.Initialize(config, origNavigator.Target, ScentField.GetOrCreate());
         }
     }
 }
