@@ -266,11 +266,20 @@ public class PlayerAssembler : MonoBehaviour
     [Header("Test")]
     [SerializeField] private PlayerConfig testConfig;
     [SerializeField] private Vector2 testPosition;
+    [Tooltip("Tick this in Play Mode to destroy all existing players and spawn a fresh one at testPosition.")]
+    [SerializeField] private bool spawnButton;
+
+    private void Update()
+    {
+        if (!spawnButton) return;
+        spawnButton = false;
+        TestSpawn();
+    }
 
     [ContextMenu("Test Spawn")]
     public void TestSpawn()
     {
         if (!Application.isPlaying || testConfig == null) return;
-        Spawn(testConfig, testPosition);
+        StartCoroutine(AutoRespawner.SpawnFreshPlayer(testConfig, this, testPosition));
     }
 }
