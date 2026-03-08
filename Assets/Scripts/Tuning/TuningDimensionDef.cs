@@ -34,4 +34,8 @@ public class TuningDimensionDef : ScriptableObject
 
     [Tooltip("Seconds for one min→max sine cycle during sweep phase")]
     [Min(1f)] public float sweepDuration = 10f;
+
+    [Range(0.10f, 0.25f)]
+    [Tooltip("Step size as a fraction of the variable range, applied after each respawn observation window (init-only / requiresRespawn variables only)")]
+    public float respawnStepFraction = 0.15f;
 }
