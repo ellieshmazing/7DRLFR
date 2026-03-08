@@ -35,8 +35,8 @@ public class FootMovement : MonoBehaviour
     [Header("References (wired by PlayerAssembler)")]
     public Rigidbody2D leftFootRB;
     public Rigidbody2D rightFootRB;
-    public FootContact  leftFootContact;
-    public FootContact  rightFootContact;
+    public FootContact leftFootContact;
+    public FootContact rightFootContact;
 
     // -------------------------------------------------------------------------
     // Internal types
@@ -47,21 +47,21 @@ public class FootMovement : MonoBehaviour
     private class FootData
     {
         public Rigidbody2D rb;
-        public FootContact  contact;
-        public FootState    state = FootState.Airborne;
-        public Vector2      lockPosition;
-        public Vector2      stepStartPos;
-        public Vector2      stepTargetPos;
-        public float        stepProgress;
-        public float        stepDuration;
-        public int          side; // -1 = left, +1 = right
-        public bool         xLocked;
-        public float        lockedX;
+        public FootContact contact;
+        public FootState state = FootState.Airborne;
+        public Vector2 lockPosition;
+        public Vector2 stepStartPos;
+        public Vector2 stepTargetPos;
+        public float stepProgress;
+        public float stepDuration;
+        public int side; // -1 = left, +1 = right
+        public bool xLocked;
+        public float lockedX;
     }
 
     private FootData _left;
     private FootData _right;
-    private int      _notPlayerMask;
+    private int _notPlayerMask;
 
     // Coyote time: tracks when any foot was last Locked.
     // Set to -999 on jump to prevent ghost double-jumps.
@@ -80,7 +80,7 @@ public class FootMovement : MonoBehaviour
     // feet over a short window so PlayerSkeletonRoot can convert it to crouch.
     private float _capturedLandingSpeed;
     private float _landingCaptureTimer;
-    private bool  _landingReady;
+    private bool _landingReady;
 
     // -------------------------------------------------------------------------
     // Lifecycle
@@ -89,15 +89,15 @@ public class FootMovement : MonoBehaviour
     void Awake()
     {
         _notPlayerMask = ~LayerMask.GetMask("Player");
-        _left  = new FootData { side = -1, state = FootState.Airborne };
+        _left = new FootData { side = -1, state = FootState.Airborne };
         _right = new FootData { side = +1, state = FootState.Airborne };
     }
 
     void Start()
     {
-        _left.rb       = leftFootRB;
-        _left.contact  = leftFootContact;
-        _right.rb      = rightFootRB;
+        _left.rb = leftFootRB;
+        _left.contact = leftFootContact;
+        _right.rb = rightFootRB;
         _right.contact = rightFootContact;
     }
 
@@ -105,10 +105,10 @@ public class FootMovement : MonoBehaviour
     {
         if (config == null || torsoRB == null) return;
 
-        float   dt     = Time.fixedDeltaTime;
-        Vector2 vel    = torsoRB.linearVelocity;
-        float   torsoX = torsoRB.position.x;
-        float   torsoY = torsoRB.position.y;
+        float dt = Time.fixedDeltaTime;
+        Vector2 vel = torsoRB.linearVelocity;
+        float torsoX = torsoRB.position.x;
+        float torsoY = torsoRB.position.y;
 
         // --- Ground probe: verify locked feet still have ground ---
         ProbeLockedFootGround(_left);
@@ -124,16 +124,16 @@ public class FootMovement : MonoBehaviour
 
         // --- Manage foot RB damping based on ground state ---
         float footDamp = anyLocked ? config.footGroundDamping : config.footAirDamping;
-        if (_left.rb  != null) _left.rb.linearDamping  = footDamp;
+        if (_left.rb != null) _left.rb.linearDamping = footDamp;
         if (_right.rb != null) _right.rb.linearDamping = footDamp;
 
         // Trailing foot (side * sign(vel.x) < 0) processes first — tie-break rule.
-        bool     leftFirst = _left.side * Mathf.Sign(vel.x) <= 0;
-        FootData first     = leftFirst ? _left  : _right;
-        FootData second    = leftFirst ? _right : _left;
+        bool leftFirst = _left.side * Mathf.Sign(vel.x) <= 0;
+        FootData first = leftFirst ? _left : _right;
+        FootData second = leftFirst ? _right : _left;
 
-        UpdateFoot(first,  second, vel, torsoX, torsoY, dt);
-        UpdateFoot(second, first,  vel, torsoX, torsoY, dt);
+        UpdateFoot(first, second, vel, torsoX, torsoY, dt);
+        UpdateFoot(second, first, vel, torsoX, torsoY, dt);
 
         HandleDirectionReversal(vel, torsoX, torsoY);
 
@@ -160,11 +160,11 @@ public class FootMovement : MonoBehaviour
     /// </summary>
     public float GetGroundReferenceY()
     {
-        bool ll = _left.state  == FootState.Locked;
+        bool ll = _left.state == FootState.Locked;
         bool rl = _right.state == FootState.Locked;
         if (ll && rl) return Mathf.Min(_left.lockPosition.y, _right.lockPosition.y);
-        if (ll)       return _left.lockPosition.y;
-        if (rl)       return _right.lockPosition.y;
+        if (ll) return _left.lockPosition.y;
+        if (rl) return _right.lockPosition.y;
         if (_left.rb != null && _right.rb != null)
             return Mathf.Min(_left.rb.position.y, _right.rb.position.y);
         return transform.position.y;
@@ -248,14 +248,15 @@ public class FootMovement : MonoBehaviour
     /// </summary>
     public float GetFootCenterX()
     {
-        bool ll = _left.state  == FootState.Locked;
+        bool ll = _left.state == FootState.Locked;
         bool rl = _right.state == FootState.Locked;
         if (ll && rl) return (_left.lockPosition.x + _right.lockPosition.x) * 0.5f;
-        if (ll)       return _left.lockPosition.x;
-        if (rl)       return _right.lockPosition.x;
+        if (ll) return _left.lockPosition.x;
+        if (rl) return _right.lockPosition.x;
         if (_left.rb != null && _right.rb != null)
             return (_left.rb.position.x + _right.rb.position.x) * 0.5f;
         return transform.position.x;
+    }
 
     /// <summary>
     /// Checks whether locked feet are walled in the given direction. Returns
@@ -267,11 +268,11 @@ public class FootMovement : MonoBehaviour
     {
         if (moveDir == 0f) return false;
 
-        bool ll = _left.state  == FootState.Locked;
+        bool ll = _left.state == FootState.Locked;
         bool rl = _right.state == FootState.Locked;
         if (!ll && !rl) return false;
 
-        bool leftWalled  = ll && _left.contact.isWalled
+        bool leftWalled = ll && _left.contact.isWalled
                            && _left.contact.lastWallNormal.x * moveDir < 0f;
         bool rightWalled = rl && _right.contact.isWalled
                            && _right.contact.lastWallNormal.x * moveDir < 0f;
@@ -300,9 +301,9 @@ public class FootMovement : MonoBehaviour
         switch (foot.state)
         {
             case FootState.Locked:
-                foot.rb.position       = foot.lockPosition;
+                foot.rb.position = foot.lockPosition;
                 foot.rb.linearVelocity = Vector2.zero;
-                foot.rb.gravityScale   = 0f;
+                foot.rb.gravityScale = 0f;
 
                 if (!foot.contact.isGrounded)
                 {
@@ -313,7 +314,7 @@ public class FootMovement : MonoBehaviour
                 if (Mathf.Abs(vel.x) > config.idleSpeedThreshold)
                 {
                     // Walking — step when foot falls behind its ideal position.
-                    float idealX       = torsoX + foot.side * config.footSpreadX * pixelToWorld;
+                    float idealX = torsoX + foot.side * config.footSpreadX * pixelToWorld;
                     float signedBehind = (idealX - foot.lockPosition.x) * Mathf.Sign(vel.x);
                     if (signedBehind > config.strideTriggerDistance * pixelToWorld
                         && other.state != FootState.Stepping)
@@ -324,7 +325,7 @@ public class FootMovement : MonoBehaviour
                 else
                 {
                     // Idle — correct feet back toward neutral spread, one at a time.
-                    float idealX       = torsoX + foot.side * config.footSpreadX * pixelToWorld;
+                    float idealX = torsoX + foot.side * config.footSpreadX * pixelToWorld;
                     float displacement = Mathf.Abs(foot.lockPosition.x - idealX);
                     if (displacement > config.footSpreadX * pixelToWorld * 0.3f
                         && other.state != FootState.Stepping)
@@ -353,7 +354,7 @@ public class FootMovement : MonoBehaviour
                 UpdateAirborneX(foot, hipX, dt);
 
                 // Y: standard spring toward hip; gravity applied by physics engine.
-                float yDisp  = foot.rb.position.y - hipY;
+                float yDisp = foot.rb.position.y - hipY;
                 float yAccel = (-config.FootStiffness * yDisp
                                - config.FootDamping * foot.rb.linearVelocity.y)
                                / config.footSpringMass;
@@ -389,8 +390,8 @@ public class FootMovement : MonoBehaviour
     private void StartStep(FootData foot, FootData other, Vector2 vel,
                            float torsoX, float torsoY, Vector2? target = null)
     {
-        foot.xLocked       = false;
-        foot.stepStartPos  = foot.rb.position;
+        foot.xLocked = false;
+        foot.stepStartPos = foot.rb.position;
         Vector2 stepTarget = target ?? ComputeStepTarget(foot, vel, torsoX, torsoY);
 
         // --- Obstacle pre-check: horizontal ray at arc-peak height ---
@@ -428,11 +429,11 @@ public class FootMovement : MonoBehaviour
         }
 
         foot.stepTargetPos = stepTarget;
-        foot.stepProgress  = 0f;
-        foot.stepDuration  = Mathf.Max(
+        foot.stepProgress = 0f;
+        foot.stepDuration = Mathf.Max(
             config.minStepDuration,
             config.baseStepDuration / (1f + Mathf.Abs(vel.x) * config.stepSpeedScale));
-        foot.state           = FootState.Stepping;
+        foot.state = FootState.Stepping;
         foot.rb.gravityScale = 0f;
     }
 
@@ -490,12 +491,12 @@ public class FootMovement : MonoBehaviour
             }
         }
 
-        foot.state             = FootState.Locked;
-        foot.lockPosition      = worldPos;
-        foot.rb.position       = worldPos;
+        foot.state = FootState.Locked;
+        foot.lockPosition = worldPos;
+        foot.rb.position = worldPos;
         foot.rb.linearVelocity = Vector2.zero;
-        foot.rb.gravityScale   = 0f;
-        foot.xLocked           = false;
+        foot.rb.gravityScale = 0f;
+        foot.xLocked = false;
 
         // Footfall impulse: when a step completes (Stepping → Locked),
         // apply a small forward push to the torso. Speed-gated to prevent
@@ -519,7 +520,7 @@ public class FootMovement : MonoBehaviour
 
     private void TransitionToAirborne(FootData foot)
     {
-        foot.state   = FootState.Airborne;
+        foot.state = FootState.Airborne;
         foot.xLocked = false;
         // Velocity intentionally NOT reset — preserve momentum from prior state.
         if (foot.rb != null)
@@ -528,7 +529,7 @@ public class FootMovement : MonoBehaviour
 
     private void HandleDirectionReversal(Vector2 vel, float torsoX, float torsoY)
     {
-        FootData stepping = _left.state  == FootState.Stepping ? _left
+        FootData stepping = _left.state == FootState.Stepping ? _left
                           : _right.state == FootState.Stepping ? _right
                           : null;
         if (stepping == null) return;
@@ -565,8 +566,8 @@ public class FootMovement : MonoBehaviour
             return;
 
         float targetX = hipX + foot.side * config.footSpreadX * pixelToWorld;
-        float xDisp   = foot.rb.position.x - targetX;
-        float xVel    = foot.rb.linearVelocity.x;
+        float xDisp = foot.rb.position.x - targetX;
+        float xVel = foot.rb.linearVelocity.x;
 
         if (foot.xLocked)
         {
@@ -579,7 +580,7 @@ public class FootMovement : MonoBehaviour
             else
             {
                 // Hold x at the locked position; y remains spring/gravity driven.
-                foot.rb.position       = new Vector2(foot.lockedX, foot.rb.position.y);
+                foot.rb.position = new Vector2(foot.lockedX, foot.rb.position.y);
                 foot.rb.linearVelocity = new Vector2(0f, foot.rb.linearVelocity.y);
                 return;
             }
@@ -594,16 +595,16 @@ public class FootMovement : MonoBehaviour
         float lockWu = config.footXLockThreshold * pixelToWorld;
         if (Mathf.Abs(xDisp) < lockWu && Mathf.Abs(xVel) < config.footXLockVelocity)
         {
-            foot.xLocked           = true;
-            foot.lockedX           = targetX;
-            foot.rb.position       = new Vector2(targetX, foot.rb.position.y);
+            foot.xLocked = true;
+            foot.lockedX = targetX;
+            foot.rb.position = new Vector2(targetX, foot.rb.position.y);
             foot.rb.linearVelocity = new Vector2(0f, foot.rb.linearVelocity.y);
         }
     }
 
     private Vector2 ComputeStepTarget(FootData foot, Vector2 vel, float torsoX, float torsoY)
     {
-        float idealX  = torsoX + foot.side * config.footSpreadX * pixelToWorld;
+        float idealX = torsoX + foot.side * config.footSpreadX * pixelToWorld;
         float targetX = idealX + vel.x * config.strideProjectionTime;
         float targetY = RaycastGroundY(targetX, torsoY, foot.lockPosition.y);
         return new Vector2(targetX, targetY);
@@ -611,9 +612,9 @@ public class FootMovement : MonoBehaviour
 
     private float RaycastGroundY(float x, float torsoY, float fallbackY)
     {
-        float rayDist    = config.stepRaycastDistance * pixelToWorld;
+        float rayDist = config.stepRaycastDistance * pixelToWorld;
         float rayOriginY = torsoY;   // cast the full distance downward from torso level
-        var   hit        = Physics2D.Raycast(
+        var hit = Physics2D.Raycast(
             new Vector2(x, rayOriginY), Vector2.down, rayDist, _notPlayerMask);
         if (hit.collider != null && IsWalkable(hit.normal))
             return hit.point.y + footColliderRadius;
@@ -623,9 +624,9 @@ public class FootMovement : MonoBehaviour
     private Vector2 EvaluateArc(Vector2 startPos, Vector2 targetPos, float t, float heightPx)
     {
         float heightWorld = heightPx * pixelToWorld;
-        float x     = Mathf.Lerp(startPos.x, targetPos.x, t);
+        float x = Mathf.Lerp(startPos.x, targetPos.x, t);
         float yBase = Mathf.Lerp(startPos.y, targetPos.y, t);
-        float yArc  = yBase + heightWorld * Mathf.Sin(Mathf.PI * t);
+        float yArc = yBase + heightWorld * Mathf.Sin(Mathf.PI * t);
         return new Vector2(x, yArc);
     }
 

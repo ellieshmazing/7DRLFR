@@ -69,6 +69,13 @@ Living documentation of all meaningful variables across the project. Updated whe
 | `ammoWeightPerUnit` | `float` | `PlayerConfig` | Mass added to torso per unit of ammo | Controls weight scaling per ammo; default 0.02 | Dynamic weight from ammo |
 | `maxWallSlideSpeed` | `float` | `PlayerConfig` | Maximum downward speed during wall slide | Clamps torso fall speed when sliding a wall; default 2.0 wu/s | Wall slide descent rate |
 | `wallSlideFootGravityScale` | `float` | `PlayerConfig` | Foot gravity scale during wall slide | Must match torso wall slide behavior to prevent feet/torso separation; default 0.5 | Foot/torso coherence during wall slide |
+| `leashSoftRadius` | `float` (px) | `PlayerConfig` | Distance from foot center X where the body leash spring begins pulling torso back | Lower = tighter body, less freedom to drift from feet; default 6 px | Torso horizontal freedom, body integrity |
+| `leashHardRadius` | `float` (px) | `PlayerConfig` | Hard clamp distance from foot center X; must be > leashSoftRadius | Safety net that should rarely be felt due to quadratic spring ramp; default 10 px | Maximum torso-to-feet separation |
+| `leashForceMult` | `float` | `PlayerConfig` | Leash force at hard boundary as multiple of moveForce; quadratic ramp from soft→hard | Higher = stronger pull, more invisible hard clamp; default 3.0 | Leash strength, body coherence |
+| `maxFootSeparation` | `float` (px) | `PlayerConfig` | Max horizontal distance between two feet; step targets clamped to this | Lower = more compact stance, prevents bizarre splits; default 20 px | Foot split limit, stance compactness |
+| `groundProbeDistance` | `float` (px) | `PlayerConfig` | Downward raycast from locked foot to verify ground still exists | Too low risks false positives on uneven terrain; default 2 px | Locked foot ground verification |
+| `edgeLandingNudge` | `float` (px) | `PlayerConfig` | Inward nudge when locking on a tilted contact normal (platform edge) | Higher = more aggressive centering onto platform surface; default 0.5 px | Edge landing stability |
+| `minStepDistance` | `float` (px) | `PlayerConfig` | Minimum step distance after obstacle pre-check shortening; below this, step is skipped | Prevents trivially short steps into walls; default 1 px | Step obstacle handling |
 
 ---
 

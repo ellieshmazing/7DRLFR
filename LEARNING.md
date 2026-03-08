@@ -213,3 +213,17 @@ Topic: Velocity-based impact crouch system
 Concepts:
   - **Positive Feedback with Ceiling**: The momentum chain (land → crouch → jump higher → land harder → crouch deeper) is a positive feedback loop that would diverge without a bound. Deriving maxCrouchDepth from standHeight provides both the ceiling and an upgrade path — upgrading standHeight doesn't just change appearance, it increases the jump energy ceiling. The gain of the loop (impactCrouchFactor × jumpOffsetFactor × pixelToWorld) determines how many bounces it takes to converge.
   - **Consume Pattern for Cross-Component Signaling**: When two scripts at different execution orders need to pass event data (FootMovement detects landing at -20, PlayerSkeletonRoot needs it at -10), a consume-pattern property (read-once, then cleared) avoids callbacks and preserves the existing "read per-frame from upstream" architecture. The landing capture window extends this across multiple frames so both feet contribute their max velocity to a single landing event.
+
+---
+Date: 2026-03-08
+Topic: Player movement architecture — gravity, horizontal, and vertical variable analysis
+Concepts:
+  - **Indirect Physics Coupling**: The torso has zero gravity and no direct vertical force — its Y is purely derived from a spring chain (feet → hip → torso). This means "gravity" is not a single dial but an emergent property of the entire chain. Tuning gravity requires understanding which link in the chain you want to change.
+  - **Separation of Concerns in Input Feel**: Horizontal and vertical movement are handled by completely separate systems (torso force vs. foot gravity/spring) that only couple through jump direction normalization and wall slide. This isolation makes each axis tunable without cross-contamination — except where intentionally bridged (mass, forwardJumpFactor).
+
+---
+Date: 2026-03-08
+Topic: Body integrity constraints — leash, wall suppression, step collision
+Concepts:
+  - **Layered Constraint Defense**: A single constraint rarely covers all failure modes. The body integrity system uses five layers: wall suppression (prevents force), leash spring (corrects drift), hard clamp (caps separation), step pre-check (prevents bad steps), and arc collision (catches mid-step failures). Each layer is cheap and simple; their overlap creates robustness. This mirrors how platformer physics stacks coyote time, input buffering, and apex tolerance — each catches a different timing failure.
+  - **Position Constraint vs. Force Constraint**: The leash uses a quadratic spring in the soft zone (force-based, allows natural deceleration) and a hard position clamp at the boundary (instant correction). Force-only constraints allow overshoot; position-only constraints cause teleporting. The blend — spring for steady-state, clamp for emergency — is the standard approach in ragdoll joint limits and IK solvers.
