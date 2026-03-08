@@ -10,59 +10,53 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ff60679b078f6a84cafb8f957d07cd55, type: 3}
-  m_Name: 02_Movement
+  m_Name: 14_GunFeel
   m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
-  dimensionName: Movement
-  testScenario: Accelerate from rest to full speed. Reverse direction at speed. Jump
-    and redirect mid-air. Land and feel damping switch. Check turnBoostFactor at speed.
+  dimensionName: Gun Feel
+  testScenario: Shoot targets at near, mid, and far range. Hold fire for sustained
+    rhythm. Watch barrel emergence illusion. Shoot different sizes at centipede and
+    compare impact.
   variables:
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
-    fieldName: moveForce
-    min: 3
-    max: 40
-    defaultValue: 15
+    fieldName: firingSpeed
+    min: 4
+    max: 25
+    defaultValue: 10
     requiresRespawn: 0
     liveSync: 0
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
-    fieldName: maxSpeed
-    min: 2
-    max: 15
-    defaultValue: 5
+    fieldName: fireCooldown
+    min: 0.05
+    max: 0.8
+    defaultValue: 0.25
     requiresRespawn: 0
     liveSync: 0
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
-    fieldName: airControlRatio
-    min: 0
-    max: 1
-    defaultValue: 0.3
+    fieldName: projectileInitialScale
+    min: 0.01
+    max: 0.3
+    defaultValue: 0.05
     requiresRespawn: 0
     liveSync: 0
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
-    fieldName: groundDamping
-    min: 2
-    max: 10
-    defaultValue: 5
+    fieldName: projectileGrowTime
+    min: 0.05
+    max: 0.4
+    defaultValue: 0.15
     requiresRespawn: 0
     liveSync: 0
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
-    fieldName: airDamping
+    fieldName: tempMinProjectileDiameter
     min: 0.1
-    max: 2
+    max: 0.5
+    defaultValue: 0.2
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: tempMaxProjectileDiameter
+    min: 0.2
+    max: 1
     defaultValue: 0.5
-    requiresRespawn: 0
-    liveSync: 0
-  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
-    fieldName: dampingTransitionSpeed
-    min: 5
-    max: 30
-    defaultValue: 15
-    requiresRespawn: 0
-    liveSync: 0
-  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
-    fieldName: turnBoostFactor
-    min: 1
-    max: 2.5
-    defaultValue: 1.5
     requiresRespawn: 0
     liveSync: 0
   sweepDuration: 10

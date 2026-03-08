@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
   dimensionName: Foot Physics
   testScenario: Drop from height. Jump repeatedly. Watch landing arc and fall speed.
-    Heavier = less jump height.
+    Heavier feet = stronger collision thud. High gravity = faster drop.
   variables:
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
     fieldName: footMass
-    min: 0.1
-    max: 5
+    min: 0.3
+    max: 2
     defaultValue: 1
     requiresRespawn: 1
     liveSync: 0

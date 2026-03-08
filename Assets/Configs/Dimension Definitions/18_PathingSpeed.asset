@@ -10,17 +10,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ff60679b078f6a84cafb8f957d07cd55, type: 3}
-  m_Name: 14_PathingSpeed
+  m_Name: 18_PathingSpeed
   m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
   dimensionName: Pathing Speed
-  testScenario: Let centipede chase. Feel the threat level. Higher speed = more aggressive
-    threat.
+  testScenario: Let centipede chase across map. Feel approach threat. Force it into
+    a corner to check collision bounce. Stationary player should be caught within
+    a few seconds.
   variables:
   - targetConfig: {fileID: 11400000, guid: d91345cba6825f74f8f0e8dabfb8cb5d, type: 2}
     fieldName: speed
     min: 1
     max: 8
     defaultValue: 3
+    requiresRespawn: 1
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: d91345cba6825f74f8f0e8dabfb8cb5d, type: 2}
+    fieldName: collisionCooldownDuration
+    min: 0.1
+    max: 2
+    defaultValue: 0.5
     requiresRespawn: 1
     liveSync: 0
   sweepDuration: 10

@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: 08_StanceGeometry
   m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
   dimensionName: Stance Geometry
-  testScenario: Stand still. Run. Jump. Evaluate silhouette proportions and stability
-    feel.
+  testScenario: Stand still and evaluate silhouette. Run and check proportions. Jump
+    to see height relative to character size.
   variables:
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
     fieldName: standHeight
@@ -25,9 +25,9 @@ MonoBehaviour:
     liveSync: 0
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
     fieldName: footSpreadX
-    min: 2
+    min: 1
     max: 10
-    defaultValue: 4
+    defaultValue: 5
     requiresRespawn: 0
     liveSync: 0
   sweepDuration: 10

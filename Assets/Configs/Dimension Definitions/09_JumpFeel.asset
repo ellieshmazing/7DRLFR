@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: 09_JumpFeel
   m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
   dimensionName: Jump Feel
-  testScenario: Jump from flat ground (tests jumpSpeed). Crouch into ground then
-    jump (tests offsetFactor). Cross a gap.
+  testScenario: Flat jump (jumpSpeed). Sprint-jump for lean (forwardJumpFactor). Tap
+    vs hold Space (variableJumpCutMultiplier). Walk off ledge and late-jump (coyoteTime).
+    Press jump before landing (jumpBufferTime).
   variables:
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
     fieldName: jumpSpeed
-    min: 3
+    min: 2
     max: 20
     defaultValue: 8
     requiresRespawn: 0
@@ -28,6 +29,55 @@ MonoBehaviour:
     min: 0
     max: 25
     defaultValue: 10
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: forwardJumpFactor
+    min: 0
+    max: 0.3
+    defaultValue: 0.1
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: directionalJumpDeadzone
+    min: 0
+    max: 1
+    defaultValue: 0.2
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: variableJumpCutMultiplier
+    min: 0
+    max: 0.9
+    defaultValue: 0.5
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: coyoteTime
+    min: 0
+    max: 0.2
+    defaultValue: 0.1
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: jumpBufferTime
+    min: 0
+    max: 0.2
+    defaultValue: 0.1
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: landingVelocityTolerance
+    min: 0
+    max: 0.5
+    defaultValue: 0.15
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: jumpCoastTime
+    min: 0
+    max: 0.12
+    defaultValue: 0.05
     requiresRespawn: 0
     liveSync: 0
   sweepDuration: 10

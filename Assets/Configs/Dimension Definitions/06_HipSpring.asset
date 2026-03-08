@@ -13,21 +13,28 @@ MonoBehaviour:
   m_Name: 06_HipSpring
   m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
   dimensionName: Hip Spring
-  testScenario: Jump and land. Watch torso bob. Higher frequency = faster recovery.
-    Low damping = head-bobbing.
+  testScenario: Jump and land hard. Watch torso dip on landing and spring back. Drop
+    from increasing heights to feel mass. Heavy hipMass causes stretch at jump start.
   variables:
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
     fieldName: hipFrequency
-    min: 5
-    max: 25
-    defaultValue: 10.95
+    min: 3
+    max: 20
+    defaultValue: 8
     requiresRespawn: 0
     liveSync: 0
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
     fieldName: hipDampingRatio
     min: 0.2
-    max: 1.2
-    defaultValue: 0.46
+    max: 1
+    defaultValue: 0.7
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: hipMass
+    min: 0.3
+    max: 3
+    defaultValue: 1
     requiresRespawn: 0
     liveSync: 0
   sweepDuration: 10

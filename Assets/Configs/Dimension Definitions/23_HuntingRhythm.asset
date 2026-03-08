@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ff60679b078f6a84cafb8f957d07cd55, type: 3}
-  m_Name: 19_HuntingRhythm
+  m_Name: 23_HuntingRhythm
   m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
   dimensionName: Hunting Rhythm
-  testScenario: Run gentle curves for 20+ seconds. Watch heading changes. Low blend
-    + low oscillation = slow deliberate sweep. High blend + high oscillation = jittery
-    reactive zigzag. High sample radius = smooth global steering.
+  testScenario: Run gentle curves for 20+ seconds and count heading changes. Low
+    blend + low oscillation = slow deliberate sweep. High blend + high oscillation
+    = nervous zigzag. Run a figure-8 to see local vs global steering.
   variables:
   - targetConfig: {fileID: 11400000, guid: d91345cba6825f74f8f0e8dabfb8cb5d, type: 2}
     fieldName: scentSteeringBlend
-    min: 1
+    min: 0.5
     max: 10
     defaultValue: 4
     requiresRespawn: 0
@@ -27,13 +27,13 @@ MonoBehaviour:
   - targetConfig: {fileID: 11400000, guid: d91345cba6825f74f8f0e8dabfb8cb5d, type: 2}
     fieldName: scentOscillationFrequency
     min: 0.1
-    max: 1
+    max: 2
     defaultValue: 0.35
     requiresRespawn: 0
     liveSync: 0
   - targetConfig: {fileID: 11400000, guid: d91345cba6825f74f8f0e8dabfb8cb5d, type: 2}
     fieldName: scentGradientSampleRadius
-    min: 0.3
+    min: 0.2
     max: 2
     defaultValue: 0.8
     requiresRespawn: 0

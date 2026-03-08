@@ -10,25 +10,25 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ff60679b078f6a84cafb8f957d07cd55, type: 3}
-  m_Name: 17_ScentTrail
+  m_Name: 24_TrailSpeed
   m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
-  dimensionName: Scent Trail
-  testScenario: Let player stand still 10 seconds, move away, stand still again. Watch
-    centipede follow the ghost path. High decayTime = long-lived memory. High sigma
-    = blurry wide trail, gradient activates earlier.
+  dimensionName: Trail Speed
+  testScenario: Sprint in a straight line then stop abruptly. Watch centipede surge
+    when it enters your trail. Calibrate scentGradientMaxStrength first until boost
+    is just visible, then set scentSpeedBoost for desired threat ceiling.
   variables:
   - targetConfig: {fileID: 11400000, guid: d91345cba6825f74f8f0e8dabfb8cb5d, type: 2}
-    fieldName: scentDecayTime
-    min: 3
-    max: 20
-    defaultValue: 8
+    fieldName: scentSpeedBoost
+    min: 0
+    max: 4
+    defaultValue: 1
     requiresRespawn: 0
     liveSync: 0
   - targetConfig: {fileID: 11400000, guid: d91345cba6825f74f8f0e8dabfb8cb5d, type: 2}
-    fieldName: scentSigma
+    fieldName: scentGradientMaxStrength
     min: 0.5
-    max: 3
-    defaultValue: 1.5
+    max: 20
+    defaultValue: 5
     requiresRespawn: 0
     liveSync: 0
   sweepDuration: 10
