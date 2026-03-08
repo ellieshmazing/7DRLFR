@@ -16,7 +16,7 @@ MonoBehaviour:
   followDistance: 0.189
   nodeRadius: 1.005498
   nodeColor: {r: 1, g: 1, b: 1, a: 1}
-  wiggleFrequency: 17.102991
+  wiggleFrequency: 19.30388
   wiggleDampingRatio: 0.2750178
   wiggleMass: 1
   ballDefinition: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}

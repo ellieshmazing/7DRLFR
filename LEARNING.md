@@ -241,3 +241,10 @@ Topic: Body Integrity tuning dimension documentation
 Concepts:
   - **Defensive vs. expressive mechanics**: Some systems exist not to create feel but to enforce invariants — they are invisible when working correctly. Body integrity (leash, ground probe, separation limit) is a defensive layer that prevents the expressive procedural walking system from producing incoherent states. The design discipline is to tune defensive parameters until they never fire in normal play, then stop.
   - **Failure-mode tuning**: Defensive parameters cannot be tuned by feel because correct behavior produces no sensation. The only reliable method is to deliberately stress-test edge cases — wall corners, thin ledges, sprint-to-stop transitions — and observe whether the system silently holds coherence. This is the inverse of feel tuning, where you iterate toward a positive sensation rather than away from a negative one.
+
+---
+Date: 2026-03-08
+Topic: AutoRespawn config identity bug in TuningManager
+Concepts:
+  - **Config identity vs. config type**: When a system routes through multiple config references (one for writing, one for spawning), a mismatch between those references is a silent bug — the entity spawns from one SO but reflects changes written to another. The type-check (`is PlayerConfig`) and the spawn-source (`playerConfig`) should be kept explicitly separate to avoid this class of confusion.
+  - **Canonical source of truth**: In a tuning system, the manager's own serialized config fields are the authoritative spawn source. Dimension-level `targetConfig` references serve reflection-write routing only and should never become the spawn config — doing so couples visual fidelity to the correctness of external asset wiring.
