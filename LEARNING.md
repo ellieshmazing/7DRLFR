@@ -143,3 +143,10 @@ Topic: footColliderRadius bug diagnosis
 Concepts:
   - **Single Source of Truth**: When two code paths produce the same value via different routes (assembler vs. Start()), one is necessarily wrong or redundant. The diagnostic question is always which one is authoritative — here, the assembler should own all wiring, and Start() was silently patching a mistake rather than the two being equivalent alternatives.
   - **Local vs. World Space in Physics**: Collider radii are local-space values that Unity scales by the object's lossyScale for physics. A formula like `col.radius * lossyScale.x` recovers the world-space radius — but the simpler expression `0.5f * playerScale` reaches the same value without reading runtime component state, making it better as a setup-time computation.
+
+---
+Date: 2026-03-07
+Topic: Dead code removal — old foot system
+Concepts:
+  - **System Archaeology**: When replacing a system incrementally, the old code often lingers past its death date — referenced in comments, stale hierarchy docs, and vestigial base classes. Periodically sweeping for orphaned files and ghost references keeps the codebase honest and prevents future readers from being misled about how the system actually works.
+  - **Minimal Interface Principle**: `PlayerSkeletonNode` used to expose tree traversal, snapping, and world-position helpers that the new `FootMovement` system never calls. Stripping it to just `localOffset` + gizmo makes its true contract obvious — it's a tagged scene object, not a behavior node.

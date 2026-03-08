@@ -186,7 +186,7 @@ public class PlayerAssembler : MonoBehaviour
                               new Vector2(position.x + footSpreadWorldX, footSpawnY),
                               config.rightFoot, spriteLocalScale, colRadius, config);
 
-        // --- FootMovement (on HipNode, replaces PlayerFeet) ---
+        // --- FootMovement (on HipNode) ---
         var footMovement = hipGO.AddComponent<FootMovement>();
         footMovement.config             = config;
         footMovement.pixelToWorld       = pixelToWorld;
