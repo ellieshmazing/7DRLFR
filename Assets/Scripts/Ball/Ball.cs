@@ -50,6 +50,12 @@ public class Ball : MonoBehaviour
     /// <summary>Current spring simulation velocity in world space.</summary>
     public Vector2 SpringVelocity => springVelocity;
 
+    /// <summary>
+    /// The ball's Rigidbody2D. Effects and movement overrides may read or write it
+    /// directly (e.g. to switch to Kinematic for a sticky freeze, or to add force).
+    /// </summary>
+    public Rigidbody2D Rigidbody => rb;
+
     // ── Cached layer IDs (shared across all Ball instances) ───────────────────
     private static int layerDefault   = -1;
     private static int layerCentipede = -1;
@@ -148,13 +154,26 @@ public class Ball : MonoBehaviour
     }
 
     /// <summary>
+    /// Sets the ball's velocity and fires all OnLaunch callbacks on the definition's
+    /// effect and movementOverride. Call this when firing a projectile from scratch.
+    /// For centipede ejection use <see cref="Detach"/> instead, which calls this internally.
+    /// </summary>
+    public void Launch(Vector2 launchVelocity)
+    {
+        EnsureComponents();
+        rb.linearVelocity = launchVelocity;
+        def?.movementOverride?.OnLaunch(this, rb, launchVelocity);
+        def?.effect?.OnLaunch(this, rb, launchVelocity);
+    }
+
+    /// <summary>
     /// Detaches this ball from its centipede segment: switches to free Dynamic physics
-    /// and assigns <paramref name="launchVelocity"/> as its initial velocity.
+    /// and calls <see cref="Launch"/> with <paramref name="launchVelocity"/>.
     /// </summary>
     public void Detach(Vector2 launchVelocity)
     {
         SetCentipedeMode(false);
-        rb.linearVelocity = launchVelocity;
+        Launch(launchVelocity);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -168,6 +187,8 @@ public class Ball : MonoBehaviour
         else if (def?.movementOverride != null)
         {
             def.movementOverride.OnFixedUpdate(this, rb, Time.fixedDeltaTime);
+            // Override may manipulate rb freely: apply forces, set velocity,
+            // or switch rb.bodyType to Kinematic for full positional control.
         }
     }
 
