@@ -55,8 +55,12 @@ Living documentation of all meaningful variables across the project. Updated whe
 | `jumpBufferTime` | `float` | `PlayerConfig` | Seconds before landing where jump input is buffered | Pre-landing jump queuing; default 0.1s | Landing-jump forgiveness |
 | `landingVelocityTolerance` | `float` | `PlayerConfig` | Max upward velocity at which feet can still lock to ground | Allows apex landings; default 0.3 wu/s | Foot locking reliability |
 | `jumpCoastTime` | `float` | `PlayerConfig` | Seconds after jump where foot X spring is suppressed | Lets feet carry launch velocity visually; default 0.06s | Visual launch coherence |
-| `maxCrouchDepth` | `float` | `PlayerConfig` | Maximum crouch depth in source pixels | Controls how far the torso lowers when crouching; default 5 px | Crouch range, jump power bonus |
-| `crouchSpeed` | `float` | `PlayerConfig` | Rate of crouch compression in px/s (release is 2x) | Controls how fast crouch engages/disengages; default 25 px/s | Crouch responsiveness |
+| `impactCrouchFactor` | `float` | `PlayerConfig` | Multiplier converting landing speed (wu/s) to crouch depth (source px) | Higher = deeper compression per unit landing speed; default 0.5 | Crouch depth on landing, jump power bonus |
+| `crouchDepthRatio` | `float` | `PlayerConfig` | Fraction of standHeight that defines max crouch depth | Higher = more energy storage ceiling; max crouch = standHeight × this; default 0.4 | Max crouch range, max jump power bonus |
+| `crouchDissipationRate` | `float` | `PlayerConfig` | Source pixels per second of crouch decay when not frozen | Lower = longer window to use stored energy; default 15 px/s | Timing window for jump after landing |
+| `impactSquashOvershoot` | `float` | `PlayerConfig` | Visual overshoot multiplier on landing (1.0 = natural spring only) | Higher = juicier visual compression on impact; default 1.0 | Visual landing weight |
+| `squashPunchDecayRate` | `float` | `PlayerConfig` | Source pixels per second of squash punch decay | Higher = snappier visual recovery; default 40 px/s | Visual squash duration |
+| `landingCaptureWindow` | `float` | `PlayerConfig` | Seconds to accumulate max landing speed across both feet | Covers gap between first and second foot locking; default 0.05 s | Landing detection reliability |
 | `footfallImpulse` | `float` | `PlayerConfig` | Forward impulse on torso each time a foot locks from stepping | Creates rhythm of step-driven acceleration; scaled down near maxSpeed; default 0.3 | Step-driven acceleration feel |
 | `footfallMinSpeed` | `float` | `PlayerConfig` | Minimum horizontal speed for footfall impulse to fire | Prevents impulse at very low speeds; default 0.3 wu/s | Footfall activation threshold |
 | `footGroundDamping` | `float` | `PlayerConfig` | Foot RB linear damping when any foot is grounded | Moderate damping when on ground; default 4.0 | Foot ground behavior |
