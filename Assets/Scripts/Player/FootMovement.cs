@@ -667,7 +667,10 @@ public class FootMovement : MonoBehaviour
         var hit = Physics2D.Raycast(
             foot.lockPosition, Vector2.down, probeDistWU, _notPlayerMask);
 
-        if (hit.collider == null || !IsWalkable(hit.normal))
+        // Require both probe miss AND no physics contact — prevents floating-point
+        // precision at the surface boundary from spuriously dropping a grounded foot
+        // to Airborne, which would re-arm idleCorrectionArmed and restart the step loop.
+        if ((hit.collider == null || !IsWalkable(hit.normal)) && !foot.contact.isGrounded)
             TransitionToAirborne(foot);
     }
 }
