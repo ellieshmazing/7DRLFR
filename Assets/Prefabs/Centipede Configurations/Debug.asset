@@ -13,24 +13,38 @@ MonoBehaviour:
   m_Name: Debug
   m_EditorClassIdentifier: Assembly-CSharp::CentipedeConfig
   nodeCount: 10
-  followDistance: 0.77649724
+  followDistance: 0.111999996
   nodeRadius: 1.005498
   nodeColor: {r: 1, g: 1, b: 1, a: 1}
-  wiggleFrequency: 4.4585757
+  wiggleFrequency: 4.797771
   wiggleDampingRatio: 0.2750178
   wiggleMass: 1
   ballDefinition: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
-  detachDistance: 1.4030675
-  speed: 6.761471
+  detachDistance: 0.20489998
+  speed: 1.05
   minTurnRadius: 3.9242067
-  arcAngleVariance: 85.340225
+  arcAngleVariance: 9.900001
   replanInterval: 1.3218192
   replanJitter: 0.4
   maxReplanAttempts: 8
-  waveAmplitude: 0.17524968
+  waveAmplitude: 0.107999995
   waveFrequency: 0.66645026
   wavePhaseOffsetPerNode: 0.21714967
   collisionCooldownDuration: 0.5
   targetArrivalRadius: 0.5
+  useScentNavigator: 0
+  scentHistorySize: 200
+  scentSampleInterval: 0.1
+  scentDecayTime: 8
+  scentSigma: 1.5
+  scentGradientSampleRadius: 0.8
+  scentSteeringBlend: 4
+  scentConsumeRadius: 0.6
+  scentConsumeRate: 2
+  scentOscillationFrequency: 0.35
+  scentSpeedBoost: 1
+  scentGradientMaxStrength: 5
+  scentFallbackThreshold: 0.05
+  scentFallbackBlend: 0.8
   headPrefab: {fileID: 7984257113175378315, guid: f693c407940147a4f8ce046820a22304, type: 3}
   bodyPrefab: {fileID: 8181626248139991486, guid: 6622fd47b5096e54c9cf811686fc9b52, type: 3}
