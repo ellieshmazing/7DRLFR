@@ -34,6 +34,7 @@ public class TuningManager : MonoBehaviour
     [SerializeField] CentipedeConfig centipedeConfig;
     [SerializeField] PlayerAssembler playerAssembler;
     [SerializeField] CentipedeAssembler centipedeAssembler;
+    [SerializeField] SmoothFollowCamera followCamera;
 
     [Header("Dimensions")]
     [SerializeField] TuningDimensionDef[] dimensionDefs;
@@ -243,7 +244,7 @@ public class TuningManager : MonoBehaviour
         }
         else if (respawnTargetConfig is CentipedeConfig cc)
         {
-            StartCoroutine(AutoRespawner.RespawnCentipedes(cc, centipedeAssembler));
+            StartCoroutine(RespawnCentipedesAndUpdateCamera(cc, centipedeAssembler));
         }
     }
 
@@ -645,7 +646,7 @@ public class TuningManager : MonoBehaviour
                 for (int i = 0; i < centipedeSpawnCount; i++)
                     positions[i] = centipedeSpawnPosition + Vector2.right * i * centipedeSpawnSpacing;
                 activeSpawnCoroutine = StartCoroutine(
-                    AutoRespawner.SpawnFreshCentipedes(centipedeConfig, centipedeAssembler, positions));
+                    SpawnCentipedesAndUpdateCamera(centipedeConfig, centipedeAssembler, positions));
                 break;
         }
     }
@@ -723,6 +724,7 @@ public class TuningManager : MonoBehaviour
         else
         {
             phase = TuningPhase.Idle;
+            ClearCameraOverride();
             Debug.Log("[TuningManager] Tuning paused.");
         }
     }
@@ -797,6 +799,33 @@ public class TuningManager : MonoBehaviour
         }
         clip.SetData(samples, 0);
         return clip;
+    }
+
+    // ── Camera targeting ─────────────────────────────────────────────────────
+
+    IEnumerator SpawnCentipedesAndUpdateCamera(CentipedeConfig config, CentipedeAssembler assembler, Vector2[] positions)
+    {
+        yield return StartCoroutine(AutoRespawner.SpawnFreshCentipedes(config, assembler, positions));
+        SetCameraForCentipede();
+    }
+
+    IEnumerator RespawnCentipedesAndUpdateCamera(CentipedeConfig config, CentipedeAssembler assembler)
+    {
+        yield return StartCoroutine(AutoRespawner.RespawnCentipedes(config, assembler));
+        SetCameraForCentipede();
+    }
+
+    void SetCameraForCentipede()
+    {
+        if (followCamera == null) return;
+        var root = FindAnyObjectByType<SkeletonRoot>();
+        followCamera.target = root != null ? root.transform : null;
+    }
+
+    void ClearCameraOverride()
+    {
+        if (followCamera == null) return;
+        followCamera.target = PlayerRegistry.PlayerTransform;
     }
 
     // ── Validation ───────────────────────────────────────────────────────────
