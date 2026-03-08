@@ -129,6 +129,10 @@ public class PlayerSkeletonRoot : MonoBehaviour
             - (kb.aKey.isPressed || kb.leftArrowKey.isPressed  ? 1f : 0f)
             : 0f;
 
+        // --- 2b. Wall-obstruction force suppression ---
+        if (h != 0f && footMovement != null && footMovement.IsMovementBlockedByWall(Mathf.Sign(h)))
+            h = 0f;
+
         float effectiveForce = isGrounded ? moveForce : moveForce * airControlRatio;
         float hSpeed = Mathf.Abs(rb.linearVelocity.x);
 
@@ -175,7 +179,10 @@ public class PlayerSkeletonRoot : MonoBehaviour
                 config.crouchSpeed * 2f * dt);
         }
 
-        // --- 5. Torso Y: converge to hipNode.Y + effectiveStandHeight ---
+        // --- 5. Body leash — constrain torso X to feet ---
+        ApplyBodyLeash();
+
+        // --- 6. Torso Y: converge to hipNode.Y + effectiveStandHeight ---
         float effectiveStandHeight = (standHeight - _crouchAmount) * pixelToWorld;
         float desiredY    = hipNode.position.y + effectiveStandHeight;
         float yCorrection = (desiredY - rb.position.y) / dt;
@@ -316,6 +323,43 @@ public class PlayerSkeletonRoot : MonoBehaviour
         else
         {
             footMovement.SetWallSliding(false);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Body Leash
+    // -------------------------------------------------------------------------
+
+    void ApplyBodyLeash()
+    {
+        if (footMovement == null) return;
+
+        float footCenterX   = footMovement.GetFootCenterX();
+        float displacement  = rb.position.x - footCenterX;
+        float softRadiusWU  = config.leashSoftRadius * pixelToWorld;
+        float hardRadiusWU  = config.leashHardRadius * pixelToWorld;
+
+        // Quadratic spring pull in the soft→hard zone.
+        if (Mathf.Abs(displacement) > softRadiusWU)
+        {
+            float excess    = Mathf.Abs(displacement) - softRadiusWU;
+            float softRange = hardRadiusWU - softRadiusWU;
+            if (softRange > 0f)
+            {
+                float t         = Mathf.Clamp01(excess / softRange);
+                float pullForce = config.moveForce * config.leashForceMult * t * t;
+                rb.AddForce(new Vector2(-Mathf.Sign(displacement) * pullForce, 0f));
+            }
+        }
+
+        // Hard clamp — safety net.
+        if (Mathf.Abs(displacement) > hardRadiusWU)
+        {
+            float clampedX = footCenterX + Mathf.Sign(displacement) * hardRadiusWU;
+            rb.position = new Vector2(clampedX, rb.position.y);
+
+            if (Mathf.Sign(rb.linearVelocity.x) == Mathf.Sign(displacement))
+                rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
         }
     }
 

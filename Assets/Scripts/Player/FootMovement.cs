@@ -104,6 +104,10 @@ public class FootMovement : MonoBehaviour
         float   torsoX = torsoRB.position.x;
         float   torsoY = torsoRB.position.y;
 
+        // --- Ground probe: verify locked feet still have ground ---
+        ProbeLockedFootGround(_left);
+        ProbeLockedFootGround(_right);
+
         // --- Track grounded state for coyote time ---
         bool anyLocked = (_left.state == FootState.Locked || _right.state == FootState.Locked);
         if (anyLocked)
@@ -206,6 +210,56 @@ public class FootMovement : MonoBehaviour
         _isWallSliding = sliding;
     }
 
+    /// <summary>
+    /// X coordinate representing the feet's center of mass. Used by the body
+    /// leash in PlayerSkeletonRoot as the anchor point.
+    /// Prefers locked foot positions; falls back to RB midpoint when airborne.
+    /// </summary>
+    public float GetFootCenterX()
+    {
+        bool ll = _left.state  == FootState.Locked;
+        bool rl = _right.state == FootState.Locked;
+        if (ll && rl) return (_left.lockPosition.x + _right.lockPosition.x) * 0.5f;
+        if (ll)       return _left.lockPosition.x;
+        if (rl)       return _right.lockPosition.x;
+        if (_left.rb != null && _right.rb != null)
+            return (_left.rb.position.x + _right.rb.position.x) * 0.5f;
+        return transform.position.x;
+    }
+
+    /// <summary>
+    /// Checks whether locked feet are walled in the given direction. Returns
+    /// true if horizontal force should be suppressed. Exception: if the other
+    /// locked foot is further ahead in moveDir and not walled, movement is
+    /// permitted (allows climbing over low walls).
+    /// </summary>
+    public bool IsMovementBlockedByWall(float moveDir)
+    {
+        if (moveDir == 0f) return false;
+
+        bool ll = _left.state  == FootState.Locked;
+        bool rl = _right.state == FootState.Locked;
+        if (!ll && !rl) return false;
+
+        bool leftWalled  = ll && _left.contact.isWalled
+                           && _left.contact.lastWallNormal.x * moveDir < 0f;
+        bool rightWalled = rl && _right.contact.isWalled
+                           && _right.contact.lastWallNormal.x * moveDir < 0f;
+
+        if (!leftWalled && !rightWalled) return false;
+
+        // Exception: other locked foot is ahead in moveDir and not walled.
+        if (leftWalled && rl && !rightWalled)
+            if ((_right.lockPosition.x - _left.lockPosition.x) * moveDir > 0f)
+                return false;
+
+        if (rightWalled && ll && !leftWalled)
+            if ((_left.lockPosition.x - _right.lockPosition.x) * moveDir > 0f)
+                return false;
+
+        return true;
+    }
+
     // -------------------------------------------------------------------------
     // Per-foot state machine
     // -------------------------------------------------------------------------
@@ -234,7 +288,7 @@ public class FootMovement : MonoBehaviour
                     if (signedBehind > config.strideTriggerDistance * pixelToWorld
                         && other.state != FootState.Stepping)
                     {
-                        StartStep(foot, vel, torsoX, torsoY);
+                        StartStep(foot, other, vel, torsoX, torsoY);
                     }
                 }
                 else
@@ -246,7 +300,7 @@ public class FootMovement : MonoBehaviour
                         && other.state != FootState.Stepping)
                     {
                         float groundY = RaycastGroundY(idealX, torsoY, foot.lockPosition.y);
-                        StartStep(foot, vel, torsoX, torsoY, new Vector2(idealX, groundY));
+                        StartStep(foot, other, vel, torsoX, torsoY, new Vector2(idealX, groundY));
                     }
                 }
                 break;
@@ -291,7 +345,7 @@ public class FootMovement : MonoBehaviour
                         float otherIdealX = transform.position.x
                                           + other.side * config.footSpreadX * pixelToWorld;
                         float groundY = RaycastGroundY(otherIdealX, torsoY, other.rb.position.y);
-                        StartStep(other, vel, torsoX, torsoY, new Vector2(otherIdealX, groundY));
+                        StartStep(other, foot, vel, torsoX, torsoY, new Vector2(otherIdealX, groundY));
                     }
                 }
                 break;
@@ -302,12 +356,48 @@ public class FootMovement : MonoBehaviour
     // State transitions
     // -------------------------------------------------------------------------
 
-    private void StartStep(FootData foot, Vector2 vel,
+    private void StartStep(FootData foot, FootData other, Vector2 vel,
                            float torsoX, float torsoY, Vector2? target = null)
     {
-        foot.xLocked      = false;
+        foot.xLocked       = false;
         foot.stepStartPos  = foot.rb.position;
-        foot.stepTargetPos = target ?? ComputeStepTarget(foot, vel, torsoX, torsoY);
+        Vector2 stepTarget = target ?? ComputeStepTarget(foot, vel, torsoX, torsoY);
+
+        // --- Obstacle pre-check: horizontal ray at arc-peak height ---
+        float moveDir = Mathf.Sign(stepTarget.x - foot.rb.position.x);
+        if (moveDir != 0f)
+        {
+            float clearanceY = foot.rb.position.y
+                             + config.stepHeight * pixelToWorld + footColliderRadius;
+            float castDist = Mathf.Abs(stepTarget.x - foot.rb.position.x) + footColliderRadius;
+            var hit = Physics2D.Raycast(
+                new Vector2(foot.rb.position.x, clearanceY),
+                new Vector2(moveDir, 0f), castDist, _notPlayerMask);
+
+            if (hit.collider != null && !IsWalkable(hit.normal))
+            {
+                float shortenedX = hit.point.x - moveDir * footColliderRadius;
+                if (Mathf.Abs(shortenedX - foot.rb.position.x) < config.minStepDistance * pixelToWorld)
+                    return; // step too short — stay locked
+
+                stepTarget.x = shortenedX;
+                stepTarget.y = RaycastGroundY(shortenedX, torsoY, foot.rb.position.y);
+            }
+        }
+
+        // --- Foot separation limit ---
+        if (other.state == FootState.Locked)
+        {
+            float maxSepWU = config.maxFootSeparation * pixelToWorld;
+            if (Mathf.Abs(stepTarget.x - other.lockPosition.x) > maxSepWU)
+            {
+                stepTarget.x = other.lockPosition.x
+                             + Mathf.Sign(stepTarget.x - other.lockPosition.x) * maxSepWU;
+                stepTarget.y = RaycastGroundY(stepTarget.x, torsoY, foot.rb.position.y);
+            }
+        }
+
+        foot.stepTargetPos = stepTarget;
         foot.stepProgress  = 0f;
         foot.stepDuration  = Mathf.Max(
             config.minStepDuration,
@@ -322,6 +412,17 @@ public class FootMovement : MonoBehaviour
 
         Vector2 arcPos = EvaluateArc(
             foot.stepStartPos, foot.stepTargetPos, foot.stepProgress, config.stepHeight);
+
+        // Arc collision: linecast from current to next arc position.
+        var arcHit = Physics2D.Linecast(foot.rb.position, arcPos, _notPlayerMask);
+        if (arcHit.collider != null && !IsWalkable(arcHit.normal))
+        {
+            Vector2 lockPos = arcHit.point
+                            - (arcPos - foot.rb.position).normalized * footColliderRadius;
+            LockFoot(foot, lockPos);
+            return;
+        }
+
         foot.rb.linearVelocity = (arcPos - foot.rb.position) / dt;
 
         // Early lock: foot contacted walkable ground on the DESCENT (past arc peak).
@@ -343,6 +444,17 @@ public class FootMovement : MonoBehaviour
     private void LockFoot(FootData foot, Vector2 worldPos)
     {
         FootState previousState = foot.state;
+
+        // Edge landing nudge: push foot inward on platform edges.
+        if (previousState == FootState.Airborne && config != null)
+        {
+            float normalX = foot.contact.lastContactNormal.x;
+            if (Mathf.Abs(normalX) > 0.1f)
+            {
+                float nudgeWU = config.edgeLandingNudge * pixelToWorld;
+                worldPos.x -= normalX * nudgeWU;
+            }
+        }
 
         foot.state             = FootState.Locked;
         foot.lockPosition      = worldPos;
@@ -397,7 +509,7 @@ public class FootMovement : MonoBehaviour
             LockFoot(stepping, stepping.rb.position);
             FootData other = stepping == _left ? _right : _left;
             if (other.state == FootState.Locked)
-                StartStep(other, vel, torsoX, torsoY);
+                StartStep(other, stepping, vel, torsoX, torsoY);
         }
     }
 
@@ -485,4 +597,16 @@ public class FootMovement : MonoBehaviour
 
     private bool IsWalkable(Vector2 normal) =>
         Vector2.Angle(normal, Vector2.up) <= config.maxWalkableAngle;
+
+    private void ProbeLockedFootGround(FootData foot)
+    {
+        if (foot.state != FootState.Locked) return;
+
+        float probeDistWU = config.groundProbeDistance * pixelToWorld;
+        var hit = Physics2D.Raycast(
+            foot.lockPosition, Vector2.down, probeDistWU, _notPlayerMask);
+
+        if (hit.collider == null || !IsWalkable(hit.normal))
+            TransitionToAirborne(foot);
+    }
 }
