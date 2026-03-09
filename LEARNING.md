@@ -311,3 +311,31 @@ Topic: Centipede obstacle-aware navigation
 Concepts:
   - **Line-of-Sight Gradient Filtering**: Instead of changing how data is stored, change how it's read. By raycasting from the navigator to each gradient sample point and discarding blocked directions, the scent field becomes spatially aware of geometry without any change to the field itself — the reader does the work.
   - **Potential Field Repulsion**: Adding an outward force inversely proportional to obstacle proximity is a classic game AI technique. Combined with gradient ascent (attraction toward a goal), the two forces sum into emergent wall-following: the centipede steers toward the player while being pushed along wall surfaces rather than into them.
+
+---
+Date: 2026-03-08
+Topic: FireballEffect force not affecting kinematic centipede balls
+Concepts:
+  - **Kinematic vs Dynamic Rigidbodies**: Kinematic bodies are moved programmatically (MovePosition/velocity assignment) and silently ignore AddForce — a common Unity gotcha when mixing physics modes. The ball's spring simulation owns its movement, so external impulses must be injected into that simulation's state, not the physics engine.
+  - **Simulation Seams**: When two systems share the same object (Unity physics + a custom spring), forces must be routed through the owning system. InjectSpringVelocity exists precisely as that handoff point — the fireball "speaks the language" of the spring rather than the physics engine.
+
+---
+Date: 2026-03-08
+Topic: Game restart / session reset
+Concepts:
+  - **Session Reset vs. Scene Reload**: Reloading a scene is the bluntest reset tool — it guarantees clean state but pays a full load cost and loses any persistent setup (configs, assembler references). Selective object destruction and state variable resets achieve the same effect mid-session with zero load time, at the cost of having to enumerate exactly what "gameplay" means vs. "administration."
+  - **Ownership by Tag vs. Component**: When deciding what to destroy on restart, tagging objects at creation time ("Destructible") cleanly separates ephemeral gameplay from persistent infrastructure — but only works if every creator agrees on the tag. Falling back to component search (`FindObjectsByType<Ball>`) covers objects that don't carry the tag, making the two approaches complementary rather than competing.
+
+---
+Date: 2026-03-08
+Topic: HintOverlay — player-facing UI hint panel
+Concepts:
+  - **Diegetic vs. Non-Diegetic UI**: HUD elements like this hint box are non-diegetic — they exist outside the game world and speak directly to the player rather than through a character. Deciding what belongs in the diegetic (e.g. enemy health bar above a character) vs. non-diegetic layer (controls reminder) shapes how immersed the player feels.
+  - **Affordance through typography**: Comic Sans signals "casual, friendly, not serious" before the player reads a word. Font choice is part of the UX message — a monospace font would imply precision; handwriting implies personality. The font *is* part of the content.
+
+---
+Date: 2026-03-08
+Topic: Randomized centipede spawning — per-spawn variety via runtime SO clones
+Concepts:
+  - **Runtime ScriptableObject Cloning**: Instantiating a SO at runtime creates a mutable copy that can be tweaked per-spawn without touching the authored asset. This is the standard "template + variation" pattern in Unity — one config asset defines the base, clones carry per-instance overrides. It scales cleanly: any new field on the SO becomes randomizable without changing the assembler's API.
+  - **Affine Parameter Coupling**: When two tuning values are linked by a ratio (followDistance = nodeRadius × 2), randomizing one and deriving the other preserves the visual relationship at all scales. The ratio encodes "how tightly packed the chain looks" — randomizing both independently would produce gappy or overlapping chains that read as bugs rather than variety.

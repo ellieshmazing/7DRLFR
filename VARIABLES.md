@@ -139,6 +139,14 @@ Procedural walking FSM; replaces PlayerFeet. Attach to HipNode GO alongside Play
 
 ---
 
+## Ball (runtime state)
+
+| Variable | Type | Location | Description | Behavior | Affects |
+|---|---|---|---|---|---|
+| `currentDiameter` | `float` | `Ball` | World-unit diameter stored during Init; used by SetSprite to recompute scale | Set once in Init; read by SetSprite for PPU-correct scale recomputation | Sprite override visual correctness |
+
+---
+
 ## Scale Convention (project-wide)
 Sprites are authored at **1 world-unit diameter at scale 1**.
 `transform.localScale = Vector3.one * diameter`
@@ -208,3 +216,11 @@ Sprites are authored at **1 world-unit diameter at scale 1**.
 | `spawnAboveCamera` | `float` | `GameLoop` | World units above the camera's top edge where centipedes are placed | Larger = centipedes have more fall time before entering frame; default 2 wu | Off-screen spawn clearance |
 | `_spawnTimer` | `float` | `GameLoop` | Countdown to next centipede spawn | Decrements each Update; reset to `CurrentInterval()` on each spawn | Spawn timing |
 | `_maxPlayerX` | `float` | `GameLoop` | One-way record of the player's furthest rightward X position | Only increases; drives spawn rate; never decremented on leftward movement | Spawn rate progression |
+| `minNodes` | `int` | `GameLoop` | Minimum node count per randomized centipede (inclusive) | Lower = more runty centipedes; try 2–5; default 3 | Centipede size variety |
+| `maxNodes` | `int` | `GameLoop` | Maximum node count per randomized centipede (inclusive) | Higher = longer worms; try 8–15; default 10 | Centipede size variety |
+| `minRadius` | `float` | `GameLoop` | Smallest nodeRadius in world units | Lower = tinier segments; try 0.05–0.12; default 0.08 | Centipede visual size range |
+| `maxRadius` | `float` | `GameLoop` | Largest nodeRadius in world units | Higher = chunkier segments; try 0.2–0.4; default 0.25 | Centipede visual size range |
+| `followRatio` | `float` | `GameLoop` | followDistance / nodeRadius ratio; preserves chain density at all scales | Higher = gappier chain, lower = overlapping; try 1.5–2.5; default 2.0 | Centipede chain spacing |
+| `maxSpeed` | `float` | `GameLoop` | Speed for the smallest/shortest centipede (lowest bulk) | Caps at 5; try 4.0–6.0; default 5.0 | Small centipede speed |
+| `minSpeed` | `float` | `GameLoop` | Speed for the largest/longest centipede (highest bulk) | Lower = more lumbering big centipedes; try 1.0–2.5; default 1.5 | Large centipede speed |
+| `centipedeVariantSprites` | `Sprite[]` | `GameLoop` | Inspector-assigned array of sprite variants (BallGamersheet_1–5) | One picked at random per centipede; all nodes share same sprite | Centipede visual variety |
