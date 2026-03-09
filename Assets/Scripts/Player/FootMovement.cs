@@ -387,20 +387,10 @@ public class FootMovement : MonoBehaviour
                     : config.footGravityScale;
 
                 float hipX = transform.position.x;
-                float hipY = transform.position.y;
 
                 // X: spring with settle-lock so foot tracks hip horizontally.
                 // Suppressed during jump coast period.
                 UpdateAirborneX(foot, hipX, dt);
-
-                // Y: standard spring toward hip; gravity applied by physics engine.
-                float yDisp = foot.rb.position.y - hipY;
-                float yAccel = (-config.FootStiffness * yDisp
-                               - config.FootDamping * foot.rb.linearVelocity.y)
-                               / config.footSpringMass;
-                foot.rb.linearVelocity = new Vector2(
-                    foot.rb.linearVelocity.x,
-                    foot.rb.linearVelocity.y + yAccel * dt);
 
                 // Landing: lock when touching walkable ground and descending
                 // (or near apex — landingVelocityTolerance catches apex landings).
