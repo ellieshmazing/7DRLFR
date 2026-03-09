@@ -248,3 +248,10 @@ Topic: AutoRespawn config identity bug in TuningManager
 Concepts:
   - **Config identity vs. config type**: When a system routes through multiple config references (one for writing, one for spawning), a mismatch between those references is a silent bug — the entity spawns from one SO but reflects changes written to another. The type-check (`is PlayerConfig`) and the spawn-source (`playerConfig`) should be kept explicitly separate to avoid this class of confusion.
   - **Canonical source of truth**: In a tuning system, the manager's own serialized config fields are the authoritative spawn source. Dimension-level `targetConfig` references serve reflection-write routing only and should never become the spawn config — doing so couples visual fidelity to the correctness of external asset wiring.
+
+---
+Date: 2026-03-08
+Topic: Centipede pincer attack mechanic
+Concepts:
+  - **Hitbox/Hurtbox Separation**: The visible sprite and the damage zone are independent — here the pincers animate (rotate) while the trigger colliders are static siblings that never move. This lets the visual be dramatic and wide while the actual kill zone stays tight and forgiving. Fighting games pioneered this to keep moment-to-moment play fair even when animations are exaggerated.
+  - **Strategy Pattern for Extensibility**: `IPlayerHitEffect` decouples "hit detected" from "what happens on hit." `PincerController` holds a list and iterates it — `DestroyPlayerEffect` is just the first entry. New effects (stun, knockback, damage) are new classes added to the list, not modifications to the detection logic. This is the classic open/closed principle applied to game events.

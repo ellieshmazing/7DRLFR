@@ -139,4 +139,33 @@ Sprites are authored at **1 world-unit diameter at scale 1**.
 
 ---
 
+---
+
+## CentipedeConfig — Pincers
+
+| Variable | Type | Location | Description | Behavior | Affects |
+|---|---|---|---|---|---|
+| `pincerSprite` | `Sprite` | `CentipedeConfig` | Sprite asset used for both pincer renderers; right side gets `flipX = true`. Leave null to disable pincers entirely. | Checked at spawn; null skips all pincer setup | Pincer visual presence |
+| `pincerSize` | `float` | `CentipedeConfig` | Uniform local scale of each pincer sprite GO | Higher = larger, more threatening claw silhouette; try 0.2–0.8 | Pincer visual size |
+| `pincerOffsetX` | `float` | `CentipedeConfig` | Local X distance from head center to each pincer's pivot in world units | Higher = pincers sit wider apart; try 0.05–0.25 | Pincer lateral position |
+| `pincerOffsetY` | `float` | `CentipedeConfig` | Local Y offset from head center to each pincer's pivot in world units | Positive = forward on the head; try -0.1–0.2 | Pincer vertical position |
+| `idleClickSpeed` | `float` | `CentipedeConfig` | Click animation frequency in Hz when player is outside attack radius | Lower = leisurely idle; try 0.5–3.0 | Animation cadence while searching |
+| `attackClickSpeed` | `float` | `CentipedeConfig` | Click animation frequency in Hz at full attack proximity | Higher = frantic snapping when closing in; try 2.0–8.0 | Animation cadence near player |
+| `clickAngle` | `float` | `CentipedeConfig` | Peak rotation degrees each pincer pivots from center | Lower = tight snip; higher = wide jaw bite; try 15–60 | Visual bite width |
+| `attackOuterRadius` | `float` | `CentipedeConfig` | World-unit distance at which pincers begin speeding up | Larger = player hears escalation from further away; try 2.0–6.0 | Threat escalation onset range |
+| `attackInnerRadius` | `float` | `CentipedeConfig` | World-unit distance at which pincers reach full `attackClickSpeed`; must be < `attackOuterRadius` | Smaller = only snaps fast when nearly touching; try 0.5–2.0 | Threat escalation peak range |
+| `pincerColliderSize` | `Vector2` | `CentipedeConfig` | Width × Height of each static trigger hitbox in world units | Intentionally smaller than visual to be forgiving; try (0.05–0.15, 0.10–0.25) | Actual kill-zone area |
+| `pincerHitboxOffsetX` | `float` | `CentipedeConfig` | Local X of each hitbox from head center; set to roughly match pincer tip at rest | try 0.05–0.2 | Kill-zone lateral placement |
+| `pincerHitboxOffsetY` | `float` | `CentipedeConfig` | Local Y of each hitbox from head center | try 0.0–0.2 | Kill-zone forward placement |
+
+---
+
+## PincerController
+
+| Variable | Type | Location | Description | Behavior | Affects |
+|---|---|---|---|---|---|
+| `phase` | `float` | `PincerController` | Accumulated animation phase in radians [0, 2π); advanced each FixedUpdate by `currentClickSpeed × 2π × dt` | Wraps via modulo; drives `sin(phase)` for click angle; preserved across speed changes for smooth transitions | Animation continuity |
+| `currentClickSpeed` | `float` | `PincerController` | Lerped click frequency this frame, between `idleClickSpeed` and `attackClickSpeed` | Computed from player distance each FixedUpdate | Actual animation speed |
+| `hitEffects` | `List<IPlayerHitEffect>` | `PincerController` | Ordered list of effects applied on player contact | Default contains `DestroyPlayerEffect`; add implementations for stun, knockback, etc. | Player hit response |
+
 *Add new sections per-script as variables are introduced.*
