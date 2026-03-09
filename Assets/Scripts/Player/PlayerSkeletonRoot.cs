@@ -15,7 +15,10 @@ using UnityEngine.InputSystem;
 ///      impactCrouchFactor. Stored energy feeds the jump offset system.
 ///      Holding down freezes dissipation (but blocks movement). Squash
 ///      punch adds visual overshoot on landing. Crouch decays linearly.
-///   5. Torso Y constraint: velocity-override to hipNode.Y + effectiveStandHeight.
+///   5. Torso-hip offset spring: inertial spring chasing hipNode.Y + standHeight;
+///      crouch compression subtracted on top. Provides squash-and-stretch: the body
+///      hangs above (expands) when the hip drops into a fall, compresses when the hip
+///      snaps up on landing, and settles quickly at rest.
 ///   6. Hip X lock: hipNode.X = torso.X.
 ///   7. Variable jump height: releasing space while ascending cuts Y velocity
 ///      on feet and hip. X is preserved (the "hop dash" mechanic).
@@ -68,6 +71,13 @@ public class PlayerSkeletonRoot : MonoBehaviour
     // --- Damping lerp ---
     private float _currentDamping;
 
+    // --- Torso-hip offset spring ---
+    // Tracks where the torso wants to be (hipY + standHeight) with inertia.
+    // Spring lag is the source of squash-and-stretch: the body hangs high when
+    // the hip drops (fall), and compresses when the hip rises sharply (landing).
+    private float _torsoSpringY;
+    private float _torsoSpringVelY;
+
     // --- Weight ---
     private float _currentAmmoWeight;
 
@@ -80,6 +90,15 @@ public class PlayerSkeletonRoot : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         rb.gravityScale = 0f;
         rb.constraints  = RigidbodyConstraints2D.FreezeRotation;
+    }
+
+    void Start()
+    {
+        // Seed offset spring at the rest position so there is no first-frame pop.
+        if (hipNode != null && config != null)
+            _torsoSpringY = hipNode.position.y + config.standHeight * pixelToWorld;
+        else
+            _torsoSpringY = rb.position.y;
     }
 
     void OnDestroy()
@@ -214,14 +233,26 @@ public class PlayerSkeletonRoot : MonoBehaviour
         // --- 5. Body leash — constrain torso X to feet ---
         ApplyBodyLeash();
 
-        // --- 6. Torso Y: converge to hipNode.Y + effectiveStandHeight ---
-        float visualCrouch = _crouchAmount + _squashPunch;
-        float effectiveStandHeight = (standHeight - visualCrouch) * pixelToWorld;
-        float desiredY    = hipNode.position.y + effectiveStandHeight;
-        float yCorrection = (desiredY - rb.position.y) / dt;
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, yCorrection);
+        // --- 6. Torso-hip offset spring ---
+        // _torsoSpringY chases hipNode.Y + standHeight with inertia.
+        // When the hip drops (feet go airborne), springY lags above the target —
+        // the torso hangs, stretching the body. When the hip snaps up on landing,
+        // springY lags below — the body compresses, then bounces back to rest.
+        float springTargetY  = hipNode.position.y + standHeight * pixelToWorld;
+        float springDisp     = _torsoSpringY - springTargetY;
+        float springAccel    = (-config.HipStiffness * springDisp
+                               - config.HipDamping * _torsoSpringVelY)
+                               / config.hipMass;
+        _torsoSpringVelY    += springAccel * dt;
+        _torsoSpringY       += _torsoSpringVelY * dt;
 
-        // --- 6. Lock hipNode X directly below the torso ---
+        // Crouch compression applied on top of the spring.
+        float visualCrouch = (_crouchAmount + _squashPunch) * pixelToWorld;
+        float desiredY     = _torsoSpringY - visualCrouch;
+        float yCorrection  = (desiredY - rb.position.y) / dt;
+        rb.linearVelocity  = new Vector2(rb.linearVelocity.x, yCorrection);
+
+        // --- 7. Lock hipNode X directly below the torso ---
         hipNode.position = new Vector3(rb.position.x, hipNode.position.y, 0f);
 
         // --- 7. Variable jump height — on release ---
@@ -288,10 +319,6 @@ public class PlayerSkeletonRoot : MonoBehaviour
         leftFootRB.linearVelocity  = jumpVelocity;
         rightFootRB.linearVelocity = jumpVelocity;
 
-        // Apply Y to hip (velocity, not impulse — consistent units).
-        if (hipNodeScript != null)
-            hipNodeScript.ApplyJumpImpulse(jumpVelocity.y);
-
         // Apply X boost to torso (the forward component of the leap).
         rb.linearVelocity = new Vector2(
             rb.linearVelocity.x + jumpVelocity.x,
@@ -313,9 +340,9 @@ public class PlayerSkeletonRoot : MonoBehaviour
                 rightFootRB.linearVelocity.x,
                 rightFootRB.linearVelocity.y * multiplier);
 
-        // Cut hip Y velocity.
-        if (hipNodeScript != null)
-            hipNodeScript.ApplyJumpCut(multiplier);
+        // Cut torso spring velocity to match the foot velocity reduction.
+        if (_torsoSpringVelY > 0f)
+            _torsoSpringVelY *= multiplier;
     }
 
     // -------------------------------------------------------------------------
