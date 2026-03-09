@@ -21,13 +21,13 @@ MonoBehaviour:
   groundDamping: 5
   airDamping: 0.5
   dampingTransitionSpeed: 15
-  turnBoostFactor: 1.5
+  turnBoostFactor: 1.45
   strideTriggerDistance: 6.442921
   idleSpeedThreshold: 1.1382936
   strideProjectionTime: 0.27692848
   idleCorrectionThreshold: 10
   idleCorrectionHysteresis: 0.75
-  stepHeight: 3.796787
+  stepHeight: 10
   baseStepDuration: 0.34462935
   minStepDuration: 0.14887281
   stepSpeedScale: 0.45138106
@@ -39,13 +39,13 @@ MonoBehaviour:
   hipFrequency: 3.1958025
   hipDampingRatio: 0.5
   hipMass: 1
-  torsoFrequency: 2.1691003
+  torsoFrequency: 30
   torsoDampingRatio: 0.5
   torsoMass: 0.1
   standHeight: 6.0545897
   footSpreadX: 3
   footOffsetY: 8
-  jumpSpeed: 2.124648
+  jumpSpeed: 15
   jumpOffsetFactor: 18.866112
   forwardJumpFactor: 0.2195651
   directionalJumpDeadzone: 0.34200412
@@ -110,7 +110,7 @@ MonoBehaviour:
     sprite: {fileID: -9037969273874986696, guid: f01fda41aa7dbc34282b83335302e5b8, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
     sortingOrder: 5
-  projectileDef: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
+  projectileDef: {fileID: 11400000, guid: 47bbb7564693a124286379402122a413, type: 2}
   firingPointOffset: 8
   maxWalkableAngle: 50
   stepRaycastDistance: 30

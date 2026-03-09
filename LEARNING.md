@@ -304,3 +304,10 @@ Topic: Procedural foot stepping over short ledges
 Concepts:
   - **Spatial clearance vs. surface detection**: A step arc is parameterized by height, not by what's in the way — the arc "knows" nothing about geometry until collision checks are layered on top. The fix here separates "can I arc over this" from "should I abort": an upward probe at the hit point gives the wall's actual height, which is then compared against the arc peak. This pattern — sample the environment to classify an obstacle, then decide — is more robust than reacting to raw collision normals alone.
   - **Trigger gating and state coupling**: The step trigger failed because an upstream system (PlayerSkeletonRoot force suppression) had already zeroed the quantity the trigger depended on (vel.x). Adding a parallel condition (`footWalledTowardInput`) decouples the step trigger from torso velocity, letting the FSM react to contact state directly. A good rule of thumb: when a state machine's transition depends on a derived quantity that can be suppressed by an unrelated system, add a direct contact-state path as a fallback.
+
+---
+Date: 2026-03-08
+Topic: Centipede obstacle-aware navigation
+Concepts:
+  - **Line-of-Sight Gradient Filtering**: Instead of changing how data is stored, change how it's read. By raycasting from the navigator to each gradient sample point and discarding blocked directions, the scent field becomes spatially aware of geometry without any change to the field itself — the reader does the work.
+  - **Potential Field Repulsion**: Adding an outward force inversely proportional to obstacle proximity is a classic game AI technique. Combined with gradient ascent (attraction toward a goal), the two forces sum into emergent wall-following: the centipede steers toward the player while being pushed along wall surfaces rather than into them.
