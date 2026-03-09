@@ -22,7 +22,7 @@ public class CentipedeAssembler : MonoBehaviour
     /// Spawns a centipede from a config asset at the given world position.
     /// Returns the root GameObject.
     /// </summary>
-    public GameObject Spawn(CentipedeConfig config, Vector2 position)
+    public GameObject Spawn(CentipedeConfig config, Vector2 position, Sprite overrideSprite = null)
     {
         GameObject headPrefab = config.headPrefab != null ? config.headPrefab : defaultHeadPrefab;
         GameObject bodyPrefab = config.bodyPrefab != null ? config.bodyPrefab : defaultBodyPrefab;
@@ -38,8 +38,10 @@ public class CentipedeAssembler : MonoBehaviour
         var nodeList = new List<SkeletonNode>();
         var ballList = new List<Ball>();
 
+        Ball headBall = SetupNodeBall(root, config);
+        if (overrideSprite != null) headBall.SetSprite(overrideSprite);
         nodeList.Add(root.GetComponent<SkeletonNode>());
-        ballList.Add(SetupNodeBall(root, config));
+        ballList.Add(headBall);
 
         // Chain body nodes: each is a Unity child of the previous,
         // so BuildTreeFromHierarchy discovers the full chain on Awake
@@ -57,7 +59,10 @@ public class CentipedeAssembler : MonoBehaviour
 
             sn.followDistance = config.followDistance;
             nodeList.Add(sn);
-            ballList.Add(SetupNodeBall(bodyNode, config));
+
+            Ball bodyBall = SetupNodeBall(bodyNode, config);
+            if (overrideSprite != null) bodyBall.SetSprite(overrideSprite);
+            ballList.Add(bodyBall);
 
             previousNode = bodyNode.transform;
         }

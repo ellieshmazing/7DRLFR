@@ -43,6 +43,7 @@ public class Ball : MonoBehaviour
 
     // ── Runtime state ─────────────────────────────────────────────────────────
     private BallDefinition def;
+    private float currentDiameter;
     private bool inCentipedeMode;
     private SkeletonNode linkedNode;
     private Vector2 springVelocity;
@@ -79,6 +80,7 @@ public class Ball : MonoBehaviour
         EnsureComponents();
 
         def = definition;
+        currentDiameter = diameter;
 
         sr.sprite = definition.sprite;
 
@@ -145,6 +147,20 @@ public class Ball : MonoBehaviour
     {
         EnsureComponents();
         sr.color = color;
+    }
+
+    /// <summary>
+    /// Replaces the ball's visual sprite and recomputes scale to maintain the correct
+    /// world-space diameter. All BallGamersheet sub-sprites share the same PPU and cell
+    /// size, but recomputation is included as a safety net.
+    /// </summary>
+    public void SetSprite(Sprite sprite)
+    {
+        EnsureComponents();
+        sr.sprite = sprite;
+        float spriteWorldDiam = SpriteWorldDiameter(sprite);
+        transform.localScale = Vector3.one * (currentDiameter / spriteWorldDiam);
+        circ.radius = spriteWorldDiam * 0.5f;
     }
 
     /// <summary>Adds to the internal spring simulation velocity (test/debug use).</summary>
