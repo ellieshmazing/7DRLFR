@@ -1,4 +1,6 @@
+using System.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// Minimal game loop: spawns the player on start, then spawns centipedes above the
@@ -15,6 +17,7 @@ public sealed class GameLoop : MonoBehaviour
     [SerializeField] private PlayerConfig playerConfig;
     [SerializeField] private CentipedeAssembler centipedeAssembler;
     [SerializeField] private CentipedeConfig centipedeConfig;
+    [SerializeField] private ChunkManager chunkManager;
 
     [Header("Player Spawn")]
     [SerializeField] private Vector2 playerSpawnPosition = new(0f, 1f);
@@ -35,6 +38,7 @@ public sealed class GameLoop : MonoBehaviour
 
     private float _spawnTimer;
     private float _maxPlayerX;
+    private bool _isRestarting;
 
     private void Start()
     {
@@ -46,6 +50,11 @@ public sealed class GameLoop : MonoBehaviour
 
     private void Update()
     {
+        if (Keyboard.current.rKey.wasPressedThisFrame && !_isRestarting)
+            StartCoroutine(RestartGame());
+
+        if (_isRestarting) return;
+
         TrackProgress();
 
         _spawnTimer -= Time.deltaTime;
@@ -81,5 +90,54 @@ public sealed class GameLoop : MonoBehaviour
         float spawnY = camPos.y + halfH + spawnAboveCamera;
 
         centipedeAssembler.Spawn(centipedeConfig, new Vector2(spawnX, spawnY));
+    }
+
+    /// <summary>
+    /// Destroys all gameplay objects (player, centipedes, free balls, terrain chunks),
+    /// resets spawn-rate state, and re-spawns the player and initial centipede.
+    /// Bound to the R key.
+    /// </summary>
+    private IEnumerator RestartGame()
+    {
+        _isRestarting = true;
+
+        // Destroy player
+        var playerRoot = Object.FindAnyObjectByType<PlayerSkeletonRoot>();
+        if (playerRoot != null)
+            Destroy(playerRoot.gameObject);
+
+        // Destroy all centipedes
+        foreach (var c in Object.FindObjectsByType<CentipedeController>(FindObjectsSortMode.None))
+            Destroy(c.gameObject);
+
+        // Destroy any remaining free balls (projectiles, detached centipede segments)
+        foreach (var b in Object.FindObjectsByType<Ball>(FindObjectsSortMode.None))
+            Destroy(b.gameObject);
+
+        // Destroy terrain chunks and decoration tilemap (tagged "Destructible")
+        foreach (var go in GameObject.FindGameObjectsWithTag("Destructible"))
+            Destroy(go);
+
+        // Clear the scent trail so new centipedes start fresh
+        ScentField.Instance?.Clear();
+
+        // Wait one frame for Destroy to finalize
+        yield return null;
+
+        // Reset spawn-rate variables
+        _maxPlayerX = 0f;
+        _spawnTimer = baseInterval;
+
+        // Spawn fresh player
+        playerAssembler.Spawn(playerConfig, playerSpawnPosition);
+        centipedeAssembler.playerTarget = PlayerRegistry.PlayerTransform;
+
+        // Regenerate world around the spawn position
+        chunkManager?.Restart(PlayerRegistry.PlayerTransform);
+
+        // Kick off the first centipede
+        SpawnCentipede();
+
+        _isRestarting = false;
     }
 }
