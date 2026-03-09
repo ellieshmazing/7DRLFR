@@ -69,7 +69,18 @@ public class FireballEffect : BallEffect
                 Vector2 direction = (hitRb.position - hitPoint).normalized;
                 float distance = Vector2.Distance(hitRb.position, hitPoint);
                 float falloff = 1f - Mathf.Clamp01(distance / explosionRadius);
-                hitRb.AddForce(direction * explosionForce * falloff, ForceMode2D.Impulse);
+                float impulse = explosionForce * falloff;
+
+                if (hitRb.bodyType == RigidbodyType2D.Kinematic)
+                {
+                    // Kinematic bodies ignore AddForce â€” inject into the Ball spring velocity instead
+                    Ball centipedeBall = hit.GetComponent<Ball>();
+                    centipedeBall?.InjectSpringVelocity(direction * impulse / hitRb.mass);
+                }
+                else
+                {
+                    hitRb.AddForce(direction * impulse, ForceMode2D.Impulse);
+                }
             }
         }
 
@@ -149,7 +160,7 @@ public class FireballEffect : BallEffect
             }
             catch (System.Exception e)
             {
-                // Texture is not read/write enabled — fall back to tint color
+                // Texture is not read/write enabled ï¿½ fall back to tint color
                 Debug.LogWarning($"[TileColor] GetPixel failed on '{tex.name}' (not Read/Write enabled?): {e.Message}");
             }
         }
