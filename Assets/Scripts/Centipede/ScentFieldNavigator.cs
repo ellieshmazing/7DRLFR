@@ -120,6 +120,11 @@ public class ScentFieldNavigator : MonoBehaviour
             momentum = Vector2.Lerp(momentum, gradient, blendRate * dt);
         }
 
+        // ── 3b. Obstacle repulsion ────────────────────────────────────────────
+        Vector2 repulsion = ComputeObstacleRepulsion();
+        if (repulsion.sqrMagnitude > 0.001f)
+            momentum += repulsion.normalized * config.obstacleAvoidanceStrength * dt;
+
         // ── 4. Fallback: field is empty or too weak → nudge toward player ─────
         float fieldAtHead = field.Evaluate(rb.position);
         IsInFallback = fieldAtHead < config.scentFallbackThreshold;
@@ -161,11 +166,41 @@ public class ScentFieldNavigator : MonoBehaviour
 
         for (int i = 0; i < k_GradientDirs.Length; i++)
         {
+            // Skip sample points blocked by a wall — scent doesn't flow through geometry
+            if (config.obstacleLayerMask != 0)
+            {
+                var hit = Physics2D.Raycast(pos, k_GradientDirs[i], r, config.obstacleLayerMask);
+                if (hit.collider != null) continue;
+            }
             float val = field.Evaluate(pos + k_GradientDirs[i] * r);
             gradient += k_GradientDirs[i] * val;
         }
 
         return gradient.sqrMagnitude > 0.001f ? gradient.normalized : Vector2.zero;
+    }
+
+    /// <summary>
+    /// Casts rays in all 8 directions and returns an outward repulsion vector
+    /// away from any obstacles within <c>obstacleDetectionRadius</c>.
+    /// Returns Vector2.zero when the feature is disabled or no walls are nearby.
+    /// </summary>
+    private Vector2 ComputeObstacleRepulsion()
+    {
+        if (config.obstacleLayerMask == 0) return Vector2.zero;
+
+        Vector2 pos       = rb.position;
+        Vector2 repulsion = Vector2.zero;
+        float   maxDist   = config.obstacleDetectionRadius;
+
+        for (int i = 0; i < k_GradientDirs.Length; i++)
+        {
+            var hit = Physics2D.Raycast(pos, k_GradientDirs[i], maxDist, config.obstacleLayerMask);
+            if (hit.collider == null) continue;
+            float proximity = 1f - hit.fraction;  // 1 at contact, 0 at maxDist
+            repulsion += -k_GradientDirs[i] * proximity;
+        }
+
+        return repulsion;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

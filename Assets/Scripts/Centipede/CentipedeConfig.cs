@@ -52,6 +52,18 @@ public class CentipedeConfig : ScriptableObject
     [Min(0f)]
     public float collisionCooldownDuration = 0.5f;
 
+    [Header("Obstacle Avoidance")]
+    [Tooltip("Physics layers treated as solid obstacles; set to whatever layer your tiles are on. 0 = feature disabled")]
+    public LayerMask obstacleLayerMask;
+
+    [Tooltip("Raycast distance for obstacle detection (world units); ~1–2x head radius is a good start")]
+    [Min(0.01f)]
+    public float obstacleDetectionRadius = 1.5f;
+
+    [Tooltip("Blend rate applied away from detected obstacles; higher = more aggressive wall avoidance; try 4–10")]
+    [Min(0f)]
+    public float obstacleAvoidanceStrength = 6f;
+
     [Header("Scent Field")]
     [Tooltip("Ring buffer capacity; 200 × 0.1 s interval = 20 seconds of scent trail")]
     [Min(10)]
