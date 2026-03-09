@@ -189,6 +189,14 @@ Sprites are authored at **1 world-unit diameter at scale 1**.
 
 ---
 
+## HintOverlay (MonoBehaviour)
+
+| Variable | Type | Location | Description | Behavior | Affects |
+|---|---|---|---|---|---|
+| `fontSize` | `int` | `HintOverlay` | Font size of the hint text in pixels | Adjustable via on-screen slider (range 8–64) or Inspector; changes apply immediately each Update | Visual size of hint text |
+
+---
+
 ## GameLoop (MonoBehaviour)
 
 | Variable | Type | Location | Description | Behavior | Affects |
