@@ -148,6 +148,16 @@ Sprites are authored at **1 world-unit diameter at scale 1**.
 
 ---
 
+## CentipedeConfig — Obstacle Avoidance
+
+| Variable | Type | Location | Description | Behavior | Affects |
+|---|---|---|---|---|---|
+| `obstacleLayerMask` | `LayerMask` | `CentipedeConfig` | Physics layers treated as solid obstacles for navigation | Checked per-gradient-sample (LOS raycast) and per-repulsion-ray each FixedUpdate; 0 = feature disabled | Which geometry the centipede perceives and avoids |
+| `obstacleDetectionRadius` | `float` | `CentipedeConfig` | Distance in world units for obstacle detection raycasts | Larger = centipede starts steering earlier; try ~1–2x head radius | How far ahead walls are detected |
+| `obstacleAvoidanceStrength` | `float` | `CentipedeConfig` | Blend rate applied away from detected obstacle directions | Higher = aggressive wall avoidance; lower = gentle curve; try 4–10 | How hard the centipede steers away from walls |
+
+---
+
 ## CentipedeConfig — Pincers
 
 | Variable | Type | Location | Description | Behavior | Affects |
