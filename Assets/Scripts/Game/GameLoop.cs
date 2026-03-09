@@ -36,6 +36,31 @@ public sealed class GameLoop : MonoBehaviour
     [Tooltip("World units above the camera's top edge where centipedes are spawned.")]
     [SerializeField] private float spawnAboveCamera = 2f;
 
+    [Header("Centipede Randomization")]
+    [Tooltip("Minimum node count per centipede (inclusive).")]
+    [SerializeField] private int minNodes = 3;
+
+    [Tooltip("Maximum node count per centipede (inclusive).")]
+    [SerializeField] private int maxNodes = 10;
+
+    [Tooltip("Smallest nodeRadius in world units.")]
+    [SerializeField] private float minRadius = 0.08f;
+
+    [Tooltip("Largest nodeRadius in world units.")]
+    [SerializeField] private float maxRadius = 0.25f;
+
+    [Tooltip("followDistance / nodeRadius ratio. Preserves chain density at all scales.")]
+    [SerializeField] private float followRatio = 2f;
+
+    [Tooltip("Speed for the smallest/shortest centipede (lowest bulk).")]
+    [SerializeField] private float maxSpeed = 5f;
+
+    [Tooltip("Speed for the largest/longest centipede (highest bulk).")]
+    [SerializeField] private float minSpeed = 1.5f;
+
+    [Tooltip("Sprite variants for centipede balls (BallGamersheet_1 through BallGamersheet_5). One picked at random per centipede.")]
+    [SerializeField] private Sprite[] centipedeVariantSprites;
+
     private float _spawnTimer;
     private float _maxPlayerX;
     private bool _isRestarting;
@@ -89,7 +114,32 @@ public sealed class GameLoop : MonoBehaviour
         float spawnX = Random.Range(camPos.x - halfW, camPos.x + halfW);
         float spawnY = camPos.y + halfH + spawnAboveCamera;
 
-        centipedeAssembler.Spawn(centipedeConfig, new Vector2(spawnX, spawnY));
+        // Roll random values
+        int nodeCount    = Random.Range(minNodes, maxNodes + 1);
+        float nodeRadius = Random.Range(minRadius, maxRadius);
+        float followDistance = nodeRadius * followRatio;
+
+        // Inverse size-speed coupling: bulk combines normalized size and count
+        float sizeT  = Mathf.InverseLerp(minRadius, maxRadius, nodeRadius);
+        float countT = Mathf.InverseLerp(minNodes, maxNodes, nodeCount);
+        float bulkT  = (sizeT + countT) * 0.5f;
+        float speed  = Mathf.Lerp(maxSpeed, minSpeed, bulkT);
+
+        // Clone config and write randomized values
+        CentipedeConfig clone = Instantiate(centipedeConfig);
+        clone.nodeCount      = nodeCount;
+        clone.nodeRadius     = nodeRadius;
+        clone.followDistance  = followDistance;
+        clone.speed          = speed;
+        clone.obstacleDetectionRadius = centipedeConfig.obstacleDetectionRadius
+            * (nodeRadius / centipedeConfig.nodeRadius);
+
+        // Pick a random sprite variant
+        Sprite overrideSprite = centipedeVariantSprites != null && centipedeVariantSprites.Length > 0
+            ? centipedeVariantSprites[Random.Range(0, centipedeVariantSprites.Length)]
+            : null;
+
+        centipedeAssembler.Spawn(clone, new Vector2(spawnX, spawnY), overrideSprite);
     }
 
     /// <summary>
