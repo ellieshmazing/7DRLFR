@@ -206,3 +206,101 @@ Topic: Movement overhaul — foot-gated locomotion, directional jumping, forgive
 Concepts:
   - **Foot-gated ground control**: Tying horizontal acceleration to foot contact state (locked = full force, airborne = reduced) makes the procedural walking animation mechanically truthful rather than decorative. The player reads the feet to understand the system: when feet grip the ground, they have control. When airborne, they're committed to their arc. This is the core of Rain World's movement philosophy — the animation IS the physics, not a skin over it.
   - **Forgiveness vs. skill ceiling**: Coyote time and jump buffering are mathematically tiny grace windows (~100ms) that catch honest timing errors without reducing the skill ceiling. The critical design distinction is separating `isGrounded` (any foot locked, no grace — used for force gating and damping) from `canJump` (includes coyote window — used ONLY for jump eligibility). Conflating the two would grant full ground control during coyote time, making ledge transitions feel inconsistent. The separation ensures forgiveness helps jumping without leaking into movement physics.
+
+---
+Date: 2026-03-08
+Topic: Velocity-based impact crouch system
+Concepts:
+  - **Positive Feedback with Ceiling**: The momentum chain (land → crouch → jump higher → land harder → crouch deeper) is a positive feedback loop that would diverge without a bound. Deriving maxCrouchDepth from standHeight provides both the ceiling and an upgrade path — upgrading standHeight doesn't just change appearance, it increases the jump energy ceiling. The gain of the loop (impactCrouchFactor × jumpOffsetFactor × pixelToWorld) determines how many bounces it takes to converge.
+  - **Consume Pattern for Cross-Component Signaling**: When two scripts at different execution orders need to pass event data (FootMovement detects landing at -20, PlayerSkeletonRoot needs it at -10), a consume-pattern property (read-once, then cleared) avoids callbacks and preserves the existing "read per-frame from upstream" architecture. The landing capture window extends this across multiple frames so both feet contribute their max velocity to a single landing event.
+
+---
+Date: 2026-03-08
+Topic: Player movement architecture — gravity, horizontal, and vertical variable analysis
+Concepts:
+  - **Indirect Physics Coupling**: The torso has zero gravity and no direct vertical force — its Y is purely derived from a spring chain (feet → hip → torso). This means "gravity" is not a single dial but an emergent property of the entire chain. Tuning gravity requires understanding which link in the chain you want to change.
+  - **Separation of Concerns in Input Feel**: Horizontal and vertical movement are handled by completely separate systems (torso force vs. foot gravity/spring) that only couple through jump direction normalization and wall slide. This isolation makes each axis tunable without cross-contamination — except where intentionally bridged (mass, forwardJumpFactor).
+
+---
+Date: 2026-03-08
+Topic: Body integrity constraints — leash, wall suppression, step collision
+Concepts:
+  - **Layered Constraint Defense**: A single constraint rarely covers all failure modes. The body integrity system uses five layers: wall suppression (prevents force), leash spring (corrects drift), hard clamp (caps separation), step pre-check (prevents bad steps), and arc collision (catches mid-step failures). Each layer is cheap and simple; their overlap creates robustness. This mirrors how platformer physics stacks coyote time, input buffering, and apex tolerance — each catches a different timing failure.
+  - **Position Constraint vs. Force Constraint**: The leash uses a quadratic spring in the soft zone (force-based, allows natural deceleration) and a hard position clamp at the boundary (instant correction). Force-only constraints allow overshoot; position-only constraints cause teleporting. The blend — spring for steady-state, clamp for emergency — is the standard approach in ragdoll joint limits and IK solvers.
+
+---
+Date: 2026-03-08
+Topic: Impact crouch system — landing compression, energy storage, and footfall impulse
+Concepts:
+  - **Energy Layering**: The impact crouch system separates two concerns that land at the same moment: the visual snap (squashPunch, decays fast) and the gameplay state (crouchAmount, holds until dissipated or released). Separating them lets the visual feedback be tuned independently of the mechanical window — a design principle common in action games where "juice" (visual response) and "feel" (state effect) are authored on different timelines to avoid coupling.
+  - **Skill Expression Window**: The crouchDissipationRate is a design lever for how much timing skill the bounce-jump rewards. A long window makes the system forgiving and accessible; a short one makes it a tight execution mechanic. This is a common pattern — coyote time, input buffering, and apex forgiveness all tune the size of a skill window without removing the skill itself.
+
+---
+Date: 2026-03-08
+Topic: Body Integrity tuning dimension documentation
+Concepts:
+  - **Defensive vs. expressive mechanics**: Some systems exist not to create feel but to enforce invariants — they are invisible when working correctly. Body integrity (leash, ground probe, separation limit) is a defensive layer that prevents the expressive procedural walking system from producing incoherent states. The design discipline is to tune defensive parameters until they never fire in normal play, then stop.
+  - **Failure-mode tuning**: Defensive parameters cannot be tuned by feel because correct behavior produces no sensation. The only reliable method is to deliberately stress-test edge cases — wall corners, thin ledges, sprint-to-stop transitions — and observe whether the system silently holds coherence. This is the inverse of feel tuning, where you iterate toward a positive sensation rather than away from a negative one.
+
+---
+Date: 2026-03-08
+Topic: AutoRespawn config identity bug in TuningManager
+Concepts:
+  - **Config identity vs. config type**: When a system routes through multiple config references (one for writing, one for spawning), a mismatch between those references is a silent bug — the entity spawns from one SO but reflects changes written to another. The type-check (`is PlayerConfig`) and the spawn-source (`playerConfig`) should be kept explicitly separate to avoid this class of confusion.
+  - **Canonical source of truth**: In a tuning system, the manager's own serialized config fields are the authoritative spawn source. Dimension-level `targetConfig` references serve reflection-write routing only and should never become the spawn config — doing so couples visual fidelity to the correctness of external asset wiring.
+
+---
+Date: 2026-03-08
+Topic: Idle foot correction — hysteresis to prevent oscillation re-triggering
+Concepts:
+  - **Hysteresis in state machines**: Using separate arm/disarm thresholds to prevent rapid re-triggering. A single threshold trips on both noise and signal; hysteresis forces the system to travel back through a quiet band before it can fire again, filtering out oscillation without raising the trigger point.
+  - **Unintended feedback loops**: The torso spring's residual oscillation fed directly into the correction trigger, creating a self-sustaining bounce. Small continuous inputs to a sensitive threshold produce large persistent behavior — a classic emergent instability from coupling two independent systems too tightly.
+
+---
+Date: 2026-03-08
+Topic: Idle-to-walk step trigger
+Concepts:
+  - **Input Latency vs. Animation Latency**: Procedural walking systems that wait for stride displacement to accumulate introduce a gap between the player's intent and visible foot movement. Removing this gate during the idle-to-walk transition makes startup feel responsive — the foot moves *because* you pressed a key, not *after* physics accumulates.
+  - **State Machine Branch Specialization**: The idle and walking branches of the foot FSM serve different goals (stability vs. momentum). Keying a special behavior to the idle branch alone — without touching the walking logic — keeps concerns separated and avoids regressions in the common case.
+
+---
+Date: 2026-03-08
+Topic: Walk startup step projection
+Concepts:
+  - **Predictive vs. Reactive Foot Placement**: Procedural walkers can place feet reactively (where the body is now) or predictively (where it will be). Reactive placement causes stutter at walk startup because the foot lands immediately behind the already-moving torso. Projecting under expected acceleration turns a single-step stumble into a smooth launch.
+  - **Kinematic Average Velocity**: For constant acceleration from v₀ over time T, average velocity = v₀ + ½·a·T. Using this as the projection velocity in a linear displacement formula gives the correct quadratic position estimate without needing to change the formula itself.
+
+---
+Date: 2026-03-08
+Topic: Foot vertical movement decoupling
+Concepts:
+  - **Layered physics authority**: When multiple systems compete for control of the same axis, the one with the most physical grounding (literally — gravity + collision) should win. Pulling airborne feet toward the hip Y with a spring fought against gravity and created conflicting authorities on vertical position; removing it lets gravity be the sole vertical driver, making the system more predictable.
+  - **Emergent feel from constraint removal**: Sometimes the right design move is subtraction. Removing the Y spring doesn't just simplify code — it shifts vertical character feel from "spring puppet" to "physical body with weight," which is often more satisfying for platformer movement.
+
+---
+Date: 2026-03-08
+Topic: Torso offset spring — squash-and-stretch from structural inertia
+Concepts:
+  - **Squash-and-stretch as emergent physics**: Rather than scripting compression/expansion explicitly, we let spring inertia produce it. The torso offset spring lags behind a moving anchor (the hip), and that lag IS the stretch during falls and the compression on landing. The animation principle emerges from the physics, not from keyframes or triggers.
+  - **Authority layering**: Each layer of the body has one clear owner for each axis. Feet own the ground contact. The hip is a pure positional relay (locked to feet Y, no opinion of its own). The offset spring is where the body's inertia lives. Keeping these responsibilities separate prevents the systems from fighting each other and makes each layer independently tunable.
+
+---
+Date: 2026-03-08
+Topic: Centipede pincer attack mechanic
+Concepts:
+  - **Hitbox/Hurtbox Separation**: The visible sprite and the damage zone are independent — here the pincers animate (rotate) while the trigger colliders are static siblings that never move. This lets the visual be dramatic and wide while the actual kill zone stays tight and forgiving. Fighting games pioneered this to keep moment-to-moment play fair even when animations are exaggerated.
+  - **Strategy Pattern for Extensibility**: `IPlayerHitEffect` decouples "hit detected" from "what happens on hit." `PincerController` holds a list and iterates it — `DestroyPlayerEffect` is just the first entry. New effects (stun, knockback, damage) are new classes added to the list, not modifications to the detection logic. This is the classic open/closed principle applied to game events.
+
+---
+Date: 2026-03-08
+Topic: Game loop bootstrapping and escalating spawn systems
+Concepts:
+  - **Emergent Difficulty via Spatial Progress**: Tying spawn rate to the player's one-way rightward displacement rather than to time creates a difficulty curve that the player *controls*. The player chooses when to advance and how fast to escalate — turning spatial exploration into a risk-reward trade-off rather than a time tax.
+  - **One-Way Progress Tracking**: Recording only the maximum X achieved (never decreasing on retreat) prevents the player from "farming" lower difficulty by oscillating near the spawn boundary. It rewards commitment to forward movement and makes retreat a tactical pause rather than a reset.
+
+---
+Date: 2026-03-08
+Topic: Procedural foot stepping over short ledges
+Concepts:
+  - **Spatial clearance vs. surface detection**: A step arc is parameterized by height, not by what's in the way — the arc "knows" nothing about geometry until collision checks are layered on top. The fix here separates "can I arc over this" from "should I abort": an upward probe at the hit point gives the wall's actual height, which is then compared against the arc peak. This pattern — sample the environment to classify an obstacle, then decide — is more robust than reacting to raw collision normals alone.
+  - **Trigger gating and state coupling**: The step trigger failed because an upstream system (PlayerSkeletonRoot force suppression) had already zeroed the quantity the trigger depended on (vel.x). Adding a parallel condition (`footWalledTowardInput`) decouples the step trigger from torso velocity, letting the FSM react to contact state directly. A good rule of thumb: when a state machine's transition depends on a derived quantity that can be suppressed by an unrelated system, add a direct contact-state path as a fallback.

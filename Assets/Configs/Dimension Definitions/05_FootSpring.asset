@@ -13,22 +13,43 @@ MonoBehaviour:
   m_Name: 05_FootSpring
   m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
   dimensionName: Foot Spring
-  testScenario: Jump and land; watch feet during airborne phase and on touchdown.
-    Low damping = feet oscillate past formation; high = feet snap immediately. (Spring
-    governs airborne phase only; Locked/Stepping feet are position-driven.)
+  testScenario: Jump and watch feet tuck under body during arc. Land on platform
+    and check for post-touch wobble. Lower footGroundDamping to see bounce then raise
+    to kill it.
   variables:
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
     fieldName: footFrequency
-    min: 5
-    max: 20
-    defaultValue: 10.95
+    min: 3
+    max: 25
+    defaultValue: 12
     requiresRespawn: 0
     liveSync: 0
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
     fieldName: footDampingRatio
-    min: 0.3
-    max: 1.2
-    defaultValue: 0.73
+    min: 0.2
+    max: 1
+    defaultValue: 0.7
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: footSpringMass
+    min: 0.1
+    max: 2
+    defaultValue: 0.5
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: footGroundDamping
+    min: 1
+    max: 8
+    defaultValue: 4
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: footAirDamping
+    min: 0
+    max: 2
+    defaultValue: 0.5
     requiresRespawn: 0
     liveSync: 0
   sweepDuration: 10

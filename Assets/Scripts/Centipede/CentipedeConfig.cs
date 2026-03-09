@@ -105,6 +105,51 @@ public class CentipedeConfig : ScriptableObject
     [Min(0f)]
     public float scentFallbackBlend = 0.8f;
 
+    [Header("Pincers")]
+    [Tooltip("Sprite used for both pincer renderers. Right side is flipped. Leave null to disable pincers.")]
+    public Sprite pincerSprite;
+
+    [Tooltip("Scale of each pincer sprite GO as a multiple of nodeRadius. try 1.0–4.0; lower = subtle, higher = dramatic")]
+    [Min(0.01f)]
+    public float pincerSize = 2.67f;
+
+    [Tooltip("X distance from head center to each pincer pivot, as a multiple of nodeRadius. try 0.3–2.0")]
+    [Min(0f)]
+    public float pincerOffsetX = 0.8f;
+
+    [Tooltip("Y offset from head center to each pincer pivot, as a multiple of nodeRadius. try -0.5–1.5")]
+    public float pincerOffsetY = 0.67f;
+
+    [Tooltip("Click frequency in Hz while player is outside attack radius. try 0.5–3.0; lower = lazy, higher = restless")]
+    [Min(0.01f)]
+    public float idleClickSpeed = 1.5f;
+
+    [Tooltip("Click frequency in Hz when player is at inner attack radius. try 2.0–8.0")]
+    [Min(0.01f)]
+    public float attackClickSpeed = 4.0f;
+
+    [Tooltip("Max rotation degrees each pincer pivots from center. try 15–60; lower = tight snip, higher = wide bite")]
+    [Min(0f)]
+    public float clickAngle = 35f;
+
+    [Tooltip("Distance at which pincers begin speeding up. try 2.0–6.0")]
+    [Min(0f)]
+    public float attackOuterRadius = 3.0f;
+
+    [Tooltip("Distance at which pincers reach full attackClickSpeed. Must be < attackOuterRadius. try 0.5–2.0")]
+    [Min(0f)]
+    public float attackInnerRadius = 1.0f;
+
+    [Tooltip("Width x Height of each trigger hitbox as multiples of nodeRadius. Intentionally smaller than visual. try (0.3–1.0, 0.5–1.5)")]
+    public Vector2 pincerColliderSize = new Vector2(0.67f, 1.0f);
+
+    [Tooltip("X offset of each hitbox from head center as a multiple of nodeRadius. try 0.3–1.5")]
+    [Min(0f)]
+    public float pincerHitboxOffsetX = 0.67f;
+
+    [Tooltip("Y offset of each hitbox from head center as a multiple of nodeRadius. try 0.0–1.5")]
+    public float pincerHitboxOffsetY = 0.67f;
+
     [Header("Prefab Overrides")]
     [Tooltip("Override head prefab (falls back to assembler default if null)")]
     public GameObject headPrefab;

@@ -13,13 +13,13 @@ MonoBehaviour:
   m_Name: 02_Movement
   m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
   dimensionName: Movement
-  testScenario: Run left-right. Start and stop. Try to dodge. moveForce = acceleration
-    feel, maxSpeed = top speed feel.
+  testScenario: Accelerate from rest to full speed. Reverse direction at speed. Jump
+    and redirect mid-air. Land and feel damping switch. Check turnBoostFactor at speed.
   variables:
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
     fieldName: moveForce
-    min: 5
-    max: 50
+    min: 3
+    max: 40
     defaultValue: 15
     requiresRespawn: 0
     liveSync: 0
@@ -28,6 +28,41 @@ MonoBehaviour:
     min: 2
     max: 15
     defaultValue: 5
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: airControlRatio
+    min: 0
+    max: 1
+    defaultValue: 0.3
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: groundDamping
+    min: 2
+    max: 10
+    defaultValue: 5
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: airDamping
+    min: 0.1
+    max: 2
+    defaultValue: 0.5
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: dampingTransitionSpeed
+    min: 5
+    max: 30
+    defaultValue: 15
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: turnBoostFactor
+    min: 1
+    max: 2.5
+    defaultValue: 1.5
     requiresRespawn: 0
     liveSync: 0
   sweepDuration: 10

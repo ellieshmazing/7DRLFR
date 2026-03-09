@@ -18,21 +18,11 @@ MonoBehaviour:
   nodeColor: {r: 1, g: 1, b: 1, a: 1}
   wiggleFrequency: 8.94
   wiggleDampingRatio: 0.28
-  wiggleMass: 1
+  wiggleMass: 0.1
   ballDefinition: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
   detachDistance: 0.5
   speed: 1
-  minTurnRadius: 1.5
-  arcAngleVariance: 60
-  replanInterval: 2
-  replanJitter: 0.4
-  maxReplanAttempts: 8
-  waveAmplitude: 1
-  waveFrequency: 2
-  wavePhaseOffsetPerNode: 0.3
   collisionCooldownDuration: 0.5
-  targetArrivalRadius: 0.5
-  useScentNavigator: 1
   scentHistorySize: 200
   scentSampleInterval: 0.1
   scentDecayTime: 8
@@ -46,5 +36,17 @@ MonoBehaviour:
   scentGradientMaxStrength: 5
   scentFallbackThreshold: 0.05
   scentFallbackBlend: 0.8
+  pincerSprite: {fileID: 21300000, guid: a9f6e04343056a340be3a34a3551ccf9, type: 3}
+  pincerSize: 0.4
+  pincerOffsetX: 0.12
+  pincerOffsetY: 0.1
+  idleClickSpeed: 1.5
+  attackClickSpeed: 4
+  clickAngle: 35
+  attackOuterRadius: 3
+  attackInnerRadius: 1
+  pincerColliderSize: {x: 0.1, y: 0.15}
+  pincerHitboxOffsetX: 0.1
+  pincerHitboxOffsetY: 0.1
   headPrefab: {fileID: 7984257113175378315, guid: f693c407940147a4f8ce046820a22304, type: 3}
   bodyPrefab: {fileID: 8181626248139991486, guid: 6622fd47b5096e54c9cf811686fc9b52, type: 3}

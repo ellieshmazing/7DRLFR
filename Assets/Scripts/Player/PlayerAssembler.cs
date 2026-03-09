@@ -52,7 +52,6 @@ public class PlayerAssembler : MonoBehaviour
 
         float pixelToWorld    = config.playerScale / SPRITE_PX;
         float spriteLocalScale = config.playerScale * PPU / SPRITE_PX;
-        float colRadius       = 0.5f * SPRITE_PX / PPU;
 
         // Keep inactive until the full hierarchy is built so Awake/Start fire
         // only after all components are present.
@@ -182,16 +181,14 @@ public class PlayerAssembler : MonoBehaviour
 
         var leftFootRB  = CreateFootVisual("LeftFootVisual",  root.transform,
                               new Vector2(position.x - footSpreadWorldX, footSpawnY),
-                              config.leftFoot, spriteLocalScale, colRadius, config);
+                              config.leftFoot, spriteLocalScale, config);
         var rightFootRB = CreateFootVisual("RightFootVisual", root.transform,
                               new Vector2(position.x + footSpreadWorldX, footSpawnY),
-                              config.rightFoot, spriteLocalScale, colRadius, config);
+                              config.rightFoot, spriteLocalScale, config);
 
         // --- FootMovement (on HipNode) ---
-        // Derive foot collider radius from truth (actual collider * scale)
-        // rather than a parallel calculation. colRadius is in local space;
-        // multiply by lossyScale.x to get world-space radius.
-        float footWorldRadius = colRadius * spriteLocalScale;
+        // World-space radius = local-space radius (set from sprite inside CreateFootVisual) * GO scale.
+        float footWorldRadius = leftFootRB.GetComponent<CircleCollider2D>().radius * spriteLocalScale;
 
         var footMovement = hipGO.AddComponent<FootMovement>();
         footMovement.config             = config;
@@ -230,7 +227,7 @@ public class PlayerAssembler : MonoBehaviour
     private Rigidbody2D CreateFootVisual(
         string goName, Transform parent,
         Vector2 worldPos, FootDef footDef,
-        float spriteLocalScale, float colRadius,
+        float spriteLocalScale,
         PlayerConfig config)
     {
         var go = new GameObject(goName);
@@ -240,12 +237,15 @@ public class PlayerAssembler : MonoBehaviour
         go.transform.localScale = Vector3.one * spriteLocalScale;
 
         var sr = go.AddComponent<SpriteRenderer>();
-        sr.sprite       = footDef.sprite != null ? footDef.sprite : defaultSprite;
+        Sprite footSprite = footDef.sprite != null ? footDef.sprite : defaultSprite;
+        sr.sprite       = footSprite;
         sr.color        = footDef.color;
         sr.sortingOrder = footDef.sortingOrder;
 
         var col = go.AddComponent<CircleCollider2D>();
-        col.radius = colRadius;
+        col.radius = footSprite != null
+            ? Mathf.Min(footSprite.rect.width, footSprite.rect.height) / (2f * footSprite.pixelsPerUnit)
+            : 0.5f * SPRITE_PX / PPU;
 
         var rb = go.AddComponent<Rigidbody2D>();
         rb.mass          = config.footMass;
@@ -266,11 +266,20 @@ public class PlayerAssembler : MonoBehaviour
     [Header("Test")]
     [SerializeField] private PlayerConfig testConfig;
     [SerializeField] private Vector2 testPosition;
+    [Tooltip("Tick this in Play Mode to destroy all existing players and spawn a fresh one at testPosition.")]
+    [SerializeField] private bool spawnButton;
+
+    private void Update()
+    {
+        if (!spawnButton) return;
+        spawnButton = false;
+        TestSpawn();
+    }
 
     [ContextMenu("Test Spawn")]
     public void TestSpawn()
     {
         if (!Application.isPlaying || testConfig == null) return;
-        Spawn(testConfig, testPosition);
+        StartCoroutine(AutoRespawner.SpawnFreshPlayer(testConfig, this, testPosition));
     }
 }

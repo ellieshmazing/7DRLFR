@@ -28,7 +28,7 @@
 
 > **Init-only** dimensions marked with ⚠ will automatically respawn the entity when values change — this is expected.
 
-> **Navigator mode**: Dimensions 14–16 (Pathing Speed, Pathing Behavior, Wriggle Feel) apply to the arc pathfinder. Dimensions 17–21 (Scent Trail through Fallback Behavior) are only relevant when the centipede uses the scent navigator (`useScentNavigator == true`). Skip whichever group doesn't apply to your current config.
+> **Navigator mode**: Dimensions 18–20 (Pathing Speed, Pathing Behavior, Wriggle Feel) apply to the arc pathfinder. Dimensions 21–25 (Scent Trail through Fallback Behavior) are only relevant when the centipede uses the scent navigator (`useScentNavigator == true`). Skip whichever group doesn't apply to your current config.
 
 ---
 
@@ -41,16 +41,16 @@
 ### 1. Foot Physics ⚠
 *Requires respawn. Variables: `footMass`, `footGravityScale`*
 
-**Architecture note**: Feet are real Rigidbody2Ds with gravity and physics. `footMass` is the actual RB mass — it appears in the jump formula directly (`footJumpVelocity = jumpImpulse / footMass`) and in collision impulse resolution. `footGravityScale` controls how hard Unity pulls them down while airborne.
+**Architecture note**: Feet are real Rigidbody2Ds with gravity and physics. `footMass` is the actual RB mass — it appears in collision impulse resolution. `footGravityScale` controls how hard Unity pulls them down while airborne.
 
 | Variable | Low value effect | High value effect |
 |---|---|---|
-| `footMass` (0.3 → 2.0) | Light, floaty feet — high jumps from same impulse, weak collision response | Heavy, grounded feet — lower jumps, strong collision thud on landing |
+| `footMass` (0.3 → 2.0) | Light, floaty feet — weak collision response | Heavy, grounded feet — strong collision thud on landing |
 | `footGravityScale` (0.3 → 3.0) | Slow fall, feet linger in the air after jumping | Fast drop, feet snap down hard on landing |
 
 **What to observe**: After jumping, watch the arc. Do feet leave the ground cleanly and return with appropriate weight? Drop from a high ledge — does the landing feel like mass, or like hitting a trampoline?
 
-**Key interaction — Dim 9 (Jump Feel)**: `footMass` is the single biggest multiplier on jump height. The raw impulse from `jumpSpeed` is divided by `footMass` to produce velocity. If jumps feel too low, check `footMass` before raising `jumpSpeed`.
+**Key interaction — Dim 9 (Jump Feel)**: `footMass` no longer divides the jump impulse directly (jumps are velocity-set). However, heavier feet have more momentum to resolve on landing and affect collision responses. Prefer adjusting `jumpSpeed` for jump height.
 
 **Key interaction — Dim 5 (Foot Spring)**: Higher `footGravityScale` fights the foot spring during the airborne phase. If feet don't track back to formation well in the air, gravity may be overpowering the spring — consider raising `footFrequency` in tandem.
 
@@ -59,22 +59,27 @@
 ---
 
 ### 2. Movement
-*Live — no respawn. Variables: `moveForce`, `maxSpeed`*
+*Live — no respawn. Variables: `moveForce`, `maxSpeed`, `airControlRatio`, `groundDamping`, `airDamping`, `dampingTransitionSpeed`, `turnBoostFactor`*
 
-**Architecture note**: `moveForce` is applied via `AddForce` every FixedUpdate while a direction key is held — but only when `rb.linearVelocity.magnitude < maxSpeed`. There is no deceleration force; the torso coasts to a stop via damping on the Rigidbody2D. This means `maxSpeed` is a hard ceiling on acceleration, not a true speed limit — you can briefly exceed it from other impulses (like landing).
+**Architecture note**: `moveForce` is applied via `AddForce` each FixedUpdate with a **quadratic soft cap** near `maxSpeed` — force tapers off as speed approaches the ceiling in the same direction, so you can briefly exceed `maxSpeed` via other impulses (landing, jumps). When reversing direction while grounded and at speed, `turnBoostFactor` replaces the soft cap entirely, guaranteeing direction changes always get full power. `airControlRatio` scales `moveForce` to a fraction when no feet are locked. Torso damping lerps between `groundDamping` (stops fast) and `airDamping` (preserves momentum) at `dampingTransitionSpeed` per second — landing doesn't feel like hitting a brake.
 
 | Variable | Low value effect | High value effect |
 |---|---|---|
 | `moveForce` (3 → 40) | Sluggish acceleration, tank-like ramp-up | Near-instant response, very snappy |
 | `maxSpeed` (2 → 15 wu/s) | Tight, precise movement; walking pace | Wide-open sprinting; hard to stay accurate |
+| `airControlRatio` (0 → 1) | Commits momentum — air direction almost unchanged | Full aerial redirection at same force as ground |
+| `groundDamping` (2 → 10) | Character skids a long distance before stopping | Snaps to a stop almost instantly when key released |
+| `airDamping` (0.1 → 2.0) | Floaty — momentum preserved through jumps and falls | Air resistance — speed bleeds off mid-jump |
+| `dampingTransitionSpeed` (5 → 30) | Slow damping transition — gear-shift jolt on landing | Instant transition — snappy but can feel abrupt |
+| `turnBoostFactor` (1.0 → 2.5) | Near maxSpeed, reversals still fight existing momentum | Directions snap instantly at any speed |
 
-**What to observe**: Start from rest and run in one direction. How long before you reach full speed? Now reverse direction hard — does it feel sticky or immediate? The ratio `moveForce / maxSpeed` shapes the feel: high ratio = snappy stop-start; low ratio = momentum-heavy drift.
+**What to observe**: Start from rest and run in one direction. How long before you reach full speed? Now reverse direction hard — does it feel sticky or immediate? Jump and try to redirect — can you influence your trajectory? Land from a jump — does the damping switch feel smooth? The ratio `moveForce / maxSpeed` shapes the ground feel; `airControlRatio / airDamping` shapes aerial control.
 
 **Key interaction — Dim 3 (Walking Trigger)**: `maxSpeed` defines the upper end of the speed range the walking animation has to handle. `idleSpeedThreshold` is effectively a fraction of your `maxSpeed` — calibrate them together after settling on a `maxSpeed`.
 
-**Key interaction — Dim 4 (Step Shape)**: Fast movement compresses step duration (via `stepSpeedScale`). If `maxSpeed` is high and `stepSpeedScale` is aggressive, sprinting may push steps below `minStepDuration` — the legs will cycle at the cap. This can look good or mechanical depending on `stepHeight`.
+**Key interaction — Dim 10 (Impact Crouch)**: When crouch energy is frozen (player holding down after landing), horizontal input is suppressed entirely — `moveForce` has no effect until the crouch releases. This is a design mechanic, not a movement bug.
 
-**Log when**: The character starts and stops in a way that feels responsive without slipping around. Direction changes feel decisive.
+**Log when**: The character starts and stops in a way that feels responsive without slipping around. Direction changes feel decisive. Jumps feel like they carry your momentum, not erase it.
 
 ---
 
@@ -127,23 +132,27 @@
 ---
 
 ### 5. Foot Spring
-*Live — no respawn. Variables: `footFrequency`, `footDampingRatio`, `footSpringMass`*
+*Live — no respawn. Variables: `footFrequency`, `footDampingRatio`, `footSpringMass`, `footGroundDamping`, `footAirDamping`*
 
-**Architecture note**: This spring **only governs the Airborne state**. When a foot is Locked, it's kinematically pinned. When Stepping, it follows a scripted arc. Only when fully airborne (after jumping, before landing) does this spring pull feet back toward `(hipX ± footSpreadX, hipY)`. The spring works in both X and Y simultaneously, competing against gravity on the Y axis.
+**Architecture note**: The spring **only governs the Airborne state**. When a foot is Locked, it's kinematically pinned. When Stepping, it follows a scripted arc. Only when fully airborne does this spring pull feet back toward `(hipX ± footSpreadX, hipY)`. The X component has a **settle-lock**: once displacement and velocity both drop below threshold, X is pinned kinematically to avoid residual oscillation — it releases again if the hip moves far enough away. `footGroundDamping` / `footAirDamping` are the foot RB linear damping values, toggled based on whether any foot is Locked — high ground damping prevents feet from bouncing after contact; low air damping lets the spring work without the RB damper fighting it.
 
 | Variable | Low value effect | High value effect |
 |---|---|---|
 | `footFrequency` (3 → 25 rad/s) | Feet drift lazily back to formation — slow float under body | Feet snap immediately to position — no drift visible |
 | `footDampingRatio` (0.2 → 1.0) | Feet oscillate past formation, bounce/dangle during flight | Feet settle immediately with no overshoot |
 | `footSpringMass` (0.1 → 2.0) | Lower computed stiffness/damping for the same ω/ζ — softer spring force per frame | Higher computed stiffness/damping — stiffer, but ω and ζ feel identical so the effect is subtle |
+| `footGroundDamping` (1 → 8) | Feet have momentum after landing — may slide or bounce slightly | Feet stop dead the moment they lock to ground |
+| `footAirDamping` (0 → 2.0) | Spring works freely — responsive X tracking in the air | RB damping fights the spring — sluggish aerial foot tracking |
 
-**What to observe**: Jump and look at the feet during the arc. Do they tuck up under the body or spread wide? Land on a platform — do feet settle cleanly or wobble after touchdown? The goal is feet that look physically plausible in flight without fighting gravity so hard they look weightless.
+**What to observe**: Jump and look at the feet during the arc. Do they tuck up under the body or spread wide? Land on a platform — do feet settle cleanly or wobble after touchdown? Lower `footGroundDamping` and notice if feet have a little bounce after locking — then raise it to kill that.
+
+**Secondary parameters** (rarely need adjustment): `footXLockThreshold`, `footXLockVelocity`, `footXUnlockThreshold` — control when the airborne X settle-lock engages and releases. Defaults work well; only adjust if feet are sticking in a position when they shouldn't be, or failing to track the hip after large horizontal movements.
 
 **Key interaction — Dim 1 (Foot Physics)**: `footGravityScale` fights the Y component of this spring. High gravity + low `footFrequency` = feet hang very low during airborne phase. If feet look like they're being pulled away from the body during jump, either raise frequency or reduce gravity scale.
 
 **Key interaction — Dim 6 (Hip Spring)**: The spring target Y is the hip node Y — which is itself moving during a jump. Both springs settle simultaneously on landing. If landing looks jittery, the two springs may be resonating; try raising the damping ratio on one of them.
 
-**Log when**: Feet track believably under the body during a jump arc. Landing transitions from airborne to locked without a visible "snap." The character looks like it has legs, not stilts.
+**Log when**: Feet track believably under the body during a jump arc. Landing transitions from airborne to locked without a visible "snap." Feet don't oscillate after touch-down.
 
 ---
 
@@ -160,9 +169,11 @@
 
 **What to observe**: Jump and land hard. Watch the torso: does it dip on landing and spring back? That's the hip spring in action. A low damping ratio gives you satisfying head-bobbing; too low and the character looks like it's perpetually bouncing. Try landing from increasing heights — does the impact feel proportional?
 
-**Jump interaction with `hipMass`**: At the moment of jump, the hip is given an upward velocity = `jumpImpulse / hipMass`. Heavier hip = slower initial rise. This is independent of how high the feet go. A heavy hip can make the character look like it's "stretching" at jump start — which can look cool or disconnected depending on damping.
+**Jump interaction with `hipMass`**: At the moment of jump, the hip is given an upward velocity. Heavier hip = slower initial rise. This is independent of how high the feet go. A heavy hip can make the character look like it's "stretching" at jump start.
 
-**Key interaction — Dim 9 (Jump Feel)**: The hip spring compresses when the character lands and is still settling. This compression is what `jumpOffsetFactor` reads — if you jump immediately after landing, the hip hasn't recovered yet, and you get a height bonus. A lower `hipFrequency` keeps the hip compressed longer, extending the window to exploit `jumpOffsetFactor`.
+**Key interaction — Dim 9 (Jump Feel)**: The hip spring compresses when the character lands and is still settling. This compression feeds `jumpOffsetFactor` — if you jump immediately after landing, the hip hasn't recovered yet, and you get a height bonus. A lower `hipFrequency` keeps the hip compressed longer, extending the window.
+
+**Key interaction — Dim 10 (Impact Crouch)**: `hipDampingRatio` controls how long the bounce window stays open. Lower damping = hip stays compressed longer = bigger window for both `jumpOffsetFactor` and impact crouch energy.
 
 **Key interaction — Dim 5 (Foot Spring)**: Both springs settle simultaneously on landing. If you see the torso oscillating after landing, the hip's damping ratio is the primary lever — not the foot spring.
 
@@ -203,37 +214,163 @@
 
 **What to observe**: Stand still and evaluate the silhouette. Run and check whether the proportions still read as a character. Jump — a taller character has more "body height" to work with, which affects whether the jump arc looks proportional to the character's size.
 
-**`standHeight` and jump feel**: Taller characters have more potential hip compression when the spring is loaded. Since `jumpOffsetFactor` reads hip compression, a taller character can accumulate more compression distance before a jump — meaning Dim 9's `jumpOffsetFactor` has more range with higher `standHeight`.
+**`standHeight` and Impact Crouch**: Taller characters have a larger range for crouch compression, since `maxCrouchDepth = standHeight × crouchDepthRatio`. If `standHeight` changes significantly, revisit Dim 10 to recheck the energy ceiling.
 
-**`footSpreadX` and stride trigger**: Wider stance means each foot is further from the hip. The stride trigger fires when the foot lags more than `strideTriggerDistance` behind its ideal X — so wider stance means more absolute lag is allowed before stepping. In effect, `footSpreadX` scales the "feel" of `strideTriggerDistance`. If the walk cadence changed after adjusting spread, expect to revisit Dim 3.
+**`footSpreadX` and stride trigger**: Wider stance means each foot is further from the hip. The stride trigger fires when the foot lags more than `strideTriggerDistance` behind its ideal X — so wider stance means more absolute lag is allowed before stepping. If the walk cadence changed after adjusting spread, expect to revisit Dim 3.
 
 **Log when**: Standing, the character's shape reads clearly as a body. The stance width feels stable — not so narrow that it looks like the character is on a tightrope, not so wide that movement looks comedic.
 
 ---
 
 ### 9. Jump Feel
-*Live — read per-frame. Variables: `jumpSpeed`, `jumpOffsetFactor`*
+*Live — read per-frame. Variables: `jumpSpeed`, `jumpOffsetFactor`, `forwardJumpFactor`, `directionalJumpDeadzone`, `variableJumpCutMultiplier`, `coyoteTime`, `jumpBufferTime`, `landingVelocityTolerance`, `jumpCoastTime`*
 
-**Architecture note**: Jump impulse = `jumpSpeed + hipOffset · jumpOffsetFactor`. `hipOffset` is `max(0, lowestFootY - hipNode.Y)` — the distance the hip spring has been pulled below the locked foot Y. This is positive whenever the hip is lagging behind the foot (e.g., immediately after landing, or when standing still after a descent). Foot velocity is then `impulse / footMass`; hip velocity is `impulse / hipMass`.
+**Architecture note**: Jump velocity is **set directly** on feet (Celeste-style — velocity override, not impulse). `jumpMagnitude = jumpSpeed + totalHipCompression × jumpOffsetFactor`, scaled by `baseTorsoMass / rb.mass` for weight. `totalHipCompression` includes both the hip spring lag below the lowest locked foot and the current impact crouch amount (Dim 10). Directional lean: if horizontal speed > `directionalJumpDeadzone`, the jump vector tilts forward by `forwardJumpFactor × |hVel|`. **Variable height**: releasing Space while ascending cuts Y velocity on feet and hip by `variableJumpCutMultiplier` while fully preserving X velocity — the "hop dash." Coyote time allows jumping for a window after leaving a ledge. Buffer stores input for a window before landing. `landingVelocityTolerance` allows feet to lock while moving very slowly upward (catches apex landings without bouncing). `jumpCoastTime` suppresses the airborne X spring right after launch so feet visually carry their trajectory.
 
 | Variable | Low value effect | High value effect |
 |---|---|---|
 | `jumpSpeed` (2 → 20) | Barely leaves the ground — hop rather than jump | Very high arc, risk of leaving the play area |
-| `jumpOffsetFactor` (0 → 25) | Crouch gives no bonus — all jumps feel the same height | Crouch gives massive boost — timing the jump after landing is almost mandatory |
+| `jumpOffsetFactor` (0 → 25) | Crouch gives no bonus — all jumps the same height | Crouched landing jump dramatically higher — timing becomes essential |
+| `forwardJumpFactor` (0 → 0.3) | Always jumps vertically regardless of run speed | Sprint-jumps lean significantly forward — hop-dash range increases |
+| `directionalJumpDeadzone` (0 → 1 wu/s) | Any tiny horizontal speed causes lean | Must be clearly moving before lean applies |
+| `variableJumpCutMultiplier` (0 → 0.9) | Tap gives an extremely short hop, hold for full height | Minimal height control — tap and hold feel nearly identical |
+| `coyoteTime` (0 → 0.2 s) | Must be on exact ground pixel to jump | Generous ledge forgiveness — jumping a moment after walking off still works |
+| `jumpBufferTime` (0 → 0.2 s) | Must press jump very precisely as feet hit ground | Jump queued before landing fires automatically — very forgiving timing |
+| `landingVelocityTolerance` (0 → 0.5 wu/s) | Feet only lock while falling — apex landings cause a momentary float | Feet lock even while barely rising — apex landings are smooth |
+| `jumpCoastTime` (0 → 0.12 s) | Feet spring immediately back under body at launch | Feet carry launch angle visually — looks like a proper jump trajectory |
 
-**What to observe**: First test flat ground jumps — this isolates `jumpSpeed`. Then immediately jump after landing hard from a high platform (the hip spring is still compressed) — this reveals `jumpOffsetFactor`. The two should feel like the same character: base jumps that clear obstacles, bonus jumps that reward skill and timing.
+**What to observe**: Flat ground jumps isolate `jumpSpeed`. Sprint and jump — reveals `forwardJumpFactor`. Tap vs. hold Space — reveals `variableJumpCutMultiplier`. Walk off a ledge and press jump a moment later — tests `coyoteTime`. Press jump just before landing — tests `jumpBufferTime`. Land hard then jump immediately — Dim 10 crouch energy adds to `jumpOffsetFactor` bonus.
 
-**The bounce jump**: The highest-value window for `jumpOffsetFactor` is the instant after a heavy landing, before the hip spring has recovered. This is intentional design — it rewards jump timing. If `hipDampingRatio` is high (hip snaps back fast), this window is narrow. Lower hip damping = longer bounce window.
+**The hop dash**: With `forwardJumpFactor` > 0 and `variableJumpCutMultiplier` low, a quick sprint-tap-jump travels mostly horizontally. This is intentional. Raise the cut multiplier or lower the forward factor to suppress it.
 
-**Key interaction — Dim 1 (Foot Physics)**: `footMass` divides the impulse. If jumps feel low, halving `footMass` doubles height just as effectively as doubling `jumpSpeed`. The difference: `footMass` also affects landing weight and collision response. Prefer adjusting `jumpSpeed` for jump height, `footMass` for landing feel.
+**Key interaction — Dim 6 (Hip Spring)**: `hipDampingRatio` controls how long the hip stays compressed after landing — directly extending the window where `jumpOffsetFactor` yields a bonus.
 
-**Key interaction — Dim 6 (Hip Spring)**: `hipDampingRatio` controls how long the compression window stays open for `jumpOffsetFactor`. `hipMass` controls how high the hip rises at jump start. Both interact with jump feel without being in this dimension — changing Dim 6 changes how this dimension plays.
+**Key interaction — Dim 10 (Impact Crouch)**: `_crouchAmount` is included in `totalHipCompression`. `jumpOffsetFactor` applies to both the hip spring lag and the stored crouch — one multiplier, two sources. Tune `jumpOffsetFactor` first (Dim 9), then `impactCrouchFactor` / `crouchDepthRatio` to control how much compression a given fall generates.
 
-**Log when**: A flat-ground jump clears a comfortable obstacle height. Jumping immediately after landing from height gives a clearly higher jump. The skill ceiling of the timing window feels accessible but not trivial.
+**Log when**: A flat-ground jump clears a comfortable obstacle. Sprint-jumping forward reaches further. Tapping Space gives a short hop; holding gives a full arc. Landing from height then jumping immediately is clearly rewarded with extra height.
 
 ---
 
-### 10. Gun Feel
+### 10. Impact Crouch
+*Live — no respawn. Variables: `impactCrouchFactor`, `crouchDepthRatio`, `crouchDissipationRate`, `impactSquashOvershoot`, `squashPunchDecayRate`, `landingCaptureWindow`, `footfallImpulse`, `footfallMinSpeed`*
+
+**Architecture note**: When a foot locks from Airborne state, `FootMovement` captures the foot's downward speed and, after a short `landingCaptureWindow` (to accumulate both feet's speeds on two-footed landings), passes the max speed to `PlayerSkeletonRoot`. This converts to crouch: `crouchAmount = min(landingSpeed × impactCrouchFactor, standHeight × crouchDepthRatio)`. The crouch reduces `effectiveStandHeight`, compressing the body. `impactSquashOvershoot` adds an extra initial visual spike (decays at `squashPunchDecayRate`) for hard-landing juiciness. Crouch dissipates at `crouchDissipationRate` px/s unless the player holds down-key while grounded — that freezes dissipation and suppresses horizontal input (committed crouch). When any step completes (Stepping → Locked), `footfallImpulse` is applied forward to the torso — a small per-step acceleration scaled down near `maxSpeed`.
+
+**Impact Crouch variables:**
+
+| Variable | Low value effect | High value effect |
+|---|---|---|
+| `impactCrouchFactor` (0.1 → 1.5) | Even high drops barely compress — little energy storage | Even moderate drops store significant compression energy |
+| `crouchDepthRatio` (0.1 → 0.6) | Shallow compression ceiling — small jump bonus cap | Deep compression — large energy ceiling, dramatic visual |
+| `crouchDissipationRate` (5 → 40 px/s) | Long window — energy lingers for several seconds | Short window — must jump almost immediately after landing |
+| `impactSquashOvershoot` (1.0 → 2.5) | No extra visual punch — only natural spring compression | Hard landing adds a strong extra spike that snaps back quickly |
+| `squashPunchDecayRate` (15 → 80 px/s) | Overshoot spike lingers, blends with dissipation | Overshoot spikes and snaps back instantly — very punchy |
+| `landingCaptureWindow` (0.02 → 0.1 s) | Only first foot's speed registers — second foot ignored | Accumulates both feet's landing speeds — more consistent on two-foot landings |
+
+**Footfall variables:**
+
+| Variable | Low value effect | High value effect |
+|---|---|---|
+| `footfallImpulse` (0 → 1.5) | Steps have no forward drive — pure visual walking | Each step gives a forward push — movement has a rhythmic, driven feel |
+| `footfallMinSpeed` (0 → 1.5 wu/s) | Impulse fires even at slow walk — twitchy at low speed | Footfall only activates above a threshold — clean idle/walk distinction |
+
+**What to observe**: Drop from a low vs. high ledge — crouch depth should scale with fall height. After landing, watch how long the body stays compressed — that's `crouchDissipationRate`. Hold down after landing: body stays compressed and movement blocks. Release: dissipation resumes. For footfall: walk and feel each step as a slight forward pulse; sprint — the rhythm should feel driven, not runaway.
+
+**Visual vs. functional crouch**: `impactSquashOvershoot` and `squashPunchDecayRate` are **entirely visual** — they don't affect jump calculations. The functional crouch is `crouchAmount`; the visual adds `squashPunch` on top. Tune them independently.
+
+**The committed crouch**: Holding down while crouched freezes energy AND blocks horizontal movement. Maximum energy storage costs mobility. Players who master this chain: heavy landing → crouch hold → released charged jump.
+
+**Key interaction — Dim 9 (Jump Feel)**: `jumpOffsetFactor` multiplies `totalHipCompression`, which includes `crouchAmount`. Tune `jumpOffsetFactor` first, then control how much compression a given fall generates via `impactCrouchFactor` and `crouchDepthRatio`.
+
+**Key interaction — Dim 6 (Hip Spring)**: Both hip spring compression and impact crouch feed into the jump. Tightly-damped hip (recovers fast) = short window for both; loosely-damped hip = long window.
+
+**Key interaction — Dim 4 (Step Shape)**: Footfall impulse fires every time a step completes. Faster step cadence = more frequent impulses. If movement feels erratic at speed, check `footfallImpulse` before tuning step shape.
+
+**Log when**: A hard landing visibly compresses the body and stores energy. A light hop barely registers. Jumping right after a heavy landing gives clearly more height. Walking feels driven by each step; sprinting has rhythm. The committed crouch creates a satisfying coil-and-release moment.
+
+---
+
+### 11. Body Integrity
+*Live — no respawn. Variables: `leashSoftRadius`, `leashHardRadius`, `leashForceMult`, `maxFootSeparation`, `groundProbeDistance`, `edgeLandingNudge`, `minStepDistance`*
+
+**Architecture note**: These variables are **defensive** — they prevent the procedural system from producing visibly broken states. The **body leash** constrains the torso from drifting too far from the foot center: within `leashSoftRadius`, no force; beyond it, a quadratic force ramp proportional to `moveForce × leashForceMult` pulls back; at `leashHardRadius`, the torso is hard-clamped and velocity zeroed. `maxFootSeparation` caps how far apart step targets can be placed — the stepping foot's target X is clamped to `other.lockX ± maxFootSeparation`. The **ground probe** fires each FixedUpdate downward `groundProbeDistance` px from each locked foot; if no walkable surface is found, the foot drops to Airborne. The **edge landing nudge** shifts a foot inward when it locks on a tilted contact normal, stabilizing it onto the platform face. The **obstacle pre-check** raycasts horizontally at arc-peak height before a step; if blocked, the step target is shortened or the step is cancelled if below `minStepDistance`.
+
+**Body Leash:**
+
+| Variable | Low value effect | High value effect |
+|---|---|---|
+| `leashSoftRadius` (2 → 12 px) | Leash begins pulling very close to foot center — tight, little drift freedom | Torso can drift far from feet before any force applies — loose feel |
+| `leashHardRadius` (4 → 20 px) | Hard clamp fires frequently — torso teleports back often | Hard clamp is a distant safety net — rarely felt |
+| `leashForceMult` (1 → 6) | Weak pull at the boundary — torso can push through easily | Strong pull — clear boundary, watch for oscillation near the edge |
+
+**Step Integrity:**
+
+| Variable | Low value effect | High value effect |
+|---|---|---|
+| `maxFootSeparation` (8 → 30 px) | Feet stay compact — no large splits | Feet can stride very far apart |
+| `groundProbeDistance` (0.5 → 5 px) | Foot loses ground very easily — aggressive airborne transitions | Foot holds lock when slightly over an edge — stickier terrain adhesion |
+| `edgeLandingNudge` (0 → 2 px) | No correction — foot lands exactly at edge contact point | Aggressively pushes foot inward — very stable edge landings |
+| `minStepDistance` (0.3 → 3 px) | Very short steps still proceed after obstacle shortening | Short steps near walls are cancelled — foot stays locked rather than stepping trivially |
+
+**What to observe**: These variables should be **largely invisible**. Run along a narrow ledge — does the body stay coherent without the leash visibly yanking? Sprint to one side — does the torso begin to resist after a natural-feeling distance? Walk off a ledge edge — does the foot drop appropriately? Walk toward a wall — does the foot shorten its step or cancel cleanly? Land on a platform edge — does the foot stick cleanly?
+
+**The leash is not a feel dimension**: If players can feel it pulling, `leashSoftRadius` is too tight or `leashForceMult` is too high. The goal is a character that stays coherent without any apparent constraint.
+
+**Key interaction — Dim 2 (Movement)**: Leash force = `moveForce × leashForceMult`. If `moveForce` increases significantly, the leash becomes proportionally stronger. Recalibrate `leashForceMult` if `moveForce` changes substantially.
+
+**Key interaction — Dim 3 (Walking Trigger)**: `maxFootSeparation` caps how far ahead `strideProjectionTime` can place a step target. At high speeds, the separation limit may clamp steps that would otherwise reach far. If feet look like they're clamping unnaturally at sprint, try widening `maxFootSeparation` before reducing `strideProjectionTime`.
+
+**Key interaction — Dim 8 (Stance Geometry)**: The leash anchors to the *current* foot positions, not ideal positions. When a foot is mid-step, the anchor shifts to the single locked foot. Wider `footSpreadX` means the foot center can shift more during single-foot phases.
+
+**Log when**: Nothing looks broken. The torso doesn't teleport. Feet don't clip into walls. Locked feet don't hang in midair over gaps. Edge landings feel stable. Body integrity tuning is complete when you can't see it working.
+
+---
+
+### 12. Wall Interaction
+*Live — no respawn. Variables: `maxWallSlideSpeed`, `wallSlideFootGravityScale`*
+
+**Architecture note**: Wall sliding activates when three conditions are simultaneously true: (1) a foot has detected a wall via `FootContact.isWalled`, (2) the torso is descending (`linearVelocity.y < 0`), and (3) the player holds the direction key toward the wall. When active: torso Y velocity is clamped to `-maxWallSlideSpeed`. `FootMovement.SetWallSliding(true)` reduces airborne foot gravity to `wallSlideFootGravityScale`, keeping feet descending at a rate compatible with the torso rather than accelerating past it.
+
+| Variable | Low value effect | High value effect |
+|---|---|---|
+| `maxWallSlideSpeed` (0.3 → 4 wu/s) | Very slow descent — nearly stationary wall cling | Barely reduces fall speed — wall slide almost imperceptible |
+| `wallSlideFootGravityScale` (0.1 → 1.0) | Feet float high during slide — body appears to stretch upward | Feet accelerate downward — may separate below the body |
+
+**What to observe**: Jump toward a vertical wall, start descending, and press into it. Does the descent visibly slow? Watch the feet — do they descend at a similar rate to the torso, or float up or drop down? Releasing the direction key should immediately restore normal fall.
+
+**Foot gravity pairing**: The goal is matching `wallSlideFootGravityScale` to the clamped torso speed. Sweep `wallSlideFootGravityScale` while watching foot position relative to the torso during an active slide — feet should descend in sync with the body.
+
+**Key interaction — Dim 1 (Foot Physics)**: `footGravityScale` is the baseline foot gravity. If the base foot gravity is very high, the wall slide scale needs to be proportionally lower to match torso descent rate.
+
+**Key interaction — Dim 10 (Impact Crouch)**: Landing from a wall slide can produce landing velocity. With a high `impactCrouchFactor`, even a modest slide-to-floor landing may store meaningful crouch energy — enabling a wall-bounce jump.
+
+**Log when**: Pressing into a wall while falling produces a clearly reduced descent rate. Feet remain at a believable height relative to the torso throughout the slide. Releasing the wall key immediately restores normal fall without a visual jolt.
+
+---
+
+### 13. Weight Feel
+*Live — no respawn. Variables: `baseTorsoMass`, `ammoWeightPerUnit`*
+
+**Architecture note**: Torso RB mass = `baseTorsoMass + (ammoCount × ammoWeightPerUnit)`. Jump magnitude is scaled by `baseTorsoMass / rb.mass` — at zero ammo the multiplier is 1.0 (no-op); as ammo adds mass, the multiplier drops below 1, reducing jump height. F = ma means the same `moveForce` produces less acceleration on a heavier torso. Springs keep identical perceptual feel (frequency/dampingRatio parameterization — ω and ζ are unchanged as mass grows).
+
+| Variable | Low value effect | High value effect |
+|---|---|---|
+| `baseTorsoMass` (0.5 → 3.0) | Light base character — fast acceleration, high jumps at zero ammo | Heavy base — each ammo unit adds proportionally less fractional mass |
+| `ammoWeightPerUnit` (0 → 0.1) | Ammo barely affects movement — carry as much as you like | Heavy ammo burden — full load noticeably reduces jump height and acceleration |
+
+**What to observe**: Jump at zero ammo, note height. Reload to maximum ammo, jump again. Sprint acceleration at low vs. full ammo. The weight difference should be perceptible as a design tradeoff — ammo buys firepower at the cost of mobility.
+
+**Base mass and the ammo gradient**: `baseTorsoMass` anchors the "nimble at zero ammo" feel. If you want the character heavy even when empty, raise `baseTorsoMass`. For maximum contrast (light empty, heavy full), keep `baseTorsoMass` low and `ammoWeightPerUnit` higher.
+
+**Key interaction — Dim 9 (Jump Feel)**: Jump magnitude is multiplied by `baseTorsoMass / rb.mass`. If `baseTorsoMass` is raised, the same `jumpSpeed` produces higher jumps at zero ammo. Always reverify jump feel after changing `baseTorsoMass`.
+
+**Key interaction — Dim 2 (Movement)**: A heavier torso requires more `moveForce` to reach the same speed in the same time. If maximum ammo makes the character uncontrollably sluggish, consider whether the weight penalty is intentionally severe.
+
+**Log when**: Carrying maximum ammo feels meaningfully heavier — jump height and sprint are perceptibly reduced. Empty ammo feels nimble. Mid-ammo states feel like intermediate mobility tiers, not binary states.
+
+---
+
+### 14. Gun Feel
 *Live — read per-frame. Variables: `firingSpeed`, `fireCooldown`, `projectileInitialScale`, `projectileGrowTime`, `tempMinProjectileDiameter`, `tempMaxProjectileDiameter`*
 
 **Architecture note**: Projectile mass scales as `baseMass × diameter²` — a ball twice the diameter has four times the mass and delivers four times the collision impulse. This means larger shots deal far more physical damage to a centipede. `projectileInitialScale` and `projectileGrowTime` create a "barrel emergence" illusion — the ball spawns tiny at the barrel tip and scales up in flight, making it look like it came from inside the barrel.
@@ -251,7 +388,7 @@
 
 **Diameter variance note**: `[TEMP]` labels indicate these will be replaced by a projectile queue system. For now, the random range creates shot variety — a wide range (0.1 → 0.8) means any given shot could be four times the area (and therefore mass) of the smallest shot, which is a 16× impulse difference.
 
-**Key interaction — Dim 13 (Destruction)**: `firingSpeed` contributes directly to projectile kinetic energy (KE = ½mv²). A small fast projectile can detach centipede segments just as well as a large slow one — the detachment check uses `ball.transform.position` displacement from the node. Tune `firingSpeed` and projectile diameter together when adjusting destruction feel.
+**Key interaction — Dim 17 (Destruction)**: `firingSpeed` contributes directly to projectile kinetic energy. A small fast projectile can detach centipede segments just as well as a large slow one — the detachment check uses ball displacement from the node. Tune `firingSpeed` and projectile diameter together when adjusting destruction feel.
 
 **Log when**: Shooting at range requires skill — enough travel time to feel satisfying to track. Fire rate feels appropriately rhythmic. The barrel emergence illusion reads as intentional, not as a glitch. Large shots visibly hit harder than small ones.
 
@@ -263,7 +400,7 @@
 
 ---
 
-### 11. Body Spring
+### 15. Body Spring
 *Live — no respawn. Variables: `wiggleFrequency`, `wiggleDampingRatio`, `wiggleMass`*
 
 **Architecture note**: Each segment in the centipede is a kinematic `Rigidbody2D` that spring-chases a `SkeletonNode` every FixedUpdate via `Ball.UpdateCentipedeSpring()`. The config stores this spring as `(wiggleFrequency, wiggleDampingRatio, wiggleMass)` and exposes computed `WiggleStiffness` and `WiggleDamping` properties. `TuningManager` writes those computed values directly to each Ball's raw `springStiffness`/`springDamping` fields at runtime.
@@ -278,15 +415,15 @@
 
 **What to observe**: Watch the body as the centipede navigates a sharp turn — do the tail segments swing wide and ring back? Hit the centipede with a projectile and look for a ripple propagating head-to-tail. Low `wiggleDampingRatio` creates a satisfying "snake shudder" on impact that reads clearly as a biological creature. Too low and the body becomes hard to read — constantly oscillating segments look chaotic rather than reactive.
 
-**Key interaction — Dim 13 (Destruction)**: `wiggleFrequency` directly sets the preemptive detach energy threshold (∝ ω²). High-frequency bodies absorb more kinetic energy before breaking — the spring must be moving fast relative to its displacement. You can use `wiggleFrequency` and `detachDistance` as two independent levers: `detachDistance` controls "how far before snap," `wiggleFrequency` controls "how much speed before snap."
+**Key interaction — Dim 17 (Destruction)**: `wiggleFrequency` directly sets the preemptive detach energy threshold (∝ ω²). High-frequency bodies absorb more kinetic energy before breaking — the spring must be moving fast relative to its displacement. You can use `wiggleFrequency` and `detachDistance` as two independent levers: `detachDistance` controls "how far before snap," `wiggleFrequency` controls "how much speed before snap."
 
-**Key interaction — Dim 12 (Body Geometry)**: `followDistance` limits the physical space each ball has to oscillate in. Closely-spaced nodes constrain spring amplitude even at low frequency. Wide spacing allows large oscillations — low frequency + wide follow distance creates dramatic, visible wave motion down the body.
+**Key interaction — Dim 16 (Body Geometry)**: `followDistance` limits the physical space each ball has to oscillate in. Closely-spaced nodes constrain spring amplitude even at low frequency. Wide spacing allows large oscillations — low frequency + wide follow distance creates dramatic, visible wave motion down the body.
 
 **Log when**: The body ripples noticeably after turns and projectile hits, reads as alive, and the ripple has a clear front-to-back travel that registers as a creature responding rather than a rigid rod bouncing.
 
 ---
 
-### 12. Body Geometry ⚠
+### 16. Body Geometry ⚠
 *Requires respawn. Variables: `nodeCount`, `followDistance`, `nodeRadius`*
 
 **Architecture note**: `followDistance` is the distance each `SkeletonNode` trails behind its parent in the path-recording system — it sets physical segment spacing. `nodeRadius` is the world-unit radius for each ball's visual and collider. These two together define whether segments look overlapping (packed body), tangent (clean sausage), or gapped (skeletal chain). `nodeCount` determines total creature length and how many independent sub-centipedes can emerge from a split encounter.
@@ -303,15 +440,15 @@
 
 **`nodeCount` and threat escalation**: A long centipede hit in the middle splits into two independent hunters. High `nodeCount` means one encounter can become several. Consider the worst-case split scenario: a 12-node centipede hit twice in the middle produces four segments — if all become centipedes, the player is immediately overwhelmed. Splits that produce ≤2 nodes become free balls, not hunters.
 
-**Key interaction — Dim 11 (Body Spring)**: `followDistance` determines the physical amplitude range available to the spring simulation. Wide follow distance + low `wiggleDampingRatio` = large, dramatic oscillations. Narrow follow distance constrains the spring regardless of frequency or damping.
+**Key interaction — Dim 15 (Body Spring)**: `followDistance` determines the physical amplitude range available to the spring simulation. Wide follow distance + low `wiggleDampingRatio` = large, dramatic oscillations. Narrow follow distance constrains the spring regardless of frequency or damping.
 
-**Key interaction — Dim 13 (Destruction)**: `nodeRadius` sets the collision circle — larger balls get hit by projectiles more readily. `nodeCount` determines how many detachments result in new centipedes vs. free balls. These two together define how "destructible" the creature actually feels in play.
+**Key interaction — Dim 17 (Destruction)**: `nodeRadius` sets the collision circle — larger balls get hit by projectiles more readily. `nodeCount` determines how many detachments result in new centipedes vs. free balls. These two together define how "destructible" the creature actually feels in play.
 
 **Log when**: The silhouette reads clearly as a distinct organism at play distance. Tail swings during navigation look like mass and inertia, not teleporting boxes. Splitting produces sub-centipedes long enough to feel like a new threat.
 
 ---
 
-### 13. Destruction
+### 17. Destruction
 *Live — no respawn. Variables: `detachDistance`*
 
 **Architecture note**: Each FixedUpdate, `CentipedeController` checks every ball's position against its linked skeleton node. If the distance ≥ `detachDistance`, that ball detaches and everything trailing it splits into a new centipede (or free balls if the chain is too short). A second, preemptive check runs on all remaining balls: if their current spring speed is high enough to carry them past `detachDistance` — using the SHM energy estimate `v² ≥ ω²(D² − d²)` — they're detached immediately, preventing a slow cascade across several frames.
@@ -326,20 +463,20 @@
 
 **The strategic asymmetry of splits**: Detaching segment N splits the centipede into the original head chain (0 to N-1) and a reversed new centipede (N+1 to end). Hitting the middle produces two new hunters. Hitting near the tail produces one small loose ball. This means shooting the middle is the most dangerous thing a player can do if sub-centipedes then converge. This is a deliberate design tension.
 
-**Key interaction — Dim 11 (Body Spring)**: `wiggleFrequency` sets the preemptive energy threshold (ω²). High frequency = spring is stiff = harder to preemptively detach. Tune `detachDistance` and `wiggleFrequency` independently: D for direct-hit sensitivity, ω for near-miss sensitivity.
+**Key interaction — Dim 15 (Body Spring)**: `wiggleFrequency` sets the preemptive energy threshold (ω²). High frequency = spring is stiff = harder to preemptively detach. Tune `detachDistance` and `wiggleFrequency` independently: D for direct-hit sensitivity, ω for near-miss sensitivity.
 
-**Key interaction — Dim 14 (Pathing Speed)**: Faster navigation generates more violent course corrections and more spring displacement per second. A `detachDistance` that holds together at low speed may trigger constantly at high speed. Always verify destruction feel after finalizing `speed`.
+**Key interaction — Dim 18 (Pathing Speed)**: Faster navigation generates more violent course corrections and more spring displacement per second. A `detachDistance` that holds together at low speed may trigger constantly at high speed. Always verify destruction feel after finalizing `speed`.
 
-**Key interaction — Dim 10 (Gun Feel)**: Projectile speed and size determine how much the navigator is disturbed (via heading changes), which determines how much spring displacement builds up. `detachDistance` is the threshold that translates disturbance into actual splits. If destruction feels wrong, check whether gun feel or this threshold needs adjustment first.
+**Key interaction — Dim 14 (Gun Feel)**: Projectile speed and size determine how much the navigator is disturbed (via heading changes), which determines how much spring displacement builds up. `detachDistance` is the threshold that translates disturbance into actual splits. If destruction feels wrong, check whether gun feel or this threshold needs adjustment first.
 
 **Log when**: Shooting a segment directly causes a clean, satisfying split. Sharp navigation turns alone do not split the centipede. Sustained fire on one spot reliably destroys that segment within 3–6 hits.
 
 ---
 
-### 14. Pathing Speed ⚠
+### 18. Pathing Speed ⚠
 *Requires respawn. Variables: `speed`, `collisionCooldownDuration`*
 
-**Architecture note**: `speed` is applied each FixedUpdate as `rb.linearVelocity = momentum × speed` — velocity-set, not force-based. There is no acceleration ramp; the centipede is instantly at full speed in whatever direction its momentum vector points. When using the scent navigator, this base speed is augmented by a trail-heat bonus (see Dim 20). `collisionCooldownDuration` prevents rapid momentum inversion when the head is pressed against a wall — it must expire before a new collision response fires.
+**Architecture note**: `speed` is applied each FixedUpdate as `rb.linearVelocity = momentum × speed` — velocity-set, not force-based. There is no acceleration ramp; the centipede is instantly at full speed in whatever direction its momentum vector points. When using the scent navigator, this base speed is augmented by a trail-heat bonus (see Dim 24). `collisionCooldownDuration` prevents rapid momentum inversion when the head is pressed against a wall — it must expire before a new collision response fires.
 
 | Variable | Low value effect | High value effect |
 |---|---|---|
@@ -348,13 +485,13 @@
 
 **What to observe**: Let the centipede approach from across the map — does the crossing time feel threatening? Sprint away from it — can you create distance with effort, or does it close relentlessly? Force it into a corner: does the collision cooldown produce a convincing bounce-and-recover, or does it stall awkwardly?
 
-**Speed as a global difficulty knob**: Unlike most dimensions, `speed` has no aesthetic nuance — it is pure threat level. The right value is whatever makes the player want to run. Too slow and the centipede becomes furniture. Too fast and there's no counterplay. The scent navigator's speed boost (Dim 20) adds a dynamic ceiling above this base.
+**Speed as a global difficulty knob**: Unlike most dimensions, `speed` has no aesthetic nuance — it is pure threat level. The right value is whatever makes the player want to run. Too slow and the centipede becomes furniture. Too fast and there's no counterplay. The scent navigator's speed boost (Dim 24) adds a dynamic ceiling above this base.
 
 **`collisionCooldownDuration` and wall behavior**: When the head bounces off a wall (momentum inverts), the cooldown blocks the next collision response. If the head immediately re-contacts the same wall (e.g., approaching at a glancing angle), it slides through. This produces a "strafing along walls" behavior that can look natural or sticky depending on the value. Lower = more nervous/jittery. Higher = smoother wall-following but longer corner stalls.
 
-**Key interaction — Dim 19 (Hunting Rhythm)**: `speed` amplifies the sweep-and-lock oscillator's effect on path shape. A fast centipede in its ballistic phase covers much more ground per cycle — high speed + low oscillation frequency produces enormous sweeping arcs that can circle the whole map.
+**Key interaction — Dim 23 (Hunting Rhythm)**: `speed` amplifies the sweep-and-lock oscillator's effect on path shape. A fast centipede in its ballistic phase covers much more ground per cycle — high speed + low oscillation frequency produces enormous sweeping arcs that can circle the whole map.
 
-**Key interaction — Dim 13 (Destruction)**: Faster navigation produces more violent heading changes and thus more spring displacement per second. Calibrate `detachDistance` after finalizing `speed` — they can't be tuned independently in isolation.
+**Key interaction — Dim 17 (Destruction)**: Faster navigation produces more violent heading changes and thus more spring displacement per second. Calibrate `detachDistance` after finalizing `speed` — they can't be tuned independently in isolation.
 
 **Log when**: The player instinctively moves when they see the centipede approach. A skilled player can stay alive by kiting, but a stationary player is reliably caught within a few seconds.
 
@@ -369,7 +506,7 @@
 
 ---
 
-### 17. Scent Trail ⚠
+### 21. Scent Trail ⚠
 *Init-only — requires respawn. Variables: `scentDecayTime`, `scentSigma`*
 
 **Architecture note**: The player's position is sampled every `scentSampleInterval` seconds into a ring buffer of size `scentHistorySize`. At defaults (200 samples × 0.1s = 20 seconds of trail), capacity rarely needs adjustment. `scentDecayTime` is an exponential time constant: a sample's temporal weight is exactly 37% (e^−1) at age = `decayTime`, ~5% at 3× `decayTime`, and effectively invisible beyond that. `scentSigma` is the Gaussian spatial standard deviation: field strength falls to ~61% at distance σ from a sample, and ~14% at 2σ.
@@ -385,15 +522,15 @@
 
 **The sigma/decay tradeoff**: Low sigma + high decay = precise, recent scent only — the centipede must nearly retrace your path, but loses you fast. High sigma + low decay = persistent regional field — the centipede can smell you from across the map but homes to the general area rather than your exact trail. This is the axis between "bloodhound tracking" and "area denial."
 
-**Key interaction — Dim 18 (Scent Consumption)**: `scentSigma` sets how wide each sample's Gaussian footprint is. For consumption to fully suppress a sample, `scentConsumeRadius` should reach at least into the core of the Gaussian — rule of thumb: `scentConsumeRadius ≈ σ` or larger.
+**Key interaction — Dim 22 (Scent Consumption)**: `scentSigma` sets how wide each sample's Gaussian footprint is. For consumption to fully suppress a sample, `scentConsumeRadius` should reach at least into the core of the Gaussian — rule of thumb: `scentConsumeRadius ≈ σ` or larger.
 
-**Key interaction — Dim 20 (Trail Speed)**: Higher sigma produces much stronger raw field values (more Gaussian overlap per point). `scentGradientMaxStrength` must be recalibrated whenever sigma changes — they are tightly coupled.
+**Key interaction — Dim 24 (Trail Speed)**: Higher sigma produces much stronger raw field values (more Gaussian overlap per point). `scentGradientMaxStrength` must be recalibrated whenever sigma changes — they are tightly coupled.
 
 **Log when**: Standing still, the centipede spirals convincingly toward your position. Walking away and returning causes the centipede to visibly track the breadcrumb path between your positions before reaching you.
 
 ---
 
-### 18. Scent Consumption
+### 22. Scent Consumption
 *Live — no respawn. Variables: `scentConsumeRate`, `scentConsumeRadius`*
 
 **Architecture note**: Each FixedUpdate, the navigator calls `ScentField.Consume(headPos, rate, radius, dt)`. Within `radius`, each sample's weight is reduced by `rate × proximity × dt`, where proximity is linear: 1 at center, 0 at the radius edge. A sample directly under the head loses `rate × dt` weight per second; samples at the radius edge are untouched. Samples consumed to zero are skipped in future evaluations. Because all centipedes share the field, one centipede's consumption erodes the trail for others.
@@ -405,19 +542,19 @@
 
 **What to observe**: Stand completely still and count how many orbits the centipede makes before reaching you. High rate + wide radius = fewer orbits, fast close-in. Low rate + narrow radius = it may loop indefinitely. The ideal: a spiral that visibly tightens over time — the player can watch the trap close and feels urgency without it being instant.
 
-**The spiral mechanics**: Without consumption, the gradient always points toward the densest accumulation — the centipede loops the same trail forever. Consumption "poisons" already-traversed zones, pushing the head toward unconsumed (fresher or denser) scent. This produces inward spiraling, not random wandering. The spiral tightness is controlled here; the spiral's radius is set by Dim 17 (sigma and decay).
+**The spiral mechanics**: Without consumption, the gradient always points toward the densest accumulation — the centipede loops the same trail forever. Consumption "poisons" already-traversed zones, pushing the head toward unconsumed (fresher or denser) scent. This produces inward spiraling, not random wandering. The spiral tightness is controlled here; the spiral's radius is set by Dim 21 (sigma and decay).
 
 **Multi-centipede note**: Two centipedes on the same target consume the trail cooperatively. High consume values mean the second centipede quickly loses the trail the first has followed — they spread out naturally. Low values let them stack on the same path.
 
-**Key interaction — Dim 17 (Scent Trail)**: `scentConsumeRadius` should be calibrated against `scentSigma`. If sigma is large and consume radius is small, each pass only partially suppresses each sample — consumption is slow relative to trail density. For decisive consumption, ensure `scentConsumeRadius ≥ σ`.
+**Key interaction — Dim 21 (Scent Trail)**: `scentConsumeRadius` should be calibrated against `scentSigma`. If sigma is large and consume radius is small, each pass only partially suppresses each sample — consumption is slow relative to trail density. For decisive consumption, ensure `scentConsumeRadius ≥ σ`.
 
-**Key interaction — Dim 19 (Hunting Rhythm)**: Long ballistic phases (low oscillation frequency) mean the centipede covers more ground between consume calls — less trail erased per unit distance. High oscillation frequency + high consume rate = trail gets systematically cleared; low frequency + low rate = centipede may pass through fresh scent during a ballistic sweep without fully depleting it.
+**Key interaction — Dim 23 (Hunting Rhythm)**: Long ballistic phases (low oscillation frequency) mean the centipede covers more ground between consume calls — less trail erased per unit distance. High oscillation frequency + high consume rate = trail gets systematically cleared; low frequency + low rate = centipede may pass through fresh scent during a ballistic sweep without fully depleting it.
 
 **Log when**: From a stationary position, the centipede visibly spirals inward rather than circling at a fixed radius. The spiral converges within 10–20 seconds of the centipede entering your scent cloud.
 
 ---
 
-### 19. Hunting Rhythm
+### 23. Hunting Rhythm
 *Live — no respawn. Variables: `scentSteeringBlend`, `scentOscillationFrequency`, `scentGradientSampleRadius`*
 
 **Architecture note**: These three variables shape *how* the gradient is translated into motion. Each FixedUpdate: (1) the oscillator phase advances, producing `sensitivity ∈ [0, 1]` via `0.5 + 0.5 × sin(phase)`; (2) gradient direction is computed at 8 radial points spaced at `scentGradientSampleRadius` around the head; (3) heading blends toward gradient at rate `scentSteeringBlend × sensitivity × dt`. When sensitivity is near 0 (the trough of the oscillator cycle), the centipede holds current momentum and sweeps ballistically. When sensitivity is near 1 (the peak), it snaps hard toward the gradient.
@@ -432,17 +569,17 @@
 
 **The oscillator rhythm**: At `scentOscillationFrequency = 0.35 Hz` (default), each full cycle is ~2.86 seconds. For roughly half of that, sensitivity < 0.5 — the centipede sweeps ballistically. During the other half, it snaps toward gradient. This hunting rhythm is visible to a careful observer: coast, coast, turn, coast, turn. Low Hz makes it obvious and deliberate; high Hz makes it imperceptible. Both are valid — they create different creature personalities.
 
-**Sample radius and field resolution**: The 8-point gradient ring should span across multiple Gaussian samples to measure meaningful slope. If `scentGradientSampleRadius` is much smaller than `scentSigma`, all 8 sample points land within a single Gaussian — the values are nearly equal and the gradient estimate is near-zero noise. Rule of thumb: `scentGradientSampleRadius ≈ scentSigma`. This value also controls the forward point used for the speed boost check (Dim 20) — a larger radius looks further ahead.
+**Sample radius and field resolution**: The 8-point gradient ring should span across multiple Gaussian samples to measure meaningful slope. If `scentGradientSampleRadius` is much smaller than `scentSigma`, all 8 sample points land within a single Gaussian — the values are nearly equal and the gradient estimate is near-zero noise. Rule of thumb: `scentGradientSampleRadius ≈ scentSigma`. This value also controls the forward point used for the speed boost check (Dim 24) — a larger radius looks further ahead.
 
-**Key interaction — Dim 17 (Scent Trail)**: `scentGradientSampleRadius` must match `scentSigma`. Any sigma change should be followed by revisiting this dimension.
+**Key interaction — Dim 21 (Scent Trail)**: `scentGradientSampleRadius` must match `scentSigma`. Any sigma change should be followed by revisiting this dimension.
 
-**Key interaction — Dim 14 (Pathing Speed)**: At higher speed, the centipede covers far more ground per ballistic sweep. The same oscillator frequency produces very different path shapes at different speeds — a slow centipede makes tight loops; a fast one makes enormous arcs. If hunting rhythm looks wrong after adjusting speed, tune `scentOscillationFrequency` next.
+**Key interaction — Dim 18 (Pathing Speed)**: At higher speed, the centipede covers far more ground per ballistic sweep. The same oscillator frequency produces very different path shapes at different speeds — a slow centipede makes tight loops; a fast one makes enormous arcs. If hunting rhythm looks wrong after adjusting speed, tune `scentOscillationFrequency` next.
 
 **Log when**: Running curves, the centipede tracks you with a rhythm that feels intentional — not random, not locked-on. Decide on a personality: low blend + low oscillation = patient predator; high blend + high oscillation = reactive hunter. Pick what fits your game feel and lock it in.
 
 ---
 
-### 20. Trail Speed
+### 24. Trail Speed
 *Live — no respawn. Variables: `scentSpeedBoost`, `scentGradientMaxStrength`*
 
 **Architecture note**: Each frame, the navigator samples field strength at `headPos + momentum × scentGradientSampleRadius` — the point directly ahead. This "forward heat" is normalized by `scentGradientMaxStrength` and clamped to [0, 1]. Final speed = `config.speed + config.scentSpeedBoost × trailHeat`. At maximum heat the centipede moves at `speed + scentSpeedBoost`; at zero heat it moves at base `speed`. There is no dead-zone — any nonzero forward heat produces some boost.
@@ -458,15 +595,15 @@
 
 **What changes with sigma**: Larger `scentSigma` produces much higher raw field values (more Gaussian overlap). If sigma increases, `scentGradientMaxStrength` must increase proportionally or the boost will saturate immediately, making the centipede always sprint.
 
-**Key interaction — Dim 17 (Scent Trail)**: `scentGradientMaxStrength` is sigma-dependent. Any time sigma changes, recalibrate this dimension immediately.
+**Key interaction — Dim 21 (Scent Trail)**: `scentGradientMaxStrength` is sigma-dependent. Any time sigma changes, recalibrate this dimension immediately.
 
-**Key interaction — Dim 14 (Pathing Speed)**: Speed boost adds to base speed. At high base speed, even a modest boost is a meaningful relative increase. At low base speed, a large boost creates a dramatic "lunge" on fresh trail — highly readable and satisfying if the player can react to it.
+**Key interaction — Dim 18 (Pathing Speed)**: Speed boost adds to base speed. At high base speed, even a modest boost is a meaningful relative increase. At low base speed, a large boost creates a dramatic "lunge" on fresh trail — highly readable and satisfying if the player can react to it.
 
 **Log when**: The centipede visibly surges when it crosses trail you recently ran. Sprinting far ahead creates meaningful breathing room. Standing still for 5+ seconds makes you a clearly hot target — the player can feel the difference.
 
 ---
 
-### 21. Fallback Behavior
+### 25. Fallback Behavior
 *Live — no respawn. Variables: `scentFallbackThreshold`, `scentFallbackBlend`*
 
 **Architecture note**: Each FixedUpdate, field strength at the head position is compared to `scentFallbackThreshold`. If below, `IsInFallback = true` and heading blends toward the player's actual position at `scentFallbackBlend × dt`. This is intentionally weaker than typical gradient steering to prevent snapping. Fallback is not exclusive — if a gradient spike appears (player re-enters the area) while in fallback, gradient steering immediately re-dominates. The two behaviors compete continuously rather than switching cleanly.
@@ -480,9 +617,9 @@
 
 **Threshold and the tension curve**: Low threshold = hiding is a real escape strategy — wait long enough and the centipede will drift away without the trail. High threshold = hiding barely helps; even faint residual scent triggers pursuit, and fallback kicks in the moment trail thins. This is one of the primary levers for whether "escape" is a viable player strategy.
 
-**Key interaction — Dim 17 (Scent Trail)**: `scentDecayTime` determines how quickly the field drops below `scentFallbackThreshold`. Short decay + low threshold = fallback fires frequently during normal play. Long decay + high threshold = fallback may never fire unless the player hides for an extended time. The interplay between these two is the core tuning question: "how long must a player hide to break pursuit?"
+**Key interaction — Dim 21 (Scent Trail)**: `scentDecayTime` determines how quickly the field drops below `scentFallbackThreshold`. Short decay + low threshold = fallback fires frequently during normal play. Long decay + high threshold = fallback may never fire unless the player hides for an extended time. The interplay between these two is the core tuning question: "how long must a player hide to break pursuit?"
 
-**Key interaction — Dim 19 (Hunting Rhythm)**: During fallback, gradient steering is inactive — only the player-facing blend applies. The oscillator still runs, but since gradient is zero, the sensitivity pulse doesn't affect heading. Fallback effectively suspends the sweep-and-lock behavior until the centipede re-enters the scent field.
+**Key interaction — Dim 23 (Hunting Rhythm)**: During fallback, gradient steering is inactive — only the player-facing blend applies. The oscillator still runs, but since gradient is zero, the sensitivity pulse doesn't affect heading. Fallback effectively suspends the sweep-and-lock behavior until the centipede re-enters the scent field.
 
 **Log when**: After an extended period of hiding with no movement, the centipede clearly changes behavior — either wandering away (low threshold) or slowly but surely approaching on a direct line (high threshold). The transition feels like a behavioral shift the player can observe and respond to, not a sudden lock-on.
 
