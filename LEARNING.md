@@ -283,3 +283,10 @@ Topic: Torso offset spring — squash-and-stretch from structural inertia
 Concepts:
   - **Squash-and-stretch as emergent physics**: Rather than scripting compression/expansion explicitly, we let spring inertia produce it. The torso offset spring lags behind a moving anchor (the hip), and that lag IS the stretch during falls and the compression on landing. The animation principle emerges from the physics, not from keyframes or triggers.
   - **Authority layering**: Each layer of the body has one clear owner for each axis. Feet own the ground contact. The hip is a pure positional relay (locked to feet Y, no opinion of its own). The offset spring is where the body's inertia lives. Keeping these responsibilities separate prevents the systems from fighting each other and makes each layer independently tunable.
+
+---
+Date: 2026-03-08
+Topic: Game loop bootstrapping and escalating spawn systems
+Concepts:
+  - **Emergent Difficulty via Spatial Progress**: Tying spawn rate to the player's one-way rightward displacement rather than to time creates a difficulty curve the player controls. The player chooses when to advance and how fast to escalate — turning spatial exploration into a risk-reward trade-off rather than a time tax.
+  - **One-Way Progress Tracking**: Recording only the maximum X achieved (never decreasing on retreat) prevents the player from "farming" lower difficulty by oscillating near the spawn boundary. It rewards commitment to forward movement and makes retreat a tactical pause rather than a full reset.
