@@ -283,3 +283,10 @@ Topic: Torso offset spring — squash-and-stretch from structural inertia
 Concepts:
   - **Squash-and-stretch as emergent physics**: Rather than scripting compression/expansion explicitly, we let spring inertia produce it. The torso offset spring lags behind a moving anchor (the hip), and that lag IS the stretch during falls and the compression on landing. The animation principle emerges from the physics, not from keyframes or triggers.
   - **Authority layering**: Each layer of the body has one clear owner for each axis. Feet own the ground contact. The hip is a pure positional relay (locked to feet Y, no opinion of its own). The offset spring is where the body's inertia lives. Keeping these responsibilities separate prevents the systems from fighting each other and makes each layer independently tunable.
+
+---
+Date: 2026-03-08
+Topic: Centipede pincer attack mechanic
+Concepts:
+  - **Hitbox/Hurtbox Separation**: The visible sprite and the damage zone are independent — here the pincers animate (rotate) while the trigger colliders are static siblings that never move. This lets the visual be dramatic and wide while the actual kill zone stays tight and forgiving. Fighting games pioneered this to keep moment-to-moment play fair even when animations are exaggerated.
+  - **Strategy Pattern for Extensibility**: `IPlayerHitEffect` decouples "hit detected" from "what happens on hit." `PincerController` holds a list and iterates it — `DestroyPlayerEffect` is just the first entry. New effects (stun, knockback, damage) are new classes added to the list, not modifications to the detection logic. This is the classic open/closed principle applied to game events.
