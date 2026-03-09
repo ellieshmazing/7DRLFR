@@ -114,10 +114,6 @@ public sealed class GameLoop : MonoBehaviour
         foreach (var b in Object.FindObjectsByType<Ball>(FindObjectsSortMode.None))
             Destroy(b.gameObject);
 
-        // Destroy terrain chunks and decoration tilemap (tagged "Destructible")
-        foreach (var go in GameObject.FindGameObjectsWithTag("Destructible"))
-            Destroy(go);
-
         // Clear the scent trail so new centipedes start fresh
         ScentField.Instance?.Clear();
 
