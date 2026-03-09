@@ -40,6 +40,7 @@ public sealed class GameLoop : MonoBehaviour
     {
         playerAssembler.Spawn(playerConfig, playerSpawnPosition);
         centipedeAssembler.playerTarget = PlayerRegistry.PlayerTransform;
+        SpawnCentipede();
         _spawnTimer = baseInterval;
     }
 
