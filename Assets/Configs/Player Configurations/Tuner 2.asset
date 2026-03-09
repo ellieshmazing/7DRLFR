@@ -1,0 +1,121 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c652bb2bcdf483d45b0b007d756c6fa8, type: 3}
+  m_Name: Tuner 2
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerConfig
+  playerScale: 1.5
+  footMass: 1.265
+  footGravityScale: 5
+  moveForce: 17
+  maxSpeed: 15
+  airControlRatio: 0.25
+  groundDamping: 5
+  airDamping: 0.5
+  dampingTransitionSpeed: 15
+  turnBoostFactor: 1.5
+  strideTriggerDistance: 6.442921
+  idleSpeedThreshold: 1.1382936
+  strideProjectionTime: 0.27692848
+  idleCorrectionThreshold: 10
+  idleCorrectionHysteresis: 0.75
+  stepHeight: 10.087488
+  baseStepDuration: 1
+  minStepDuration: 0.1184
+  stepSpeedScale: 2.2
+  footFrequency: 5
+  footDampingRatio: 0.5
+  footSpringMass: 1
+  footGroundDamping: 1
+  footAirDamping: 0.3
+  hipFrequency: 5
+  hipDampingRatio: 0.5
+  hipMass: 1
+  torsoFrequency: 20
+  torsoDampingRatio: 0.5
+  torsoMass: 1
+  standHeight: 9
+  footSpreadX: 3
+  footOffsetY: 8
+  jumpSpeed: 5
+  jumpOffsetFactor: 15
+  forwardJumpFactor: 0.15
+  directionalJumpDeadzone: 0.5
+  variableJumpCutMultiplier: 0.45
+  coyoteTime: 0.1
+  jumpBufferTime: 0.1
+  landingVelocityTolerance: 0.3
+  jumpCoastTime: 0.06
+  impactCrouchFactor: 0.5
+  crouchDepthRatio: 0.4
+  crouchDissipationRate: 15
+  impactSquashOvershoot: 1
+  squashPunchDecayRate: 40
+  landingCaptureWindow: 0.05
+  footfallImpulse: 0.3
+  footfallMinSpeed: 0.3
+  leashSoftRadius: 1
+  leashHardRadius: 15
+  leashForceMult: 5
+  maxFootSeparation: 20
+  groundProbeDistance: 0.1
+  edgeLandingNudge: 0.5
+  minStepDistance: 1
+  maxWallSlideSpeed: 2
+  wallSlideFootGravityScale: 0.5
+  baseTorsoMass: 1
+  ammoWeightPerUnit: 0.02
+  firingSpeed: 3.2645638
+  fireCooldown: 0.27074963
+  projectileInitialScale: 0.05
+  projectileGrowTime: 0.15
+  tempMinProjectileDiameter: 0.2
+  tempMaxProjectileDiameter: 0.8
+  torsoLayers:
+  - sprite: {fileID: -1226034082, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    localOffset: {x: 0, y: 0}
+    sortingOrder: 0
+  - sprite: {fileID: -1416153245, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    localOffset: {x: 0.5, y: 8.5}
+    sortingOrder: 1
+  - sprite: {fileID: 1791198264, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    localOffset: {x: 0, y: 9.5}
+    sortingOrder: 1
+  armOrbitRadius: 10
+  armLayers:
+  - sprite: {fileID: -1628136530, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    localOffset: {x: 0, y: 0}
+    sortingOrder: 3
+  - sprite: {fileID: -1756739904, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    localOffset: {x: 4.5, y: 0.5}
+    sortingOrder: 2
+  leftFoot:
+    sprite: {fileID: 2243031002349522149, guid: f01fda41aa7dbc34282b83335302e5b8, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    sortingOrder: -1
+  rightFoot:
+    sprite: {fileID: -9037969273874986696, guid: f01fda41aa7dbc34282b83335302e5b8, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+    sortingOrder: 5
+  projectileDef: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
+  firingPointOffset: 8
+  maxWalkableAngle: 50
+  stepRaycastDistance: 30
+  footXLockThreshold: 1
+  footXLockVelocity: 0.1
+  footXUnlockThreshold: 3
+  torsoNodeGizmoColor: {r: 0, g: 1, b: 1, a: 1}
+  footNodeGizmoColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}

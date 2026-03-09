@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff60679b078f6a84cafb8f957d07cd55, type: 3}
+  m_Name: 24_TrailSpeed
+  m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
+  dimensionName: Trail Speed
+  testScenario: Sprint in a straight line then stop abruptly. Watch centipede surge
+    when it enters your trail. Calibrate scentGradientMaxStrength first until boost
+    is just visible, then set scentSpeedBoost for desired threat ceiling.
+  variables:
+  - targetConfig: {fileID: 11400000, guid: d91345cba6825f74f8f0e8dabfb8cb5d, type: 2}
+    fieldName: scentSpeedBoost
+    min: 0
+    max: 4
+    defaultValue: 1
+    requiresRespawn: 0
+    liveSync: 0
+  - targetConfig: {fileID: 11400000, guid: d91345cba6825f74f8f0e8dabfb8cb5d, type: 2}
+    fieldName: scentGradientMaxStrength
+    min: 0.5
+    max: 20
+    defaultValue: 5
+    requiresRespawn: 0
+    liveSync: 0
+  sweepDuration: 10

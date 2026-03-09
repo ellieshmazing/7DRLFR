@@ -68,6 +68,12 @@ public class CentipedeAssembler : MonoBehaviour
         var controller = root.AddComponent<CentipedeController>();
         controller.Initialize(config, nodeList, ballList);
 
+        if (config.pincerSprite != null)
+        {
+            var pincerController = root.AddComponent<PincerController>();
+            pincerController.Build(config, config.pincerSprite);
+        }
+
         var origMouseFollow = root.GetComponent<DebugMouseFollow>();
         if (origMouseFollow != null)
             Destroy(origMouseFollow);

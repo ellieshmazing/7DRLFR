@@ -14,32 +14,71 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerConfig
   playerScale: 1
   footMass: 1.265
-  footGravityScale: 1
-  moveForce: 13.03
+  footGravityScale: 5
+  moveForce: 17
   maxSpeed: 15
-  strideTriggerDistance: 7.7376146
-  idleSpeedThreshold: 0.2939936
-  strideProjectionTime: 0.25
-  stepHeight: 1.9209137
-  baseStepDuration: 0.2
-  minStepDuration: 0.06
-  stepSpeedScale: 0.3
+  airControlRatio: 0.25
+  groundDamping: 5
+  airDamping: 0.5
+  dampingTransitionSpeed: 15
+  turnBoostFactor: 1.5
+  strideTriggerDistance: 15
+  idleSpeedThreshold: 0.29399
+  strideProjectionTime: 2
+  idleCorrectionThreshold: 2
+  idleCorrectionHysteresis: 0.75
+  stepHeight: 10
+  baseStepDuration: 1
+  minStepDuration: 0.27574
+  stepSpeedScale: 1
   footFrequency: 5
   footDampingRatio: 0.5
   footSpringMass: 1
+  footGroundDamping: 1
+  footAirDamping: 0.3
   hipFrequency: 5
   hipDampingRatio: 0.5
   hipMass: 1
   torsoFrequency: 20
   torsoDampingRatio: 0.5
   torsoMass: 1
-  standHeight: 7.3
-  footSpreadX: 3.2143004
+  standHeight: 9
+  footSpreadX: 3
   footOffsetY: 8
   jumpSpeed: 5
   jumpOffsetFactor: 15
+  forwardJumpFactor: 0.15
+  directionalJumpDeadzone: 0.5
+  variableJumpCutMultiplier: 0.45
+  coyoteTime: 0.1
+  jumpBufferTime: 0.1
+  landingVelocityTolerance: 0.3
+  jumpCoastTime: 0.06
+  impactCrouchFactor: 0.5
+  crouchDepthRatio: 0.4
+  crouchDissipationRate: 15
+  impactSquashOvershoot: 1
+  squashPunchDecayRate: 40
+  landingCaptureWindow: 0.05
+  footfallImpulse: 0.3
+  footfallMinSpeed: 0.3
+  leashSoftRadius: 1
+  leashHardRadius: 15
+  leashForceMult: 5
+  maxFootSeparation: 20
+  groundProbeDistance: 0.1
+  edgeLandingNudge: 0.5
+  minStepDistance: 1
+  maxWallSlideSpeed: 2
+  wallSlideFootGravityScale: 0.5
+  baseTorsoMass: 1
+  ammoWeightPerUnit: 0.02
   firingSpeed: 3.2645638
   fireCooldown: 0.27074963
+  projectileInitialScale: 0.05
+  projectileGrowTime: 0.15
+  tempMinProjectileDiameter: 0.2
+  tempMaxProjectileDiameter: 0.8
   torsoLayers:
   - sprite: {fileID: -1226034082, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
@@ -73,10 +112,6 @@ MonoBehaviour:
     sortingOrder: 5
   projectileDef: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
   firingPointOffset: 8
-  projectileInitialScale: 0.05
-  projectileGrowTime: 0.15
-  tempMinProjectileDiameter: 0.2
-  tempMaxProjectileDiameter: 0.8
   maxWalkableAngle: 50
   stepRaycastDistance: 30
   footXLockThreshold: 1

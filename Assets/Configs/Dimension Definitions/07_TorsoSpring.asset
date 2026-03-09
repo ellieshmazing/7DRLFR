@@ -13,21 +13,28 @@ MonoBehaviour:
   m_Name: 07_TorsoSpring
   m_EditorClassIdentifier: Assembly-CSharp::TuningDimensionDef
   dimensionName: Torso Spring
-  testScenario: Change direction rapidly. Watch torso visual lag behind skeleton
-    node. Pure visual polish.
+  testScenario: Change direction sharply and watch body lag. Jump and watch visual
+    stretch on takeoff. Observe arm swing at low dampingRatio.
   variables:
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
     fieldName: torsoFrequency
-    min: 4
+    min: 2
     max: 20
-    defaultValue: 8.94
+    defaultValue: 8
     requiresRespawn: 0
     liveSync: 1
   - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
     fieldName: torsoDampingRatio
     min: 0.1
-    max: 1.5
-    defaultValue: 0.28
+    max: 1
+    defaultValue: 0.5
+    requiresRespawn: 0
+    liveSync: 1
+  - targetConfig: {fileID: 11400000, guid: bbd4678807967344096e2cb243566aa1, type: 2}
+    fieldName: torsoMass
+    min: 0.1
+    max: 3
+    defaultValue: 1
     requiresRespawn: 0
     liveSync: 1
   sweepDuration: 10

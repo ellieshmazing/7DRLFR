@@ -234,7 +234,7 @@ public class TuningManager : MonoBehaviour
         if (!respawnPending) return;
         respawnPending = false;
 
-        if (respawnTargetConfig is PlayerConfig pc)
+        if (respawnTargetConfig is PlayerConfig)
         {
             // Defer respawn until a foot is grounded to avoid mid-air respawn glitches
             var player = FindAnyObjectByType<PlayerSkeletonRoot>();
@@ -250,13 +250,15 @@ public class TuningManager : MonoBehaviour
             }
             stepRespawnPending = false;
             postRespawnLockout = respawnObservationWindow;
-            StartCoroutine(AutoRespawner.RespawnPlayer(pc, playerAssembler));
+            // Always use playerConfig (TuningManager's canonical config) — not the dimension
+            // def's targetConfig, which may be a different asset with stale visual settings.
+            StartCoroutine(AutoRespawner.RespawnPlayer(playerConfig, playerAssembler));
         }
-        else if (respawnTargetConfig is CentipedeConfig cc)
+        else if (respawnTargetConfig is CentipedeConfig)
         {
             stepRespawnPending = false;
             postRespawnLockout = respawnObservationWindow;
-            StartCoroutine(RespawnCentipedesAndUpdateCamera(cc, centipedeAssembler));
+            StartCoroutine(RespawnCentipedesAndUpdateCamera(centipedeConfig, centipedeAssembler));
         }
     }
 
@@ -542,12 +544,13 @@ public class TuningManager : MonoBehaviour
             if (dim == null) continue;
             foreach (var v in dim.variables)
             {
-                string key = SnapshotKey(v);
+                var config = ResolveConfig(v);
+                string key = SnapshotKey(v, config);
                 if (snap.ContainsKey(key)) continue;
 
-                var field = GetField(v);
+                var field = GetField(config, v.fieldName);
                 if (field != null)
-                    snap[key] = (float)field.GetValue(v.targetConfig);
+                    snap[key] = (float)field.GetValue(config);
             }
         }
         return snap;
@@ -560,60 +563,72 @@ public class TuningManager : MonoBehaviour
             if (dim == null) continue;
             foreach (var v in dim.variables)
             {
-                string key = SnapshotKey(v);
+                var config = ResolveConfig(v);
+                string key = SnapshotKey(v, config);
                 if (snap.TryGetValue(key, out float val))
                     ApplyValue(v, val);
             }
         }
     }
 
-    static string SnapshotKey(TuningVariable v)
+    static string SnapshotKey(TuningVariable v, ScriptableObject config)
     {
-        return v.targetConfig != null
-            ? $"{v.targetConfig.GetType().Name}.{v.fieldName}"
+        return config != null
+            ? $"{config.GetType().Name}.{v.fieldName}"
             : v.fieldName;
     }
+
+    // ── Config resolution ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Returns the variable's own targetConfig, or TuningManager's playerConfig when null.
+    /// This lets dimension variables omit the config reference and automatically target
+    /// the canonical PlayerConfig wired into TuningManager.
+    /// </summary>
+    ScriptableObject ResolveConfig(TuningVariable v) =>
+        v.targetConfig != null ? v.targetConfig : playerConfig;
 
     // ── ApplyValue ───────────────────────────────────────────────────────────
 
     void ApplyValue(TuningVariable v, float value)
     {
-        var field = GetField(v);
+        var config = ResolveConfig(v);
+        var field = GetField(config, v.fieldName);
         if (field == null)
         {
             Debug.LogError($"[TuningManager] Field '{v.fieldName}' not found on " +
-                           $"{(v.targetConfig != null ? v.targetConfig.GetType().Name : "null")}");
+                           $"{(config != null ? config.GetType().Name : "null")}");
             return;
         }
 
-        field.SetValue(v.targetConfig, value);
+        field.SetValue(config, value);
         CurrentValue = value;
 
 #if UNITY_EDITOR
-        UnityEditor.EditorUtility.SetDirty(v.targetConfig);
+        UnityEditor.EditorUtility.SetDirty(config);
 #endif
 
         if (v.liveSync)
-            SyncLiveInstances(v);
+            SyncLiveInstances(v, config);
 
         if (v.requiresRespawn)
-            QueueRespawn(v.targetConfig);
+            QueueRespawn(config);
     }
 
-    static FieldInfo GetField(TuningVariable v)
+    static FieldInfo GetField(ScriptableObject config, string fieldName)
     {
-        if (v.targetConfig == null || string.IsNullOrEmpty(v.fieldName)) return null;
-        return v.targetConfig.GetType().GetField(v.fieldName,
+        if (config == null || string.IsNullOrEmpty(fieldName)) return null;
+        return config.GetType().GetField(fieldName,
             BindingFlags.Public | BindingFlags.Instance);
     }
 
     // ── Live sync ────────────────────────────────────────────────────────────
 
-    void SyncLiveInstances(TuningVariable v)
+    void SyncLiveInstances(TuningVariable v, ScriptableObject config)
     {
-        if (v.targetConfig is PlayerConfig pc)
+        if (config is PlayerConfig pc)
             SyncPlayerSpringParams(pc, v.fieldName);
-        else if (v.targetConfig is CentipedeConfig cc)
+        else if (config is CentipedeConfig cc)
             SyncCentipedeSpringParams(cc, v.fieldName);
     }
 
@@ -689,7 +704,7 @@ public class TuningManager : MonoBehaviour
     EntityType GetEntityType(TuningDimensionDef dim)
     {
         if (dim?.variables == null || dim.variables.Length == 0) return EntityType.None;
-        var cfg = dim.variables[0].targetConfig;
+        var cfg = ResolveConfig(dim.variables[0]);
         if (cfg is PlayerConfig) return EntityType.Player;
         if (cfg is CentipedeConfig) return EntityType.Centipede;
         return EntityType.None;
@@ -924,19 +939,22 @@ public class TuningManager : MonoBehaviour
             for (int v = 0; v < dim.variables.Length; v++)
             {
                 var tv = dim.variables[v];
-                if (tv.targetConfig == null)
+                // null targetConfig is valid — TuningManager.playerConfig is used as fallback.
+                var config = tv.targetConfig != null ? tv.targetConfig : playerConfig;
+                if (config == null)
                 {
                     Debug.LogError($"[TuningManager] {dim.dimensionName}.variables[{v}] " +
-                                   $"has no targetConfig assigned.");
+                                   $"has no targetConfig and TuningManager.playerConfig is also null.");
                     continue;
                 }
-                var field = tv.targetConfig.GetType().GetField(tv.fieldName,
+                var field = config.GetType().GetField(tv.fieldName,
                     BindingFlags.Public | BindingFlags.Instance);
                 if (field == null)
                 {
                     Debug.LogError($"[TuningManager] {dim.dimensionName}.variables[{v}]: " +
                                    $"field '{tv.fieldName}' not found on " +
-                                   $"{tv.targetConfig.GetType().Name}.");
+                                   $"{config.GetType().Name}" +
+                                   (tv.targetConfig == null ? " (resolved from TuningManager.playerConfig)" : "") + ".");
                 }
                 else if (field.FieldType != typeof(float))
                 {
