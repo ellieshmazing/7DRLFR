@@ -2,7 +2,8 @@ using UnityEngine;
 
 /// <summary>
 /// Controls the hip node's Y position each FixedUpdate using a spring-damper
-/// (NodeWiggle-style) that chases the lowest foot visual Y.
+/// (NodeWiggle-style) that chases the highest locked foot Y when both are grounded,
+/// or the single grounded foot's Y otherwise.
 ///
 ///   Y — spring toward the lowest foot Y each frame, so the hip settles
 ///       naturally rather than snapping rigidly.  Runs at -15 so
