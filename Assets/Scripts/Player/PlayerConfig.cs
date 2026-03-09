@@ -106,16 +106,20 @@ public class PlayerConfig : ScriptableObject
     [Min(0f)] public float footAirDamping = 0.3f;
     // TEST: Jump and land; watch feet during airborne phase and on touchdown.
 
-    [Header("6. Hip Spring")]
-    [Tooltip("Range: 5–25 rad/s. Higher frequency = faster recovery.")]
+    [Header("6. Torso Offset Spring")]
+    [Tooltip("Range: 5–25 rad/s. Higher = torso snaps faster to its standHeight target. " +
+             "Lower = more stretch and squash arc during jumps and landings.")]
     [Min(0.01f)] public float hipFrequency = 10.95f;
-    [Tooltip("Range: 0.2–1.2. Low damping = head-bobbing.")]
+    [Tooltip("Range: 0.6–1.2. Higher = settles quickly with minimal oscillation (recommended ~0.8). " +
+             "Lower = more bouncy. Below 0.5 = persistent head-bobbing.")]
     [Min(0f)] public float hipDampingRatio = 0.46f;
-    [Tooltip("Hip spring mass; also divides jump impulse.")]
+    [Tooltip("Virtual mass of the offset spring. Heavier = more inertia, more noticeable stretch and squash.")]
     [Min(0.01f)] public float hipMass = 1f;
     public float HipStiffness => SpringParams.ComputeStiffness(hipFrequency, hipMass);
     public float HipDamping   => SpringParams.ComputeDamping(hipFrequency, hipDampingRatio, hipMass);
-    // TEST: Jump and land. Watch torso bob.
+    // TEST: Walk off a ledge — torso should hang briefly (expand) as the hip drops.
+    // Land from a fall — torso should compress then spring back to standHeight.
+    // Stand idle — should settle within ~0.2s with no oscillation.
 
     [Header("7. Torso Spring")]
     [Tooltip("Range: 4–20 rad/s. Higher = snappier visual tracking.")]
