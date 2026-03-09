@@ -46,7 +46,7 @@ public class ChunkManager : MonoBehaviour
         if (player == null)
         {
             player = Camera.main.transform;
-            Debug.LogWarning("[ChunkManager] No player assigned � falling back to Camera.main.");
+            Debug.LogWarning("[ChunkManager] No player assigned � falling back to Camera.main.");
         }
 
         // Create the shared decoration Tilemap once, as a sibling of chunk Tilemaps.
@@ -115,5 +115,28 @@ public class ChunkManager : MonoBehaviour
     int WorldXToChunkIndex(float worldX)
     {
         return Mathf.FloorToInt(worldX / chunkWidth);
+    }
+
+    /// <summary>
+    /// Resets all chunk state and regenerates terrain around the given player Transform.
+    /// Call after all "Destructible"-tagged objects have been destroyed so the internal
+    /// dictionaries reference only defunct objects that Unity has already cleaned up.
+    /// </summary>
+    public void Restart(Transform newPlayer)
+    {
+        // Terrain chunks and the deco tilemap were destroyed by tag — clear stale refs.
+        _activeChunks.Clear();
+        _chunkDecoTiles.Clear();
+        _decoTilemap = null;
+
+        // New seed → fresh procedural world.
+        terrainGenerator.InitSeed();
+
+        // Recreate the shared decoration tilemap.
+        _decoTilemap = terrainGenerator.CreateTreeLayerTilemap();
+
+        player = newPlayer;
+        _currentChunkIndex = WorldXToChunkIndex(player.position.x);
+        RefreshChunks();
     }
 }
