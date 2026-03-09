@@ -34,23 +34,25 @@ public class PincerController : MonoBehaviour
         config = cfg;
         if (sprite == null) return;
 
-        leftPincer  = CreatePincerVisual("LeftPincer",  flipX: false, cfg, sprite);
-        rightPincer = CreatePincerVisual("RightPincer", flipX: true,  cfg, sprite);
+        float r = cfg.nodeRadius;
 
-        CreateHitbox("LeftHitbox",  new Vector3(-cfg.pincerHitboxOffsetX, cfg.pincerHitboxOffsetY, 0f), cfg);
-        CreateHitbox("RightHitbox", new Vector3( cfg.pincerHitboxOffsetX, cfg.pincerHitboxOffsetY, 0f), cfg);
+        leftPincer  = CreatePincerVisual("LeftPincer",  flipX: false, cfg, sprite, r);
+        rightPincer = CreatePincerVisual("RightPincer", flipX: true,  cfg, sprite, r);
+
+        CreateHitbox("LeftHitbox",  new Vector3(-cfg.pincerHitboxOffsetX * r, cfg.pincerHitboxOffsetY * r, 0f), cfg, r);
+        CreateHitbox("RightHitbox", new Vector3( cfg.pincerHitboxOffsetX * r, cfg.pincerHitboxOffsetY * r, 0f), cfg, r);
 
         hitEffects.Add(new DestroyPlayerEffect());
     }
 
-    private Transform CreatePincerVisual(string goName, bool flipX, CentipedeConfig cfg, Sprite sprite)
+    private Transform CreatePincerVisual(string goName, bool flipX, CentipedeConfig cfg, Sprite sprite, float r)
     {
         float xSign = flipX ? 1f : -1f;
 
         var go = new GameObject(goName);
         go.transform.SetParent(transform, false);
-        go.transform.localPosition = new Vector3(xSign * cfg.pincerOffsetX, cfg.pincerOffsetY, 0f);
-        go.transform.localScale    = Vector3.one * cfg.pincerSize;
+        go.transform.localPosition = new Vector3(xSign * cfg.pincerOffsetX * r, cfg.pincerOffsetY * r, 0f);
+        go.transform.localScale    = Vector3.one * cfg.pincerSize * r;
 
         var sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = sprite;
@@ -59,14 +61,14 @@ public class PincerController : MonoBehaviour
         return go.transform;
     }
 
-    private void CreateHitbox(string goName, Vector3 localPos, CentipedeConfig cfg)
+    private void CreateHitbox(string goName, Vector3 localPos, CentipedeConfig cfg, float r)
     {
         var go = new GameObject(goName);
         go.transform.SetParent(transform, false);
         go.transform.localPosition = localPos;
 
         var box    = go.AddComponent<BoxCollider2D>();
-        box.size      = cfg.pincerColliderSize;
+        box.size      = cfg.pincerColliderSize * r;
         box.isTrigger = true;
 
         var rb        = go.AddComponent<Rigidbody2D>();

@@ -146,17 +146,17 @@ Sprites are authored at **1 world-unit diameter at scale 1**.
 | Variable | Type | Location | Description | Behavior | Affects |
 |---|---|---|---|---|---|
 | `pincerSprite` | `Sprite` | `CentipedeConfig` | Sprite asset used for both pincer renderers; right side gets `flipX = true`. Leave null to disable pincers entirely. | Checked at spawn; null skips all pincer setup | Pincer visual presence |
-| `pincerSize` | `float` | `CentipedeConfig` | Uniform local scale of each pincer sprite GO | Higher = larger, more threatening claw silhouette; try 0.2–0.8 | Pincer visual size |
-| `pincerOffsetX` | `float` | `CentipedeConfig` | Local X distance from head center to each pincer's pivot in world units | Higher = pincers sit wider apart; try 0.05–0.25 | Pincer lateral position |
-| `pincerOffsetY` | `float` | `CentipedeConfig` | Local Y offset from head center to each pincer's pivot in world units | Positive = forward on the head; try -0.1–0.2 | Pincer vertical position |
+| `pincerSize` | `float` | `CentipedeConfig` | Scale of each pincer sprite GO as a multiple of `nodeRadius`; multiplied at Build() time | Higher = larger claw relative to body; try 1.0–4.0 | Pincer visual size |
+| `pincerOffsetX` | `float` | `CentipedeConfig` | X distance from head center to each pincer pivot as a multiple of `nodeRadius` | Higher = pincers wider apart relative to body; try 0.3–2.0 | Pincer lateral position |
+| `pincerOffsetY` | `float` | `CentipedeConfig` | Y offset from head center to each pincer pivot as a multiple of `nodeRadius` | Positive = forward on the head; try -0.5–1.5 | Pincer vertical position |
 | `idleClickSpeed` | `float` | `CentipedeConfig` | Click animation frequency in Hz when player is outside attack radius | Lower = leisurely idle; try 0.5–3.0 | Animation cadence while searching |
 | `attackClickSpeed` | `float` | `CentipedeConfig` | Click animation frequency in Hz at full attack proximity | Higher = frantic snapping when closing in; try 2.0–8.0 | Animation cadence near player |
 | `clickAngle` | `float` | `CentipedeConfig` | Peak rotation degrees each pincer pivots from center | Lower = tight snip; higher = wide jaw bite; try 15–60 | Visual bite width |
 | `attackOuterRadius` | `float` | `CentipedeConfig` | World-unit distance at which pincers begin speeding up | Larger = player hears escalation from further away; try 2.0–6.0 | Threat escalation onset range |
 | `attackInnerRadius` | `float` | `CentipedeConfig` | World-unit distance at which pincers reach full `attackClickSpeed`; must be < `attackOuterRadius` | Smaller = only snaps fast when nearly touching; try 0.5–2.0 | Threat escalation peak range |
-| `pincerColliderSize` | `Vector2` | `CentipedeConfig` | Width × Height of each static trigger hitbox in world units | Intentionally smaller than visual to be forgiving; try (0.05–0.15, 0.10–0.25) | Actual kill-zone area |
-| `pincerHitboxOffsetX` | `float` | `CentipedeConfig` | Local X of each hitbox from head center; set to roughly match pincer tip at rest | try 0.05–0.2 | Kill-zone lateral placement |
-| `pincerHitboxOffsetY` | `float` | `CentipedeConfig` | Local Y of each hitbox from head center | try 0.0–0.2 | Kill-zone forward placement |
+| `pincerColliderSize` | `Vector2` | `CentipedeConfig` | Width × Height of each hitbox as multiples of `nodeRadius`; multiplied at Build() time | Intentionally smaller than visual; try (0.3–1.0, 0.5–1.5) | Actual kill-zone area |
+| `pincerHitboxOffsetX` | `float` | `CentipedeConfig` | X offset of each hitbox from head center as a multiple of `nodeRadius` | try 0.3–1.5 | Kill-zone lateral placement |
+| `pincerHitboxOffsetY` | `float` | `CentipedeConfig` | Y offset of each hitbox from head center as a multiple of `nodeRadius` | try 0.0–1.5 | Kill-zone forward placement |
 
 ---
 
