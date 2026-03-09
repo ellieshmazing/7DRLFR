@@ -199,8 +199,8 @@ public class FootMovement : MonoBehaviour
     /// <summary>
     /// Called by PlayerSkeletonRoot BEFORE setting foot velocities for the jump.
     /// Clears coyote time (prevents ghost double-jumps), starts jump coast timer
-    /// (suppresses X spring so feet carry launch momentum), and transitions both
-    /// feet to Airborne.
+    /// (suppresses X spring so feet carry launch momentum), snaps both feet to
+    /// the same launch Y, and transitions both feet to Airborne.
     /// </summary>
     public void OnJump()
     {
@@ -211,6 +211,16 @@ public class FootMovement : MonoBehaviour
         // so feet visually carry their launch velocity.
         if (config != null)
             _jumpCoastTimer = config.jumpCoastTime;
+
+        // Snap both feet to the same launch Y before transitioning, so they
+        // travel together through the jump arc. Captured now while the locked
+        // foot reference is still valid — after TransitionToAirborne both states
+        // are Airborne and GetGroundReferenceY() would return the RB minimum.
+        float launchY = GetGroundReferenceY();
+        if (_left.rb != null)
+            _left.rb.position = new Vector2(_left.rb.position.x, launchY);
+        if (_right.rb != null)
+            _right.rb.position = new Vector2(_right.rb.position.x, launchY);
 
         TransitionToAirborne(_left);
         TransitionToAirborne(_right);
