@@ -103,11 +103,6 @@ public static class CreateTuningDimensions
             V(centipedeConfig, "followDistance", 0.1f,  0.8f, 0.3f,  respawn: true),
             V(centipedeConfig, "nodeRadius",     0.05f, 0.4f, 0.15f, respawn: true));
 
-        // ── 13 Destruction ───────────────────────────────────────────────────
-        Create("13_Destruction", "Destruction",
-            "Shoot centipede with different projectile sizes. How hard is it to break? Too easy = trivial. Too hard = frustrating.",
-            V(centipedeConfig, "detachDistance", 0.2f, 1.5f, 0.5f));
-
         // ── 14 Pathing Speed (arc only — skipped when useScentNavigator) ─────
         Create("14_PathingSpeed", "Pathing Speed",
             "[Arc navigator] Let centipede chase. Feel the threat level. High speed + low turn radius = aggressive.",

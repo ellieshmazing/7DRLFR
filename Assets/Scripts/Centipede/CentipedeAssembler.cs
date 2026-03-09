@@ -144,10 +144,9 @@ public class CentipedeAssembler : MonoBehaviour
     private CentipedeConfig    lastSpawnedConfig;
 
     /// <summary>
-    /// Injects enough upward spring velocity into each selected ball to guarantee
-    /// it crosses detachDistance (3× the undamped SHM escape velocity).
-    /// Right-click the component in the Inspector to invoke during Play Mode.
-    /// Targeted balls turn red as visual confirmation.
+    /// Directly detaches the selected balls from their centipede via
+    /// CentipedeController.DetachBalls. Right-click the component in the
+    /// Inspector to invoke during Play Mode. Targeted balls turn red.
     /// </summary>
     [ContextMenu("Execute Detachment Test")]
     public void ExecuteDetachmentTest()
@@ -159,17 +158,13 @@ public class CentipedeAssembler : MonoBehaviour
             Debug.LogWarning("[DetachTest] Not in Play Mode.");
             return;
         }
-        if (lastSpawnedConfig == null)
-        {
-            Debug.LogWarning("[DetachTest] lastSpawnedConfig is null — spawn via 'Test Spawn' first.");
-            return;
-        }
         if (lastSpawnedBalls.Count == 0)
         {
             Debug.LogWarning("[DetachTest] Ball list is empty — spawn via 'Test Spawn' first.");
             return;
         }
 
+        var affected = new HashSet<Ball>();
         foreach (int i in testDetachIndices)
         {
             if (i < 0 || i >= lastSpawnedBalls.Count)
@@ -184,11 +179,15 @@ public class CentipedeAssembler : MonoBehaviour
                 continue;
             }
 
-            float launchSpeed = lastSpawnedConfig.detachDistance
-                                * Mathf.Sqrt(ball.springStiffness / ball.springMass) * 3f;
-            ball.InjectSpringVelocity(Vector2.up * launchSpeed);
             ball.SetTint(Color.red);
-            Debug.Log($"[DetachTest] Ball[{i}] launched at {launchSpeed:F1} m/s upward (red tint applied).");
+            affected.Add(ball);
+            Debug.Log($"[DetachTest] Ball[{i}] marked for detachment (red tint applied).");
+        }
+
+        if (affected.Count > 0)
+        {
+            var controller = lastSpawnedBalls[0]?.transform.root.GetComponent<CentipedeController>();
+            controller?.DetachBalls(affected);
         }
     }
 }
