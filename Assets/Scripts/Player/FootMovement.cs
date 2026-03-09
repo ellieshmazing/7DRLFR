@@ -351,7 +351,9 @@ public class FootMovement : MonoBehaviour
                     if (rawInput != 0f)
                     {
                         float signedBehind = (idealX - foot.lockPosition.x) * rawInput;
-                        if (signedBehind > 0f && other.state != FootState.Stepping)
+                        bool footWalledTowardInput = foot.contact.isWalled
+                            && foot.contact.lastWallNormal.x * rawInput < 0f;
+                        if ((signedBehind > 0f || footWalledTowardInput) && other.state != FootState.Stepping)
                         {
                             // Project step target assuming continued MoveForce application.
                             // Average displacement under constant accel: Δx = v0·T + ½·a·T²
@@ -488,10 +490,23 @@ public class FootMovement : MonoBehaviour
         var arcHit = Physics2D.Linecast(foot.rb.position, arcPos, _notPlayerMask);
         if (arcHit.collider != null && !IsWalkable(arcHit.normal))
         {
-            Vector2 lockPos = arcHit.point
-                            - (arcPos - foot.rb.position).normalized * footColliderRadius;
-            LockFoot(foot, lockPos);
-            return;
+            bool canArcOver = false;
+            if (foot.stepProgress < 0.5f)
+            {
+                float arcPeakY = foot.stepStartPos.y + config.stepHeight * pixelToWorld;
+                var wallTopHit = Physics2D.Raycast(arcHit.point, Vector2.up,
+                    config.stepHeight * pixelToWorld, _notPlayerMask);
+                float wallTopY = wallTopHit.collider != null ? wallTopHit.point.y : arcHit.point.y;
+                canArcOver = wallTopY < arcPeakY;
+            }
+
+            if (!canArcOver)
+            {
+                Vector2 lockPos = arcHit.point
+                                - (arcPos - foot.rb.position).normalized * footColliderRadius;
+                LockFoot(foot, lockPos);
+                return;
+            }
         }
 
         foot.rb.linearVelocity = (arcPos - foot.rb.position) / dt;
