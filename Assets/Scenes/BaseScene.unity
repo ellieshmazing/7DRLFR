@@ -469,12 +469,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TuningManager
   playerConfig: {fileID: 11400000, guid: 19756a768b2c6a54db9593f45f38bd4e, type: 2}
-  centipedeConfig: {fileID: 11400000, guid: 4507b4f9ff99c3647bded542d64881cd, type: 2}
+  centipedeConfig: {fileID: 11400000, guid: 67507a2064f90104698f1ec4f19b689b, type: 2}
   playerAssembler: {fileID: 2012067122}
   centipedeAssembler: {fileID: 1685109566}
   followCamera: {fileID: 519420033}
   dimensionDefs:
-  - {fileID: 11400000, guid: b2c3d4e5f678901234abcd5678ef0102, type: 2}
+  - {fileID: 11400000, guid: 34ea289b583647240bf6d5c1efc32df8, type: 2}
   - {fileID: 11400000, guid: c74cf9783e80e69419df6b8e3625e57f, type: 2}
   - {fileID: 11400000, guid: 3ea485721c33be344abe57c42229fc0f, type: 2}
   - {fileID: 11400000, guid: e07c666c85171e949a5c8f28503336d4, type: 2}

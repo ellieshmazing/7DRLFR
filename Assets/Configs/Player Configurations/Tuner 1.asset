@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerConfig
   playerScale: 1
   footMass: 1.265
-  footGravityScale: 5
-  moveForce: 17
+  footGravityScale: 2
+  moveForce: 65
   maxSpeed: 15
   airControlRatio: 0.25
   groundDamping: 5
@@ -27,25 +27,25 @@ MonoBehaviour:
   strideProjectionTime: 0.27692848
   idleCorrectionThreshold: 10
   idleCorrectionHysteresis: 0.75
-  stepHeight: 7.9319205
+  stepHeight: 3.796787
   baseStepDuration: 0.34462935
   minStepDuration: 0.14887281
   stepSpeedScale: 0.45138106
-  footFrequency: 5
+  footFrequency: 12.860628
   footDampingRatio: 0.5
   footSpringMass: 1
   footGroundDamping: 1
   footAirDamping: 0.3
-  hipFrequency: 9.601378
+  hipFrequency: 3.1958025
   hipDampingRatio: 0.5
   hipMass: 1
-  torsoFrequency: 12.187658
+  torsoFrequency: 2.1691003
   torsoDampingRatio: 0.5
-  torsoMass: 1
-  standHeight: 10.342699
+  torsoMass: 0.1
+  standHeight: 6.0545897
   footSpreadX: 3
   footOffsetY: 8
-  jumpSpeed: 16.724888
+  jumpSpeed: 2.124648
   jumpOffsetFactor: 18.866112
   forwardJumpFactor: 0.2195651
   directionalJumpDeadzone: 0.34200412
@@ -54,7 +54,7 @@ MonoBehaviour:
   jumpBufferTime: 0.06344699
   landingVelocityTolerance: 0.3
   jumpCoastTime: 0.06
-  impactCrouchFactor: 0.83285564
+  impactCrouchFactor: 0.110247776
   crouchDepthRatio: 0.4
   crouchDissipationRate: 15
   impactSquashOvershoot: 1
@@ -62,18 +62,18 @@ MonoBehaviour:
   landingCaptureWindow: 0.05
   footfallImpulse: 0.3
   footfallMinSpeed: 0.3
-  leashSoftRadius: 4.8222184
+  leashSoftRadius: 2.072081
   leashHardRadius: 15
   leashForceMult: 5
   maxFootSeparation: 20
   groundProbeDistance: 0.1
   edgeLandingNudge: 0.5
   minStepDistance: 1
-  maxWallSlideSpeed: 2.8471014
+  maxWallSlideSpeed: 0.33555898
   wallSlideFootGravityScale: 0.5
-  baseTorsoMass: 2.9080894
+  baseTorsoMass: 0.5247364
   ammoWeightPerUnit: 0.02
-  firingSpeed: 7.657472
+  firingSpeed: 4.2199345
   fireCooldown: 0.27074963
   projectileInitialScale: 0.05
   projectileGrowTime: 0.15
