@@ -118,21 +118,28 @@ public class ChunkManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Resets all chunk state and regenerates terrain around the given player Transform.
-    /// Call after all "Destructible"-tagged objects have been destroyed so the internal
-    /// dictionaries reference only defunct objects that Unity has already cleaned up.
+    /// Destroys all active chunks and the decoration tilemap via stored references
+    /// (not by scene tag), re-seeds the terrain, and regenerates chunks around
+    /// <paramref name="newPlayer"/>. Safe to call even if chunks carry no tag.
     /// </summary>
     public void Restart(Transform newPlayer)
     {
-        // Terrain chunks and the deco tilemap were destroyed by tag — clear stale refs.
+        // Destroy chunks using our own refs — avoids any dependency on scene tags.
+        foreach (var chunkGO in _activeChunks.Values)
+            if (chunkGO != null) Destroy(chunkGO);
         _activeChunks.Clear();
         _chunkDecoTiles.Clear();
-        _decoTilemap = null;
+
+        if (_decoTilemap != null)
+        {
+            Destroy(_decoTilemap.gameObject);
+            _decoTilemap = null;
+        }
 
         // New seed → fresh procedural world.
         terrainGenerator.InitSeed();
 
-        // Recreate the shared decoration tilemap.
+        // Recreate the shared decoration tilemap under the same Grid.
         _decoTilemap = terrainGenerator.CreateTreeLayerTilemap();
 
         player = newPlayer;
