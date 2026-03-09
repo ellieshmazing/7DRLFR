@@ -157,14 +157,15 @@ public class FootMovement : MonoBehaviour
     // -------------------------------------------------------------------------
 
     /// <summary>
-    /// Y reference for PlayerHipNode's spring target. Returns the lowest locked
-    /// foot's Y; falls back to raw RB positions when both feet are airborne.
+    /// Y reference for PlayerHipNode's spring target. When both feet are locked,
+    /// returns the highest foot Y so the hip rides up toward elevated terrain.
+    /// Falls back to the single locked foot Y, or raw RB min when both are airborne.
     /// </summary>
     public float GetGroundReferenceY()
     {
         bool ll = _left.state == FootState.Locked;
         bool rl = _right.state == FootState.Locked;
-        if (ll && rl) return Mathf.Min(_left.lockPosition.y, _right.lockPosition.y);
+        if (ll && rl) return Mathf.Max(_left.lockPosition.y, _right.lockPosition.y);
         if (ll) return _left.lockPosition.y;
         if (rl) return _right.lockPosition.y;
         if (_left.rb != null && _right.rb != null)
