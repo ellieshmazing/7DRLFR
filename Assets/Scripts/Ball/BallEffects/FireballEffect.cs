@@ -94,8 +94,9 @@ public class FireballEffect : BallEffect
                         if (tileBreakPrefab != null)
                         {
                             Vector3 tileWorldCenter = tilemap.GetCellCenterWorld(cellPos);
+                            Color tileColor = SampleTileColor(tilemap, cellPos);
                             float delay = Random.Range(0f, tileBreakMaxDelay);
-                            SpawnTileBreakEffect(tileWorldCenter, delay);
+                            SpawnTileBreakEffect(tileWorldCenter, delay, tileColor);
                         }
 
                         tilemap.SetTile(cellPos, null);
@@ -115,19 +116,68 @@ public class FireballEffect : BallEffect
         ball.DestroySelf();
     }
 
-    private void SpawnTileBreakEffect(Vector3 position, float delay)
+    /// <summary>
+    /// Samples the color of a tile by reading its sprite texture at the tile's center UV.
+    /// Falls back to the Tilemap's tint color, then white if no sprite is found.
+    /// </summary>
+    private Color SampleTileColor(Tilemap tilemap, Vector3Int cellPos)
     {
-        // Use a MonoBehaviour on the ball to run the coroutine before it's destroyed
-        CoroutineRunner.Instance.StartCoroutine(SpawnAfterDelay(position, delay));
+        TileBase tileBase = tilemap.GetTile(cellPos);
+
+        // Try to get the sprite from the tile
+        Sprite sprite = null;
+        if (tileBase is Tile tile)
+            sprite = tile.sprite;
+
+        if (sprite != null)
+        {
+            Texture2D tex = sprite.texture;
+
+            // Convert sprite's pivot-relative rect to texture pixel coords
+            Rect rect = sprite.textureRect;
+            int px = Mathf.RoundToInt(rect.x + rect.width * 0.5f);
+            int py = Mathf.RoundToInt(rect.y + rect.height * 0.5f);
+
+            // GetPixel requires a readable texture; falls through to tint if not readable
+            try
+            {
+                Color texColor = tex.GetPixel(px, py);
+                Color tint = tilemap.GetColor(cellPos);
+                Color finalColor = texColor * tint;
+                Debug.Log($"[TileColor] Cell {cellPos} | Sprite: {sprite.name} | TexColor: {texColor} | Tint: {tint} | Final: {finalColor}");
+                return finalColor;
+            }
+            catch (System.Exception e)
+            {
+                // Texture is not read/write enabled — fall back to tint color
+                Debug.LogWarning($"[TileColor] GetPixel failed on '{tex.name}' (not Read/Write enabled?): {e.Message}");
+            }
+        }
+
+        // Fallback: use the tilemap's color tint for this cell
+        Color cellTint = tilemap.GetColor(cellPos);
+        return cellTint == Color.clear ? Color.white : cellTint;
     }
 
-    private System.Collections.IEnumerator SpawnAfterDelay(Vector3 position, float delay)
+    private void SpawnTileBreakEffect(Vector3 position, float delay, Color tileColor)
+    {
+        CoroutineRunner.Instance.StartCoroutine(SpawnAfterDelay(position, delay, tileColor));
+    }
+
+    private System.Collections.IEnumerator SpawnAfterDelay(Vector3 position, float delay, Color tileColor)
     {
         yield return new WaitForSeconds(delay);
 
         if (tileBreakPrefab != null)
         {
             GameObject tileBreak = Instantiate(tileBreakPrefab, position, Quaternion.identity);
+
+            // Apply the sampled tile color to all particle systems on the prefab
+            foreach (ParticleSystem ps in tileBreak.GetComponentsInChildren<ParticleSystem>())
+            {
+                var main = ps.main;
+                main.startColor = new ParticleSystem.MinMaxGradient(tileColor);
+            }
 
             // Auto-destroy after all particle systems finish
             ParticleSystem[] systems = tileBreak.GetComponentsInChildren<ParticleSystem>();

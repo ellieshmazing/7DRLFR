@@ -128,8 +128,7 @@ public class TerrainGenerator : MonoBehaviour
 
         Tilemap tm = go.AddComponent<Tilemap>();
         go.AddComponent<TilemapRenderer>();
-        // No collider — leaves and trunks are visual only on the deco layer.
-        // If you want canopy collision, add a TilemapCollider2D here.
+        go.AddComponent<TilemapCollider2D>();
         return tm;
     }
 
