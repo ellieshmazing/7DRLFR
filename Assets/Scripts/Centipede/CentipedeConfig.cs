@@ -109,16 +109,16 @@ public class CentipedeConfig : ScriptableObject
     [Tooltip("Sprite used for both pincer renderers. Right side is flipped. Leave null to disable pincers.")]
     public Sprite pincerSprite;
 
-    [Tooltip("Uniform local scale of each pincer sprite GO. try 0.2–0.8; lower = subtle, higher = dramatic")]
+    [Tooltip("Scale of each pincer sprite GO as a multiple of nodeRadius. try 1.0–4.0; lower = subtle, higher = dramatic")]
     [Min(0.01f)]
-    public float pincerSize = 0.4f;
+    public float pincerSize = 2.67f;
 
-    [Tooltip("Local X distance from head center to each pincer's pivot point in world units. try 0.05–0.25")]
+    [Tooltip("X distance from head center to each pincer pivot, as a multiple of nodeRadius. try 0.3–2.0")]
     [Min(0f)]
-    public float pincerOffsetX = 0.12f;
+    public float pincerOffsetX = 0.8f;
 
-    [Tooltip("Local Y offset from head center to each pincer's pivot point in world units. try -0.1–0.2")]
-    public float pincerOffsetY = 0.1f;
+    [Tooltip("Y offset from head center to each pincer pivot, as a multiple of nodeRadius. try -0.5–1.5")]
+    public float pincerOffsetY = 0.67f;
 
     [Tooltip("Click frequency in Hz while player is outside attack radius. try 0.5–3.0; lower = lazy, higher = restless")]
     [Min(0.01f)]
@@ -140,15 +140,15 @@ public class CentipedeConfig : ScriptableObject
     [Min(0f)]
     public float attackInnerRadius = 1.0f;
 
-    [Tooltip("Width x Height of each trigger hitbox in world units. Intentionally smaller than the visual. try (0.05–0.15, 0.10–0.25)")]
-    public Vector2 pincerColliderSize = new Vector2(0.1f, 0.15f);
+    [Tooltip("Width x Height of each trigger hitbox as multiples of nodeRadius. Intentionally smaller than visual. try (0.3–1.0, 0.5–1.5)")]
+    public Vector2 pincerColliderSize = new Vector2(0.67f, 1.0f);
 
-    [Tooltip("Local X offset of each hitbox from head center in world units. try 0.05–0.2")]
+    [Tooltip("X offset of each hitbox from head center as a multiple of nodeRadius. try 0.3–1.5")]
     [Min(0f)]
-    public float pincerHitboxOffsetX = 0.1f;
+    public float pincerHitboxOffsetX = 0.67f;
 
-    [Tooltip("Local Y offset of each hitbox from head center in world units. try 0.0–0.2")]
-    public float pincerHitboxOffsetY = 0.1f;
+    [Tooltip("Y offset of each hitbox from head center as a multiple of nodeRadius. try 0.0–1.5")]
+    public float pincerHitboxOffsetY = 0.67f;
 
     [Header("Prefab Overrides")]
     [Tooltip("Override head prefab (falls back to assembler default if null)")]
