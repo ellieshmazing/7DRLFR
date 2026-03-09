@@ -248,3 +248,38 @@ Topic: AutoRespawn config identity bug in TuningManager
 Concepts:
   - **Config identity vs. config type**: When a system routes through multiple config references (one for writing, one for spawning), a mismatch between those references is a silent bug — the entity spawns from one SO but reflects changes written to another. The type-check (`is PlayerConfig`) and the spawn-source (`playerConfig`) should be kept explicitly separate to avoid this class of confusion.
   - **Canonical source of truth**: In a tuning system, the manager's own serialized config fields are the authoritative spawn source. Dimension-level `targetConfig` references serve reflection-write routing only and should never become the spawn config — doing so couples visual fidelity to the correctness of external asset wiring.
+
+---
+Date: 2026-03-08
+Topic: Idle foot correction — hysteresis to prevent oscillation re-triggering
+Concepts:
+  - **Hysteresis in state machines**: Using separate arm/disarm thresholds to prevent rapid re-triggering. A single threshold trips on both noise and signal; hysteresis forces the system to travel back through a quiet band before it can fire again, filtering out oscillation without raising the trigger point.
+  - **Unintended feedback loops**: The torso spring's residual oscillation fed directly into the correction trigger, creating a self-sustaining bounce. Small continuous inputs to a sensitive threshold produce large persistent behavior — a classic emergent instability from coupling two independent systems too tightly.
+
+---
+Date: 2026-03-08
+Topic: Idle-to-walk step trigger
+Concepts:
+  - **Input Latency vs. Animation Latency**: Procedural walking systems that wait for stride displacement to accumulate introduce a gap between the player's intent and visible foot movement. Removing this gate during the idle-to-walk transition makes startup feel responsive — the foot moves *because* you pressed a key, not *after* physics accumulates.
+  - **State Machine Branch Specialization**: The idle and walking branches of the foot FSM serve different goals (stability vs. momentum). Keying a special behavior to the idle branch alone — without touching the walking logic — keeps concerns separated and avoids regressions in the common case.
+
+---
+Date: 2026-03-08
+Topic: Walk startup step projection
+Concepts:
+  - **Predictive vs. Reactive Foot Placement**: Procedural walkers can place feet reactively (where the body is now) or predictively (where it will be). Reactive placement causes stutter at walk startup because the foot lands immediately behind the already-moving torso. Projecting under expected acceleration turns a single-step stumble into a smooth launch.
+  - **Kinematic Average Velocity**: For constant acceleration from v₀ over time T, average velocity = v₀ + ½·a·T. Using this as the projection velocity in a linear displacement formula gives the correct quadratic position estimate without needing to change the formula itself.
+
+---
+Date: 2026-03-08
+Topic: Foot vertical movement decoupling
+Concepts:
+  - **Layered physics authority**: When multiple systems compete for control of the same axis, the one with the most physical grounding (literally — gravity + collision) should win. Pulling airborne feet toward the hip Y with a spring fought against gravity and created conflicting authorities on vertical position; removing it lets gravity be the sole vertical driver, making the system more predictable.
+  - **Emergent feel from constraint removal**: Sometimes the right design move is subtraction. Removing the Y spring doesn't just simplify code — it shifts vertical character feel from "spring puppet" to "physical body with weight," which is often more satisfying for platformer movement.
+
+---
+Date: 2026-03-08
+Topic: Torso offset spring — squash-and-stretch from structural inertia
+Concepts:
+  - **Squash-and-stretch as emergent physics**: Rather than scripting compression/expansion explicitly, we let spring inertia produce it. The torso offset spring lags behind a moving anchor (the hip), and that lag IS the stretch during falls and the compression on landing. The animation principle emerges from the physics, not from keyframes or triggers.
+  - **Authority layering**: Each layer of the body has one clear owner for each axis. Feet own the ground contact. The hip is a pure positional relay (locked to feet Y, no opinion of its own). The offset spring is where the body's inertia lives. Keeping these responsibilities separate prevents the systems from fighting each other and makes each layer independently tunable.

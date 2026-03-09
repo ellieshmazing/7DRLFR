@@ -10,49 +10,51 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c652bb2bcdf483d45b0b007d756c6fa8, type: 3}
-  m_Name: Beginning 1
+  m_Name: Tuner 1
   m_EditorClassIdentifier: Assembly-CSharp::PlayerConfig
   playerScale: 1
-  footMass: 0.3
-  footGravityScale: 10
-  moveForce: 32.415524
+  footMass: 1.265
+  footGravityScale: 5
+  moveForce: 17
   maxSpeed: 15
   airControlRatio: 0.25
   groundDamping: 5
   airDamping: 0.5
   dampingTransitionSpeed: 15
   turnBoostFactor: 1.5
-  strideTriggerDistance: 1.5757853
-  idleSpeedThreshold: 0.2939936
-  strideProjectionTime: 0.25
-  stepHeight: 2.0176945
-  baseStepDuration: 0.2
-  minStepDuration: 0.06
-  stepSpeedScale: 0.3
-  footFrequency: 5.4217825
+  strideTriggerDistance: 6.442921
+  idleSpeedThreshold: 1.1382936
+  strideProjectionTime: 0.27692848
+  idleCorrectionThreshold: 10
+  idleCorrectionHysteresis: 0.75
+  stepHeight: 7.9319205
+  baseStepDuration: 0.34462935
+  minStepDuration: 0.14887281
+  stepSpeedScale: 0.45138106
+  footFrequency: 5
   footDampingRatio: 0.5
   footSpringMass: 1
-  footGroundDamping: 4
+  footGroundDamping: 1
   footAirDamping: 0.3
-  hipFrequency: 3.8510034
+  hipFrequency: 9.601378
   hipDampingRatio: 0.5
   hipMass: 1
-  torsoFrequency: 2.6605809
+  torsoFrequency: 12.187658
   torsoDampingRatio: 0.5
   torsoMass: 1
-  standHeight: 6.927226
-  footSpreadX: 3.2143004
+  standHeight: 10.342699
+  footSpreadX: 3
   footOffsetY: 8
-  jumpSpeed: 7.756731
-  jumpOffsetFactor: 15
-  forwardJumpFactor: 0.15
-  directionalJumpDeadzone: 0.5
-  variableJumpCutMultiplier: 0.45
-  coyoteTime: 0.1
-  jumpBufferTime: 0.1
+  jumpSpeed: 16.724888
+  jumpOffsetFactor: 18.866112
+  forwardJumpFactor: 0.2195651
+  directionalJumpDeadzone: 0.34200412
+  variableJumpCutMultiplier: 0.007803688
+  coyoteTime: 0.0017341533
+  jumpBufferTime: 0.06344699
   landingVelocityTolerance: 0.3
   jumpCoastTime: 0.06
-  impactCrouchFactor: 0.44609386
+  impactCrouchFactor: 0.83285564
   crouchDepthRatio: 0.4
   crouchDissipationRate: 15
   impactSquashOvershoot: 1
@@ -60,18 +62,18 @@ MonoBehaviour:
   landingCaptureWindow: 0.05
   footfallImpulse: 0.3
   footfallMinSpeed: 0.3
-  leashSoftRadius: 4.657153
-  leashHardRadius: 10
-  leashForceMult: 3
+  leashSoftRadius: 4.8222184
+  leashHardRadius: 15
+  leashForceMult: 5
   maxFootSeparation: 20
-  groundProbeDistance: 2
+  groundProbeDistance: 0.1
   edgeLandingNudge: 0.5
   minStepDistance: 1
-  maxWallSlideSpeed: 2.1158729
+  maxWallSlideSpeed: 2.8471014
   wallSlideFootGravityScale: 0.5
-  baseTorsoMass: 0.83195114
+  baseTorsoMass: 2.9080894
   ammoWeightPerUnit: 0.02
-  firingSpeed: 5.2793183
+  firingSpeed: 7.657472
   fireCooldown: 0.27074963
   projectileInitialScale: 0.05
   projectileGrowTime: 0.15
@@ -101,13 +103,13 @@ MonoBehaviour:
     localOffset: {x: 4.5, y: 0.5}
     sortingOrder: 2
   leftFoot:
-    sprite: {fileID: -1420021654, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    sprite: {fileID: 2243031002349522149, guid: f01fda41aa7dbc34282b83335302e5b8, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
     sortingOrder: -1
   rightFoot:
-    sprite: {fileID: 2096353187, guid: 5480967f61c2b66478750adeb3482a4e, type: 3}
+    sprite: {fileID: -9037969273874986696, guid: f01fda41aa7dbc34282b83335302e5b8, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
-    sortingOrder: -1
+    sortingOrder: 5
   projectileDef: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
   firingPointOffset: 8
   maxWalkableAngle: 50

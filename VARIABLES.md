@@ -16,9 +16,9 @@ Living documentation of all meaningful variables across the project. Updated whe
 | `torsoFrequency` | `float` | `PlayerConfig` | Torso spring natural frequency ω (rad/s) | Higher = snappier visual tracking of torso node; `TorsoStiffness` and `TorsoDamping` computed from this | Spring response speed for torso visual |
 | `torsoDampingRatio` | `float` | `PlayerConfig` | Torso spring damping ratio ζ; 0 = perpetual bounce, 1 = critically damped | Lower = more overshoot/bounce; `TorsoDamping` computed from this | Torso visual oscillation character |
 | `torsoMass` | `float` | `PlayerConfig` | Torso spring simulation mass | Higher = more resistance to external forces without changing spring feel; `TorsoStiffness` and `TorsoDamping` recomputed | Torso visual inertia |
-| `hipFrequency` | `float` | `PlayerConfig` | Hip spring natural frequency ω (rad/s) | Higher = torso snaps to foot level faster after jumps/impacts | Hip spring response speed |
-| `hipDampingRatio` | `float` | `PlayerConfig` | Hip spring damping ratio ζ | Lower = more torso bob on landing, higher = planted/rigid feel | Hip spring oscillation character |
-| `hipMass` | `float` | `PlayerConfig` | Hip spring mass; also divides jump impulse | Higher = lower jump height from same jumpSpeed; `HipStiffness` and `HipDamping` recomputed | Hip spring inertia, jump height |
+| `hipFrequency` | `float` | `PlayerConfig` | Torso offset spring natural frequency ω (rad/s) | Higher = torso snaps faster to standHeight above hip; lower = more pronounced squash-and-stretch arc | Torso offset spring response speed |
+| `hipDampingRatio` | `float` | `PlayerConfig` | Torso offset spring damping ratio ζ | Lower = more oscillation after landing/fall (bobbing); higher = quick settle; ~0.8 recommended | Torso offset spring oscillation character |
+| `hipMass` | `float` | `PlayerConfig` | Torso offset spring virtual mass | Higher = more inertia, more pronounced stretch and squash during jumps and falls; `HipStiffness` and `HipDamping` recomputed | Torso offset spring inertia |
 | `footFrequency` | `float` | `PlayerConfig` | Foot spring natural frequency ω (rad/s) | Higher = feet snap to formation faster during movement | Foot spring response speed |
 | `footDampingRatio` | `float` | `PlayerConfig` | Foot spring damping ratio ζ | Lower = feet wobble after direction changes, higher = rigid formation | Foot spring oscillation character |
 | `footSpringMass` | `float` | `PlayerConfig` | Foot spring simulation mass; independent of footMass (RB mass) | Affects visual inertia only; `FootStiffness` and `FootDamping` recomputed | Foot visual inertia |
@@ -91,11 +91,18 @@ Living documentation of all meaningful variables across the project. Updated whe
 
 ---
 
+## PlayerSkeletonRoot (runtime state)
+
+| Variable | Type | Location | Description | Behavior | Affects |
+|---|---|---|---|---|---|
+| `_torsoSpringY` | `float` | `PlayerSkeletonRoot` | Current Y position of the torso offset spring | Integrates each FixedUpdate toward `hipNode.Y + standHeight`; lags behind when hip moves rapidly | Torso Y position (desiredY = _torsoSpringY − visualCrouch) |
+| `_torsoSpringVelY` | `float` | `PlayerSkeletonRoot` | Velocity of the torso offset spring | Accelerated by spring-damper force each frame; cut by variableJumpCutMultiplier on jump release | Torso Y velocity, stretch/squash intensity |
+
 ## PlayerHipNode
 
 | Variable | Type | Location | Description | Behavior | Affects |
 |---|---|---|---|---|---|
-| `config` | `PlayerConfig` | `PlayerHipNode` | Live config SO reference | HipStiffness, HipDamping, hipMass read per-frame | Hip spring response |
+| `config` | `PlayerConfig` | `PlayerHipNode` | Live config SO reference | hipMass read per-frame for external systems | Virtual spring mass property |
 
 ---
 
