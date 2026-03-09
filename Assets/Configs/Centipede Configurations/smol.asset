@@ -20,13 +20,13 @@ MonoBehaviour:
   wiggleDampingRatio: 0.28
   wiggleMass: 0.1
   ballDefinition: {fileID: 11400000, guid: 325af4621da5a00478d25b80091be76b, type: 2}
-  detachDistance: 3
-  speed: 10
+  detachDistance: 5
+  speed: 8
   collisionCooldownDuration: 0.5
   obstacleLayerMask:
     serializedVersion: 2
     m_Bits: 1
-  obstacleDetectionRadius: 1.5
+  obstacleDetectionRadius: 20
   obstacleAvoidanceStrength: 6
   scentHistorySize: 200
   scentSampleInterval: 0.1

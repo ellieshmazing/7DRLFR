@@ -339,3 +339,10 @@ Topic: Randomized centipede spawning — per-spawn variety via runtime SO clones
 Concepts:
   - **Runtime ScriptableObject Cloning**: Instantiating a SO at runtime creates a mutable copy that can be tweaked per-spawn without touching the authored asset. This is the standard "template + variation" pattern in Unity — one config asset defines the base, clones carry per-instance overrides. It scales cleanly: any new field on the SO becomes randomizable without changing the assembler's API.
   - **Affine Parameter Coupling**: When two tuning values are linked by a ratio (followDistance = nodeRadius × 2), randomizing one and deriving the other preserves the visual relationship at all scales. The ratio encodes "how tightly packed the chain looks" — randomizing both independently would produce gappy or overlapping chains that read as bugs rather than variety.
+
+---
+Date: 2026-03-08
+Topic: Centipede detachment — replacing displacement polling with explosion-triggered detachment
+Concepts:
+  - **Event-Driven vs. Polling**: The displacement-based system ran O(n) checks every FixedUpdate despite detachment being rare. Replacing it with an event-driven approach (explosion triggers detachment) eliminates per-frame cost entirely. In game systems, polling is easy to implement but wasteful when the trigger condition is rare; switching to event-driven architecture pays off when you can identify a discrete event that fully owns the trigger.
+  - **Batch Resolution of Dependent Mutations**: When an explosion hits multiple balls on the same centipede, they must be resolved as a single batch — not one-by-one, which would cascade partial splits. Grouping affected entities by their owner before mutating state is a pattern that recurs anywhere a single event affects multiple members of the same aggregate (damage AoE, chain reactions, multi-unit selection).

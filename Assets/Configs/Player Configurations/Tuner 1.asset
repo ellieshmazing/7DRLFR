@@ -15,7 +15,7 @@ MonoBehaviour:
   playerScale: 1
   footMass: 1.265
   footGravityScale: 2
-  moveForce: 65
+  moveForce: 15
   maxSpeed: 15
   airControlRatio: 0.25
   groundDamping: 5
