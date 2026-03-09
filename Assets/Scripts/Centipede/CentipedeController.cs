@@ -2,12 +2,8 @@ using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
-/// Monitors centipede Balls for displacement past config.detachDistance and handles
-/// splitting the centipede when detachment occurs.
-///
-/// Runs at execution order 5 — after SkeletonRoot (-10, trail update) and
-/// Ball (0, spring chase) — so displacement is measured against this frame's
-/// node positions with the ball's physics position from the last step.
+/// Handles centipede splitting when balls are detached by external systems
+/// (e.g. explosion radius from FireballEffect).
 ///
 /// Placed on the same GameObject as SkeletonRoot. Created by CentipedeAssembler
 /// on initial spawn, and by HandleDetachment on each split sub-centipede.
@@ -47,77 +43,46 @@ public class CentipedeController : MonoBehaviour
         balls  = new List<Ball>(ballList);
     }
 
-    // ── Per-frame ─────────────────────────────────────────────────────────────
+    // ── Public detachment API ─────────────────────────────────────────────────
 
-    void FixedUpdate()
+    /// <summary>
+    /// Detaches the given balls from this centipede and runs chain resolution
+    /// (splitting, freeing solo balls, spawning reversed sub-centipedes).
+    /// Called by external systems such as FireballEffect on explosion.
+    /// </summary>
+    public void DetachBalls(HashSet<Ball> affectedBalls)
     {
-        if (config == null || nodes.Count == 0) return;
-        CheckForDetachment();
-    }
-
-    // ── Detachment detection ──────────────────────────────────────────────────
-
-    private void CheckForDetachment()
-    {
-        List<int> triggered = null;
+        bool[] detachMask = new bool[balls.Count];
+        bool any = false;
         for (int i = 0; i < balls.Count; i++)
         {
-            if (balls[i] == null || nodes[i] == null) continue;
-            float d = Vector2.Distance(
-                (Vector2)balls[i].transform.position,
-                (Vector2)nodes[i].transform.position);
-            if (d >= config.detachDistance)
+            if (balls[i] != null && affectedBalls.Contains(balls[i]))
             {
-                triggered ??= new List<int>();
-                triggered.Add(i);
+                detachMask[i] = true;
+                any = true;
             }
         }
 
-        if (triggered != null)
-            HandleDetachment(triggered);
+        if (!any) return;
+
+        HandleDetachment(detachMask);
     }
 
     // ── Core destruction logic ────────────────────────────────────────────────
 
-    private void HandleDetachment(List<int> initialDetached)
+    private void HandleDetachment(bool[] detachMask)
     {
-        float D = config.detachDistance;
-
-        // ── Step 1: Expand detached set to include preemptive detachments ─────
-        //
-        // A ball that hasn't yet crossed detachDistance may already have enough
-        // kinetic + spring potential energy to do so (SHM approximation, no damping):
-        //   mass·v² ≥ stiffness·(D²−d²)
-        //
-        // Identifying these now avoids a cascade of sequential HandleDetachment
-        // calls in subsequent frames.
-        var detachedSet = new HashSet<int>(initialDetached);
-        for (int i = 0; i < balls.Count; i++)
-        {
-            if (detachedSet.Contains(i)) continue;
-            Ball b = balls[i]; SkeletonNode n = nodes[i];
-            if (b == null || n == null) continue;
-
-            float d        = Vector2.Distance((Vector2)b.transform.position, (Vector2)n.transform.position);
-            float speedSq  = b.SpringVelocity.sqrMagnitude;
-            float neededSq = (b.springStiffness / b.springMass) * (D * D - d * d);
-
-            // neededSq ≤ 0 → already at or past D (shouldn't happen — would have been triggered)
-            if (neededSq <= 0f || speedSq >= neededSq)
-                detachedSet.Add(i);
-        }
-
-        // ── Step 2: Find chains of consecutive non-detached indices ───────────
+        // ── Step 1: Find chains of consecutive non-detached indices ───────────
         var chains = new List<(int start, int end)>();
         int chainStart = -1;
         for (int i = 0; i <= nodes.Count; i++)
         {
-            bool det = i == nodes.Count || detachedSet.Contains(i);
+            bool det = i == nodes.Count || detachMask[i];
             if (!det && chainStart < 0)              chainStart = i;
             else if (det && chainStart >= 0)  { chains.Add((chainStart, i - 1)); chainStart = -1; }
         }
 
-        // ── Step 3: Reparent non-zero chain heads before any destruction ──────
+        // ── Step 2: Reparent non-zero chain heads before any destruction ──────
         //
         // The first node of each non-zero chain is a Unity child of a detached node
         // (or was before this frame). Moving it to scene root brings its entire
@@ -128,9 +93,12 @@ public class CentipedeController : MonoBehaviour
                 nodes[s].transform.SetParent(null, true);
         }
 
-        // ── Step 4: Unparent balls that must survive their node GO's destruction ──
-        foreach (int i in detachedSet)
-            balls[i].transform.SetParent(null, true);
+        // ── Step 3: Unparent balls that must survive their node GO's destruction ──
+        for (int i = 0; i < detachMask.Length; i++)
+        {
+            if (detachMask[i])
+                balls[i].transform.SetParent(null, true);
+        }
 
         foreach (var (s, e) in chains)
         {
@@ -138,26 +106,25 @@ public class CentipedeController : MonoBehaviour
                 balls[s].transform.SetParent(null, true);
         }
 
-        // ── Step 5: Destroy detached node GOs ────────────────────────────────
+        // ── Step 4: Destroy detached node GOs ────────────────────────────────
         //
         // For consecutive detached runs (e.g. {3,4}), only the topmost one in
         // the Unity hierarchy (lowest index) is destroyed explicitly; the rest
         // are already children of it and will be destroyed along with it.
-        // (This prevents destroying an already-destroyed child object.)
-        foreach (int i in detachedSet)
+        for (int i = 0; i < detachMask.Length; i++)
         {
-            if (i == 0 || !detachedSet.Contains(i - 1))
+            if (detachMask[i] && (i == 0 || !detachMask[i - 1]))
                 Destroy(nodes[i].gameObject);
         }
 
-        // ── Step 6: Free detached balls ───────────────────────────────────────
-        foreach (int i in detachedSet)
+        // ── Step 5: Free detached balls ───────────────────────────────────────
+        for (int i = 0; i < detachMask.Length; i++)
         {
-            if (balls[i] != null)
+            if (detachMask[i] && balls[i] != null)
                 balls[i].Detach(balls[i].SpringVelocity);
         }
 
-        // ── Step 7: Resolve each surviving chain ──────────────────────────────
+        // ── Step 6: Resolve each surviving chain ──────────────────────────────
         bool zeroChainSurvivesAsCentipede = false;
 
         foreach (var (s, e) in chains)
@@ -180,8 +147,8 @@ public class CentipedeController : MonoBehaviour
                     nodes[0].children.Clear();
                     nodes[0].parent = null;
                     balls[0].Detach(balls[0].SpringVelocity);
-                    // Ball was unparented in step 4; this GO (which has SkeletonRoot +
-                    // CentipedeController) is destroyed in step 8.
+                    // Ball was unparented in step 3; this GO (which has SkeletonRoot +
+                    // CentipedeController) is destroyed in step 7.
                 }
             }
             else
@@ -203,7 +170,7 @@ public class CentipedeController : MonoBehaviour
             }
         }
 
-        // ── Step 8: Destroy this controller if the original chain is gone ─────
+        // ── Step 7: Destroy this controller if the original chain is gone ─────
         if (!zeroChainSurvivesAsCentipede)
             Destroy(gameObject);
     }

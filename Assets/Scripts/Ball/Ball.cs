@@ -50,6 +50,9 @@ public class Ball : MonoBehaviour
     /// <summary>Current spring simulation velocity in world space.</summary>
     public Vector2 SpringVelocity => springVelocity;
 
+    /// <summary>True when this ball is a Centipede segment (kinematic spring-chase mode).</summary>
+    public bool InCentipedeMode => inCentipedeMode;
+
     /// <summary>
     /// The ball's Rigidbody2D. Effects and movement overrides may read or write it
     /// directly (e.g. to switch to Kinematic for a sticky freeze, or to add force).

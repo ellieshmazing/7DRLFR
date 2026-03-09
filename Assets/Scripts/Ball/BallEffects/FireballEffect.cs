@@ -59,29 +59,44 @@ public class FireballEffect : BallEffect
         if (impactSound != null)
             AudioSource.PlayClipAtPoint(impactSound, hitPoint, impactVolume);
 
-        // Physics force on nearby rigidbodies
+        // Detach centipede balls within explosion radius before applying forces.
+        // Once detached, balls become Dynamic and receive standard AddForce impulses.
         Collider2D[] hits = Physics2D.OverlapCircleAll(hitPoint, explosionRadius);
+
+        var controllerMap = new System.Collections.Generic.Dictionary<CentipedeController, System.Collections.Generic.HashSet<Ball>>();
+        foreach (Collider2D hit in hits)
+        {
+            Ball hitBall = hit.GetComponent<Ball>();
+            if (hitBall != null && hitBall.InCentipedeMode)
+            {
+                var controller = hitBall.transform.root.GetComponent<CentipedeController>();
+                if (controller != null)
+                {
+                    if (!controllerMap.TryGetValue(controller, out var set))
+                    {
+                        set = new System.Collections.Generic.HashSet<Ball>();
+                        controllerMap[controller] = set;
+                    }
+                    set.Add(hitBall);
+                }
+            }
+        }
+
+        foreach (var kvp in controllerMap)
+            kvp.Key.DetachBalls(kvp.Value);
+
+        // Physics force on nearby rigidbodies
         foreach (Collider2D hit in hits)
         {
             Rigidbody2D hitRb = hit.GetComponent<Rigidbody2D>();
-            if (hitRb != null)
-            {
-                Vector2 direction = (hitRb.position - hitPoint).normalized;
-                float distance = Vector2.Distance(hitRb.position, hitPoint);
-                float falloff = 1f - Mathf.Clamp01(distance / explosionRadius);
-                float impulse = explosionForce * falloff;
+            if (hitRb == null || hitRb.bodyType == RigidbodyType2D.Kinematic) continue;
 
-                if (hitRb.bodyType == RigidbodyType2D.Kinematic)
-                {
-                    // Kinematic bodies ignore AddForce — inject into the Ball spring velocity instead
-                    Ball centipedeBall = hit.GetComponent<Ball>();
-                    centipedeBall?.InjectSpringVelocity(direction * impulse / hitRb.mass);
-                }
-                else
-                {
-                    hitRb.AddForce(direction * impulse, ForceMode2D.Impulse);
-                }
-            }
+            Vector2 direction = (hitRb.position - hitPoint).normalized;
+            float distance = Vector2.Distance(hitRb.position, hitPoint);
+            float falloff = 1f - Mathf.Clamp01(distance / explosionRadius);
+            float impulse = explosionForce * falloff;
+
+            hitRb.AddForce(direction * impulse, ForceMode2D.Impulse);
         }
 
         // Erase tiles within explosion radius on all tagged Tilemaps
