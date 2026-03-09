@@ -290,3 +290,17 @@ Topic: Centipede pincer attack mechanic
 Concepts:
   - **Hitbox/Hurtbox Separation**: The visible sprite and the damage zone are independent — here the pincers animate (rotate) while the trigger colliders are static siblings that never move. This lets the visual be dramatic and wide while the actual kill zone stays tight and forgiving. Fighting games pioneered this to keep moment-to-moment play fair even when animations are exaggerated.
   - **Strategy Pattern for Extensibility**: `IPlayerHitEffect` decouples "hit detected" from "what happens on hit." `PincerController` holds a list and iterates it — `DestroyPlayerEffect` is just the first entry. New effects (stun, knockback, damage) are new classes added to the list, not modifications to the detection logic. This is the classic open/closed principle applied to game events.
+
+---
+Date: 2026-03-08
+Topic: Game loop bootstrapping and escalating spawn systems
+Concepts:
+  - **Emergent Difficulty via Spatial Progress**: Tying spawn rate to the player's one-way rightward displacement rather than to time creates a difficulty curve that the player *controls*. The player chooses when to advance and how fast to escalate — turning spatial exploration into a risk-reward trade-off rather than a time tax.
+  - **One-Way Progress Tracking**: Recording only the maximum X achieved (never decreasing on retreat) prevents the player from "farming" lower difficulty by oscillating near the spawn boundary. It rewards commitment to forward movement and makes retreat a tactical pause rather than a reset.
+
+---
+Date: 2026-03-08
+Topic: Procedural foot stepping over short ledges
+Concepts:
+  - **Spatial clearance vs. surface detection**: A step arc is parameterized by height, not by what's in the way — the arc "knows" nothing about geometry until collision checks are layered on top. The fix here separates "can I arc over this" from "should I abort": an upward probe at the hit point gives the wall's actual height, which is then compared against the arc peak. This pattern — sample the environment to classify an obstacle, then decide — is more robust than reacting to raw collision normals alone.
+  - **Trigger gating and state coupling**: The step trigger failed because an upstream system (PlayerSkeletonRoot force suppression) had already zeroed the quantity the trigger depended on (vel.x). Adding a parallel condition (`footWalledTowardInput`) decouples the step trigger from torso velocity, letting the FSM react to contact state directly. A good rule of thumb: when a state machine's transition depends on a derived quantity that can be suppressed by an unrelated system, add a direct contact-state path as a fallback.

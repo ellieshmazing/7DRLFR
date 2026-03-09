@@ -176,3 +176,17 @@ Sprites are authored at **1 world-unit diameter at scale 1**.
 | `hitEffects` | `List<IPlayerHitEffect>` | `PincerController` | Ordered list of effects applied on player contact | Default contains `DestroyPlayerEffect`; add implementations for stun, knockback, etc. | Player hit response |
 
 *Add new sections per-script as variables are introduced.*
+
+---
+
+## GameLoop (MonoBehaviour)
+
+| Variable | Type | Location | Description | Behavior | Affects |
+|---|---|---|---|---|---|
+| `playerSpawnPosition` | `Vector2` | `GameLoop` | World position where the player spawns at game start | Set once on Start; passed directly to PlayerAssembler.Spawn | Player initial position |
+| `baseInterval` | `float` | `GameLoop` | Centipede spawn interval (seconds) at x = 0 | Numerator of spawn rate formula; default 120s = 1 per 2 minutes | Spawn rate at game start |
+| `minInterval` | `float` | `GameLoop` | Floor on the spawn interval regardless of rightward progress | Clamps the rate formula; prevents centipede saturation at far-right positions | Maximum possible spawn rate |
+| `progressScale` | `float` | `GameLoop` | Controls how aggressively rightward progress shortens the interval: `interval = base / (1 + maxX * scale)` | Higher = rate ramps faster; lower = slow steady ramp; try 0.02–0.1 | Spawn rate ramp speed |
+| `spawnAboveCamera` | `float` | `GameLoop` | World units above the camera's top edge where centipedes are placed | Larger = centipedes have more fall time before entering frame; default 2 wu | Off-screen spawn clearance |
+| `_spawnTimer` | `float` | `GameLoop` | Countdown to next centipede spawn | Decrements each Update; reset to `CurrentInterval()` on each spawn | Spawn timing |
+| `_maxPlayerX` | `float` | `GameLoop` | One-way record of the player's furthest rightward X position | Only increases; drives spawn rate; never decremented on leftward movement | Spawn rate progression |
